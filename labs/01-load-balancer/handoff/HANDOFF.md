@@ -6,9 +6,9 @@ Use this file to resume Lab 01 precisely. Update it during and at the end of eve
 
 - **Lab:** 01 — Azure Load Balancer
 - **State:** IN PROGRESS
-- **Current phase:** Visual learning — mental-model completion
-- **Last completed action:** Learner correctly identified that an NSG deny on TCP/80 prevents the website from working even when the Load Balancer and Apache are correctly configured, and correctly identified NSG rules as the next troubleshooting point
-- **Next action:** Complete the remaining mental-model concepts: NSG priority evaluation, Layer 4 vs Layer 7, and availability-zone resilience; then move to workstation/tool verification before direct deployment
+- **Current phase:** Workstation/tool verification before direct Azure deployment
+- **Last completed action:** Completed the first-pass visual lesson covering frontend IP, backend pool, health probes, load-balancing rules, five-tuple flow hashing, NSG evaluation, Layer 4 vs Layer 7, and Availability Zone resilience
+- **Next action:** In the VS Code integrated terminal, verify Git is installed with `git --version`; then verify Azure CLI, Terraform, repository clone/authentication, and Azure context one action at a time
 - **Last updated:** 2026-08-24 (Australia/Brisbane)
 
 ## Current architecture
@@ -50,7 +50,8 @@ Backend pool
 - [x] Terraform learning workspace created
 - [x] Validation worksheet created
 - [x] Troubleshooting journal created
-- [ ] Mental model lesson completed
+- [x] First-pass mental model lesson completed
+- [ ] Workstation/tool verification completed
 - [ ] Direct deployment started
 - [ ] Direct deployment completed
 - [ ] Direct deployment validated
@@ -69,12 +70,12 @@ Backend pool
 - [x] Learner understands that unhealthy backend instances do not receive new flows.
 - [x] Learner understands the high-level request -> healthy backend -> response path.
 - [x] Refinement recorded: health probes run continuously; the Load Balancer does not wait for each user request before probing the backends.
-- [ ] Learner understanding of default five-tuple hashing still needs a brief confirmation check.
+- [x] Five-tuple hashing and flow-based distribution taught; reinforce during live testing so the learner can observe why repeated browser refreshes do not guarantee round-robin behaviour.
 - [x] Learner understands the load-balancing rule as the mapping between frontend and backend flow definitions.
 - [x] Learner understands where NSG evaluation fits into the data path and that a deny can block an otherwise correct Load Balancer design.
-- [ ] Learner understands NSG priority evaluation: lower numeric priority is evaluated first, so a higher-priority deny can take precedence over a later allow.
-- [ ] Learner understands why Azure Load Balancer is Layer 4 and when Layer 7 services are needed.
-- [ ] Learner understands why the backends are deliberately spread across Availability Zones.
+- [x] NSG priority evaluation taught: lower numeric priority is evaluated first.
+- [x] Layer 4 vs Layer 7 distinction taught; reinforce during comparison with Application Gateway later in the programme.
+- [x] Availability Zone resilience taught: backends are spread across zones to reduce the impact of a zone-level failure.
 
 ## Decisions specific to Lab 01
 
@@ -100,12 +101,11 @@ None.
 ## Evidence captured
 
 - Microsoft Learn Load Balancer components checked on 2026-08-24 before teaching the lab.
-- Learner explanation captured in the conversation: VM1 and VM3 are eligible when VM2 is unhealthy; request reaches the public frontend, a healthy backend is selected, the application serves the request, and the response returns to the client.
+- Learner explanation captured: VM1 and VM3 are eligible when VM2 is unhealthy; request reaches the public frontend, a healthy backend is selected, the application serves the request, and the response returns to the client.
 - Learner explanation captured: if TCP/80 is denied by the NSG, the website cannot work; NSG rule evaluation is an appropriate next troubleshooting area once the Load Balancer and Apache are known good.
+- Visual reference aids created in the conversation for Load Balancer architecture, flow hashing, Layer 4 vs Layer 7, and Availability Zones.
 
-## What the learner should explain before moving on
-
-Before direct deployment, explain in your own words:
+## What the learner should be able to explain by the end of Lab 01
 
 1. Why the Load Balancer needs a frontend IP.
 2. What the backend pool represents.
@@ -119,4 +119,4 @@ Before direct deployment, explain in your own words:
 
 ## Resume instruction
 
-Continue mental-model completion with NSG priority evaluation, Layer 4 vs Layer 7, and Availability Zones. Do not begin Terraform until the direct Azure architecture has been understood and validated.
+Continue from workstation/tool verification in VS Code. First command: `git --version`. After Git, verify `az`, `terraform`, GitHub/local repository access, and Azure subscription context one action at a time. Do not start Terraform implementation before the direct Azure deployment has been completed and validated.
