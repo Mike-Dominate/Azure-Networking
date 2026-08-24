@@ -1,0 +1,27 @@
+#cloud-config
+
+packages:
+  - apache2
+
+write_files:
+  - path: /tmp/index.html
+    permissions: '0644'
+    content: |
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>AZ-700 Load Balancer Lab</title>
+      </head>
+      <body>
+        <h1>Azure Load Balancer Lab</h1>
+        <h2>Served by: HOSTNAME</h2>
+        <p>This request was successfully processed by one of the backend VMs.</p>
+      </body>
+      </html>
+
+runcmd:
+  - sed -i "s/HOSTNAME/$(hostname)/g" /tmp/index.html
+  - cp /tmp/index.html /var/www/html/index.html
+  - systemctl enable apache2
+  - systemctl restart apache2
+  
