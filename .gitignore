@@ -1,0 +1,41 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfplan
+.terraformrc
+terraform.rc
+
+# Sensitive/local Terraform values
+*.auto.tfvars
+*.auto.tfvars.json
+terraform.tfvars
+
+# Keys and certificates
+*.pem
+*.key
+*.pfx
+*.p12
+*.cer
+*.crt
+*.csr
+*.ovpn
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Azure / local auth artefacts
+.azure/
+
+# Editors / OS
+.vscode/settings.local.json
+.DS_Store
+Thumbs.db
+
+# Temporary evidence/output
+**/evidence/tmp/
+*.log
