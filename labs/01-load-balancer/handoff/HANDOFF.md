@@ -6,9 +6,9 @@ Use this file to resume Lab 01 precisely. Update it during and at the end of eve
 
 - **Lab:** 01 — Azure Load Balancer
 - **State:** IN PROGRESS
-- **Current phase:** Visual learning — mental model and traffic flow
-- **Last completed action:** Lab 01 formally started; current Microsoft Azure Load Balancer component model verified against Microsoft Learn
-- **Next action:** Complete the mental-model lesson and learner explanation before any deployment
+- **Current phase:** Visual learning — traffic flow and load-distribution behaviour
+- **Last completed action:** Learner correctly explained that new traffic can only be sent to healthy backend instances (VM1 and VM3 in the example) and described the request path from the Load Balancer frontend to the backend pool and response to the client
+- **Next action:** Teach how Azure Load Balancer selects one healthy backend using its default five-tuple hash, then complete the remaining mental-model concepts before deployment
 - **Last updated:** 2026-08-24 (Australia/Brisbane)
 
 ## Current architecture
@@ -62,6 +62,18 @@ Backend pool
 - [ ] Resources destroyed
 - [ ] Lab marked COMPLETE
 
+## Mental-model checkpoints
+
+- [x] Learner understands that clients connect to the Load Balancer frontend rather than directly to individual backend VMs.
+- [x] Learner understands that the backend pool contains candidate backend instances.
+- [x] Learner understands that unhealthy backend instances do not receive new flows.
+- [x] Learner understands the high-level request -> healthy backend -> response path.
+- [x] Refinement recorded: health probes run continuously; the Load Balancer does not wait for each user request before probing the backends.
+- [ ] Learner understands the default five-tuple hashing algorithm and why it is not simple round-robin.
+- [ ] Learner understands the load-balancing rule as the mapping between frontend and backend flow definitions.
+- [ ] Learner understands where NSG evaluation fits into the data path.
+- [ ] Learner understands why Azure Load Balancer is Layer 4 and when Layer 7 services are needed.
+
 ## Decisions specific to Lab 01
 
 - Preserve the reference lab's core objective: public Standard Load Balancer with three web backends across availability zones.
@@ -86,6 +98,7 @@ None.
 ## Evidence captured
 
 - Microsoft Learn Load Balancer components checked on 2026-08-24 before teaching the lab.
+- Learner explanation captured in the conversation: VM1 and VM3 are eligible when VM2 is unhealthy; request reaches the public frontend, a healthy backend is selected, the application serves the request, and the response returns to the client.
 
 ## What the learner should explain before moving on
 
@@ -98,7 +111,8 @@ Before direct deployment, explain in your own words:
 5. Why Azure Load Balancer is Layer 4.
 6. Why the three backends are distributed across availability zones.
 7. Where the NSG fits into the data path.
+8. Why traffic distribution is flow-hash based rather than simple request-by-request round-robin.
 
 ## Resume instruction
 
-Continue the visual/mental-model lesson. Do not begin Terraform until the direct Azure architecture has been understood and validated.
+Continue the visual/mental-model lesson with the five-tuple distribution algorithm. Do not begin Terraform until the direct Azure architecture has been understood and validated.
