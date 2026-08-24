@@ -7,8 +7,8 @@ Use this file to resume Lab 01 precisely. Update it during and at the end of eve
 - **Lab:** 01 — Azure Load Balancer
 - **State:** IN PROGRESS
 - **Current phase:** Workstation/tool verification before direct Azure deployment
-- **Last completed action:** Completed the first-pass visual lesson covering frontend IP, backend pool, health probes, load-balancing rules, five-tuple flow hashing, NSG evaluation, Layer 4 vs Layer 7, and Availability Zone resilience
-- **Next action:** In the VS Code integrated terminal, verify Git is installed with `git --version`; then verify Azure CLI, Terraform, repository clone/authentication, and Azure context one action at a time
+- **Last completed action:** Verified Git from the VS Code integrated PowerShell terminal: `git version 2.54.0.windows.1`
+- **Next action:** Verify Azure CLI with `az --version`, then verify Terraform, repository clone/authentication, and Azure context one action at a time
 - **Last updated:** 2026-08-24 (Australia/Brisbane)
 
 ## Current architecture
@@ -52,6 +52,11 @@ Backend pool
 - [x] Troubleshooting journal created
 - [x] First-pass mental model lesson completed
 - [ ] Workstation/tool verification completed
+  - [x] Git verified: 2.54.0.windows.1
+  - [ ] Azure CLI verified
+  - [ ] Terraform verified
+  - [ ] Local GitHub repository verified
+  - [ ] Azure subscription context verified
 - [ ] Direct deployment started
 - [ ] Direct deployment completed
 - [ ] Direct deployment validated
@@ -88,7 +93,10 @@ Backend pool
 
 ## Commands already run
 
-None yet.
+```powershell
+git --version
+# git version 2.54.0.windows.1
+```
 
 ## Resources currently deployed
 
@@ -104,6 +112,7 @@ None.
 - Learner explanation captured: VM1 and VM3 are eligible when VM2 is unhealthy; request reaches the public frontend, a healthy backend is selected, the application serves the request, and the response returns to the client.
 - Learner explanation captured: if TCP/80 is denied by the NSG, the website cannot work; NSG rule evaluation is an appropriate next troubleshooting area once the Load Balancer and Apache are known good.
 - Visual reference aids created in the conversation for Load Balancer architecture, flow hashing, Layer 4 vs Layer 7, and Availability Zones.
+- Workstation evidence: Git 2.54.0.windows.1 is available in the VS Code integrated PowerShell terminal.
 
 ## What the learner should be able to explain by the end of Lab 01
 
@@ -119,4 +128,4 @@ None.
 
 ## Resume instruction
 
-Continue from workstation/tool verification in VS Code. First command: `git --version`. After Git, verify `az`, `terraform`, GitHub/local repository access, and Azure subscription context one action at a time. Do not start Terraform implementation before the direct Azure deployment has been completed and validated.
+Continue workstation verification in VS Code. Next command: `az --version`. After Azure CLI, verify Terraform, GitHub/local repository access, and Azure subscription context one action at a time. Do not start Terraform implementation before the direct Azure deployment has been completed and validated.
