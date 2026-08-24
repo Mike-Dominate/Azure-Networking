@@ -5,10 +5,10 @@ Use this file to resume Lab 01 precisely. Update it during and at the end of eve
 ## Status
 
 - **Lab:** 01 — Azure Load Balancer
-- **State:** NOT STARTED
-- **Current phase:** Visual learning
-- **Last completed action:** Repository and Lab 01 workspace created
-- **Next action:** Teach and complete the Azure Load Balancer mental model before deployment
+- **State:** IN PROGRESS
+- **Current phase:** Visual learning — mental model and traffic flow
+- **Last completed action:** Lab 01 formally started; current Microsoft Azure Load Balancer component model verified against Microsoft Learn
+- **Next action:** Complete the mental-model lesson and learner explanation before any deployment
 - **Last updated:** 2026-08-24 (Australia/Brisbane)
 
 ## Current architecture
@@ -68,6 +68,8 @@ Backend pool
 - Prefer secure SSH-key authentication rather than the source lab's shared lab password.
 - Select the actual Azure region at execution time based on availability-zone and VM SKU availability.
 - Use the source address space (`10.200.0.0/16`, subnet `10.200.1.0/24`) unless a real conflict is identified.
+- Use Standard Load Balancer; Basic Load Balancer has been retired.
+- Prefer a zone-redundant frontend public IP where the selected region supports availability zones.
 
 ## Commands already run
 
@@ -83,7 +85,7 @@ None.
 
 ## Evidence captured
 
-None yet.
+- Microsoft Learn Load Balancer components checked on 2026-08-24 before teaching the lab.
 
 ## What the learner should explain before moving on
 
@@ -99,4 +101,4 @@ Before direct deployment, explain in your own words:
 
 ## Resume instruction
 
-Start with `../visual-learning/architecture.md`. Do not begin Terraform until the direct Azure architecture has been understood and validated.
+Continue the visual/mental-model lesson. Do not begin Terraform until the direct Azure architecture has been understood and validated.
