@@ -6,9 +6,9 @@ Use this file to resume Lab 01 precisely. Update it during and at the end of eve
 
 - **Lab:** 01 — Azure Load Balancer
 - **State:** IN PROGRESS
-- **Current phase:** Visual learning — traffic flow and load-distribution behaviour
-- **Last completed action:** Learner correctly explained that new traffic can only be sent to healthy backend instances (VM1 and VM3 in the example) and described the request path from the Load Balancer frontend to the backend pool and response to the client
-- **Next action:** Teach how Azure Load Balancer selects one healthy backend using its default five-tuple hash, then complete the remaining mental-model concepts before deployment
+- **Current phase:** Visual learning — mental-model completion
+- **Last completed action:** Learner correctly identified that an NSG deny on TCP/80 prevents the website from working even when the Load Balancer and Apache are correctly configured, and correctly identified NSG rules as the next troubleshooting point
+- **Next action:** Complete the remaining mental-model concepts: NSG priority evaluation, Layer 4 vs Layer 7, and availability-zone resilience; then move to workstation/tool verification before direct deployment
 - **Last updated:** 2026-08-24 (Australia/Brisbane)
 
 ## Current architecture
@@ -69,10 +69,12 @@ Backend pool
 - [x] Learner understands that unhealthy backend instances do not receive new flows.
 - [x] Learner understands the high-level request -> healthy backend -> response path.
 - [x] Refinement recorded: health probes run continuously; the Load Balancer does not wait for each user request before probing the backends.
-- [ ] Learner understands the default five-tuple hashing algorithm and why it is not simple round-robin.
-- [ ] Learner understands the load-balancing rule as the mapping between frontend and backend flow definitions.
-- [ ] Learner understands where NSG evaluation fits into the data path.
+- [ ] Learner understanding of default five-tuple hashing still needs a brief confirmation check.
+- [x] Learner understands the load-balancing rule as the mapping between frontend and backend flow definitions.
+- [x] Learner understands where NSG evaluation fits into the data path and that a deny can block an otherwise correct Load Balancer design.
+- [ ] Learner understands NSG priority evaluation: lower numeric priority is evaluated first, so a higher-priority deny can take precedence over a later allow.
 - [ ] Learner understands why Azure Load Balancer is Layer 4 and when Layer 7 services are needed.
+- [ ] Learner understands why the backends are deliberately spread across Availability Zones.
 
 ## Decisions specific to Lab 01
 
@@ -99,6 +101,7 @@ None.
 
 - Microsoft Learn Load Balancer components checked on 2026-08-24 before teaching the lab.
 - Learner explanation captured in the conversation: VM1 and VM3 are eligible when VM2 is unhealthy; request reaches the public frontend, a healthy backend is selected, the application serves the request, and the response returns to the client.
+- Learner explanation captured: if TCP/80 is denied by the NSG, the website cannot work; NSG rule evaluation is an appropriate next troubleshooting area once the Load Balancer and Apache are known good.
 
 ## What the learner should explain before moving on
 
@@ -112,7 +115,8 @@ Before direct deployment, explain in your own words:
 6. Why the three backends are distributed across availability zones.
 7. Where the NSG fits into the data path.
 8. Why traffic distribution is flow-hash based rather than simple request-by-request round-robin.
+9. Why NSG priority numbers matter when multiple rules could match the same traffic.
 
 ## Resume instruction
 
-Continue the visual/mental-model lesson with the five-tuple distribution algorithm. Do not begin Terraform until the direct Azure architecture has been understood and validated.
+Continue mental-model completion with NSG priority evaluation, Layer 4 vs Layer 7, and Availability Zones. Do not begin Terraform until the direct Azure architecture has been understood and validated.
