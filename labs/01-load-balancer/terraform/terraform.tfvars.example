@@ -1,0 +1,5 @@
+# Copy this file to terraform.tfvars locally and set values for your environment.
+# terraform.tfvars is ignored by Git.
+
+location            = "australiaeast"
+ssh_public_key_path = "~/.ssh/id_ed25519.pub"
