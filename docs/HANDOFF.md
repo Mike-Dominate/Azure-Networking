@@ -1,105 +1,107 @@
 # Programme Handoff — Azure Networking Engineering Labs
 
-This is the **authoritative continuation record** for the programme. Read this file before doing any lab work. Update it at the end of every working session and whenever the programme changes direction.
+This is the **authoritative continuation record** for the programme. Read this file before doing any lab work. Update it at the end of every working session and at meaningful checkpoints.
 
 ## Current status
 
 - **Programme:** Azure Networking Engineering Labs
 - **Repository:** `Mike-Dominate/Azure-Networking`
 - **Current lab:** Lab 01 — Azure Load Balancer
-- **Current phase:** Manual Azure CLI deployment completed, validated, failure/recovery tested, outbound tested, and destroyed. Ready for Terraform rebuild after Git synchronization.
-- **Overall progress:** 0 / 15 labs completed
+- **Current phase:** CLOSEOUT — manual deployment and Terraform rebuild are complete and validated; Terraform-managed Azure resources are still running and are ready for planned teardown.
+- **Overall progress:** 0 / 15 labs formally completed
 - **Cadence:** Maximum of one lab per day
-- **Last updated:** 2026-08-25 (Australia/Brisbane)
+- **Last updated:** 2026-08-26 (Australia/Brisbane)
 
 ## Last completed action
 
-Completed the full direct/manual Azure CLI lifecycle for Lab 01 and verified teardown:
+Lab 01 Terraform implementation was completed, validated, committed, and pushed to GitHub.
+
+Final Terraform convergence check:
 
 ```powershell
-az group exists --name rg-az700-lb-aue
+terraform plan
 ```
 
 returned:
 
 ```text
-false
+No changes. Your infrastructure matches the configuration.
 ```
 
-A detailed command/syntax walkthrough was added at:
+Completed Terraform commit:
 
 ```text
-labs/01-load-balancer/manual-deployment/DEPLOYMENT-WALKTHROUGH.md
+bf02196 Complete Lab 01 Terraform load balancer deployment
 ```
 
-The lab-specific continuation record is:
+Lab-specific continuation record:
 
 ```text
 labs/01-load-balancer/handoff/HANDOFF.md
 ```
 
+Detailed manual deployment walkthrough:
+
+```text
+labs/01-load-balancer/manual-deployment/DEPLOYMENT-WALKTHROUGH.md
+```
+
 ## Immediate next action
 
-The remote repository was updated with the latest documentation after the user's last local Git status check. The user also has a new local untracked file:
+Do not rebuild or modify the running Lab 01 environment.
+
+From:
 
 ```text
-labs/01-load-balancer/manual-deployment/cloud-init.yaml
+C:\Users\W_Admin\Azure-Networking\labs\01-load-balancer\terraform
 ```
 
-Therefore, from the local repository, synchronize first:
-
-```powershell
-git pull --rebase origin main
-```
-
-Then inspect status, add/commit the local cloud-init file, and push it:
-
-```powershell
-git status --short
-git add labs/01-load-balancer/manual-deployment/cloud-init.yaml
-git commit -m "Add Lab 01 cloud-init configuration"
-git push origin main
-```
-
-Verify:
-
-```powershell
-git status
-git log --oneline -5
-```
-
-Only after the Git repository is synchronized should the Terraform phase begin.
-
-## Lab 01 manual build summary
-
-The following architecture was successfully created in `australiaeast`:
+continue with:
 
 ```text
-Client
-  |
-  v
-Standard Public IP
-  |
-  v
+1. Generate and review a Terraform destroy plan.
+2. Apply the reviewed destroy plan.
+3. Verify resource group rg-az700-lb-aue no longer exists.
+4. Confirm Terraform state contains no managed resources.
+5. Update Lab 01 handoff to COMPLETE.
+6. Commit/push final closeout documentation.
+7. Complete learner explain-back / reflection.
+8. Only then begin Lab 02.
+```
+
+## Lab 01 final architecture before teardown
+
+Terraform created the following architecture in `australiaeast`:
+
+```text
+Internet client
+      |
+      | HTTP TCP/80
+      v
+Standard zone-redundant Public IP
+pip-az700-lb-aue
+40.82.216.41
+      |
+      v
 Standard Azure Load Balancer
-  |
-  +--> Frontend IP configuration
-  +--> TCP/80 load-balancing rule
-  +--> HTTP/80 health probe path /
-  +--> explicit outbound rule
-  |
-  v
-Backend pool
-  |
-  +--> vm-web-az1 / Zone 1 / 10.200.1.4
-  +--> vm-web-az2 / Zone 2 / 10.200.1.5
-  +--> vm-web-az3 / Zone 3 / 10.200.1.6
-          |
-          v
-     Web subnet / subnet NSG
-          |
-          v
-        Apache
+lb-az700-aue
+      |
+      +-- Frontend: fe-public
+      +-- HTTP health probe: probe-http (port 80, path /)
+      +-- Load-balancing rule: rule-http (TCP 80 -> 80)
+      +-- Explicit outbound SNAT rule: outbound-web
+      |
+      v
+Backend pool: be-web
+      |
+      +----------------------+----------------------+----------------------+
+      |                      |                      |
+      v                      v                      v
+vm-web-az1               vm-web-az2               vm-web-az3
+Zone 1                   Zone 2                   Zone 3
+Standard_B2als_v2        Standard_B2als_v2        Standard_B2ls_v2
+10.200.1.5               10.200.1.6               10.200.1.4
+Apache :80               Apache :80               Apache :80
 ```
 
 Network addressing:
@@ -109,55 +111,99 @@ VNet:   10.200.0.0/16
 Subnet: 10.200.1.0/24
 ```
 
-Backend VMs had no individual public IP addresses.
+All backend VMs have no individual public IP addresses.
 
-## Manual phase tests completed
+## Lab 01 phases completed
 
-- [x] Each VM cloud-init completed successfully.
-- [x] Apache was active on all three backends.
-- [x] Each web page displayed its own VM hostname.
-- [x] Public Load Balancer frontend returned an end-to-end HTTP response.
-- [x] Repeated new TCP connections reached all three healthy backends.
-- [x] Apache on VM2 was stopped while VM2 remained running.
-- [x] Health probe removed VM2 from new traffic.
-- [x] Traffic continued through VM1 and VM3.
-- [x] Apache on VM2 was restarted.
-- [x] Health probe automatically returned VM2 to service.
-- [x] Outbound test from VM1 showed the Load Balancer public IP as the external source IP.
-- [x] Resource Group was deleted after testing.
-- [x] Resource Group absence was verified.
+- [x] Problem/use-case discussion
+- [x] Mental model
+- [x] Visual architecture
+- [x] Manual Azure CLI deployment
+- [x] Manual Azure CLI validation
+- [x] Manual failure/recovery testing
+- [x] Manual outbound SNAT testing
+- [x] Manual environment teardown
+- [x] Terraform syntax and file-structure teaching
+- [x] Terraform `init`, `fmt`, `validate`, `plan`, and `apply`
+- [x] Real Terraform partial-apply recovery
+- [x] Azure zonal-capacity troubleshooting
+- [x] Terraform convergence test
+- [x] Azure CLI validation of Terraform-built resources
+- [x] Application/cloud-init/Apache validation
+- [x] Load distribution validation
+- [x] Terraform health-probe failure/recovery test
+- [x] Explicit outbound SNAT validation
+- [x] Azure Portal inspection
+- [x] Orphaned failed-deployment disk cleanup
+- [x] Terraform outputs
+- [x] Git commit and GitHub push
+- [ ] Terraform teardown
+- [ ] Final resource/state verification
+- [ ] Learner explain-back / reflection
+- [ ] Lab 01 formally marked COMPLETE
 
-## Important troubleshooting lessons captured
+## Key Lab 01 lessons
 
-### VM SKU behavior
+### Azure Load Balancer mental model
 
-`Standard_B1ms` supported Availability Zones 1/2/3 but failed at actual deployment because Azure reported live capacity restrictions.
+- Clients connect to the Load Balancer frontend rather than directly to backend VMs.
+- Backend pool members are NIC/IP configurations that are candidates for new flows.
+- Health probes continuously determine whether a backend is eligible for new flows.
+- The load-balancing rule ties frontend, backend pool, protocol/ports, and probe together.
+- Azure Load Balancer is Layer 4; it does not perform path- or host-based HTTP routing.
+- Distribution is flow-hash based, not guaranteed request-by-request round-robin.
 
-`Standard_B2s` existed but was reported `NotAvailableForSubscription`.
+### Application health versus VM state
 
-`Standard_B2als_v2` was selected after checking restrictions and zone support. It successfully deployed across Zones 1, 2, and 3.
+A VM can remain powered on while its application is unhealthy. Stopping Apache on VM2 caused the HTTP health probe to remove it from new flows. Restarting Apache allowed it to rejoin automatically after probe recovery.
 
-The key lesson is:
+### Explicit outbound connectivity
+
+The subnet was configured with default outbound access disabled. A dedicated Standard Load Balancer outbound rule supplied SNAT for the private backend VMs. An external-IP test from VM1 returned the same IP as the LB frontend, proving the explicit outbound path.
+
+### Availability and capacity
+
+`Standard_B2als_v2` worked in Zones 1 and 2 but failed in Zone 3 during the Terraform deployment with `ZonalAllocationFailed` due to live capacity.
+
+The final design preserved three-zone placement by using:
+
+```text
+Zone 1 -> Standard_B2als_v2
+Zone 2 -> Standard_B2als_v2
+Zone 3 -> Standard_B2ls_v2
+```
+
+The key lesson remains:
 
 ```text
 SKU supports a zone
       !=
 SKU has live capacity right now
       !=
-SKU is allowed for the current subscription
+SKU is permitted for the current subscription
 ```
 
-### Application health versus VM power state
+### Terraform behavior
 
-A VM can be `running` while its application is unhealthy. The failure exercise stopped Apache without stopping VM2, and the HTTP health probe removed that backend from new flows.
+- Terraform apply is not transactional; successful resources remain if a later resource fails.
+- Terraform state recorded the 20 successful resources after the first partial apply.
+- A failed Azure VM object could exist even when the resource was absent from Terraform state.
+- Azure may leave provider/API artifacts such as unattached disks after a failed deployment.
+- Suspected orphan resources must be inspected before manual deletion.
+- `for_each` allowed one NIC/VM definition to create three keyed instances.
+- An explicit `depends_on` was used because cloud-init required outbound connectivity before VM bootstrap, even though no VM property directly references the outbound rule.
+- Terraform outputs provide a clean operator/automation interface to runtime-assigned values.
+- A final no-change plan demonstrated convergence between desired configuration, state, and Azure.
 
-### Load distribution
+## Terraform tooling checkpoint
 
-Azure Load Balancer behavior should be understood as **flow-hash based**, not guaranteed request-by-request round-robin. The test generated separate client connections to make distribution observable.
+```text
+Terraform CLI:        1.15.8
+AzureRM provider:     4.81.0
+Provider constraint:  ~> 4.0
+```
 
-### Explicit outbound connectivity
-
-The subnet reported `defaultOutboundAccess: false`, so the lab used the Standard Load Balancer outbound rule to provide explicit SNAT for the private backend VMs.
+`.terraform.lock.hcl` is committed. Local `terraform.tfvars`, `.terraform/`, Terraform state, plan files, credentials, and private keys are ignored and must not be committed.
 
 ## Agreed learning method
 
@@ -182,11 +228,11 @@ Every applicable lab follows this sequence:
 16. Learner explains the design back in their own words
 ```
 
-Lab 01 has now completed steps 1 through 6 and is ready for step 7 after repository synchronization.
+Lab 01 has completed steps 1 through 14. Step 15 is the immediate next action; step 16 follows before the lab is marked complete.
 
 ## Tooling agreement
 
-Use the normal engineering tools throughout the programme instead of studying them separately:
+Use the normal engineering tools throughout the programme rather than studying them separately:
 
 - **VS Code** — primary editor/workspace and integrated terminal
 - **Terraform** — primary Infrastructure as Code implementation
@@ -206,54 +252,16 @@ Reference repository:
 
 `https://github.com/rithinskaria/kodekloud-az700`
 
-Use it for lab objectives and concepts. Do not simply copy its PowerShell workflow. Rebuild the exercises as our own visual + direct deployment + Terraform + validation learning programme.
+Use it for lab objectives and concepts. Do not simply copy its workflow. Rebuild the exercises as our own visual + direct deployment + Terraform + validation learning programme.
 
 ## Guardrails / anti-drift rules
 
 1. One lab per day maximum.
 2. Never mark a lab complete only because deployment succeeded.
-3. Teach Azure networking before teaching the Terraform resource syntax for it.
-4. Use the portal for visual understanding, not as the only deployment method.
-5. Use Azure CLI to independently validate what was created.
+3. Teach Azure networking before teaching Terraform syntax for it.
+4. Use the Portal for visual understanding, not as the only deployment method.
+5. Use Azure CLI to independently validate what Terraform created.
 6. Rebuild applicable labs with Terraform.
-7. Never commit secrets, credentials, private keys, certificates, `.tfstate`, `.tfvars` containing sensitive values, or Azure tokens.
-8. Update the handoff at the end of a working session or explicit checkpoint rather than after every command.
-9. If a future conversation lacks context, this file and the lab-specific handoff override conversational guesses.
-10. Do not begin the next lab until the current lab definition of done is satisfied.
-11. Teach command and Terraform syntax rather than only providing commands to copy.
-
-## Current repository checkpoint
-
-Remote GitHub now contains updated documentation, including:
-
-```text
-labs/01-load-balancer/manual-deployment/DEPLOYMENT-WALKTHROUGH.md
-labs/01-load-balancer/handoff/HANDOFF.md
-docs/HANDOFF.md
-```
-
-The user's last known local Git state before these remote documentation commits was:
-
-```text
-?? labs/01-load-balancer/manual-deployment/cloud-init.yaml
-```
-
-Because both the local working tree and remote `main` now have new work, **pull/rebase before committing and pushing the local file**.
-
-## Resume instruction
-
-Do not recreate the manual Azure deployment.
-
-Resume with:
-
-```powershell
-git pull --rebase origin main
-```
-
-Then commit/push the local cloud-init file. Once the repository is clean and synchronized, inspect:
-
-```powershell
-Get-ChildItem .\labs\01-load-balancer\terraform
-```
-
-Then begin Terraform teaching from syntax and resource relationships before running `terraform init`, `plan`, or `apply`.
+7. Never commit secrets, credentials, private keys, certificates, `.tfstate`, local `.tfvars`, Azure tokens, or other sensitive execution artifacts.
+8. Update handoffs at the end of a working session or meaningful checkpoint rather than after every command.
+9. Do not begin the next lab until the current lab has been safely torn down and formally closed out.
