@@ -6,204 +6,259 @@ This is the **authoritative continuation record** for the programme. Read this f
 
 - **Programme:** Azure Networking Engineering Labs
 - **Repository:** `Mike-Dominate/Azure-Networking`
-- **Current lab:** Lab 01 — Azure Load Balancer
-- **Current phase:** CLOSEOUT — manual deployment and Terraform rebuild are complete and validated; Terraform-managed Azure resources are still running and are ready for planned teardown.
-- **Overall progress:** 0 / 15 labs formally completed
+- **Last completed lab:** Lab 01 — Azure Load Balancer
+- **Next lab:** Lab 02 — Azure Traffic Manager
+- **Current phase:** Lab 01 formally complete; ready to begin Lab 02 on the next lab day.
+- **Overall progress:** 1 / 15 labs completed
 - **Cadence:** Maximum of one lab per day
-- **Last updated:** 2026-08-26 (Australia/Brisbane)
+- **Last updated:** 2026-08-29 (Australia/Brisbane)
 
 ## Last completed action
 
-Lab 01 Terraform implementation was completed, validated, committed, and pushed to GitHub.
+Lab 01 was formally closed after all of the following were completed:
 
-Final Terraform convergence check:
+```text
+manual Azure CLI build
+manual validation and failure/recovery testing
+manual teardown
+Terraform rebuild
+real partial-apply/capacity recovery
+Azure CLI and application validation
+Portal inspection
+outbound SNAT validation
+orphan-resource cleanup
+Git/GitHub checkpoint
+Terraform destroy plan
+Terraform teardown
+Azure resource-group verification
+Terraform-state verification
+complete rebuild/practice PDF
+learner explain-back
+```
+
+Final Terraform destroy plan:
+
+```text
+Plan: 0 to add, 0 to change, 21 to destroy.
+```
+
+Final Terraform apply result:
+
+```text
+Apply complete! Resources: 0 added, 0 changed, 21 destroyed.
+```
+
+Independent Azure verification:
 
 ```powershell
-terraform plan
+az group exists --name rg-az700-lb-aue
 ```
 
 returned:
 
 ```text
-No changes. Your infrastructure matches the configuration.
+false
 ```
 
-Completed Terraform commit:
+Terraform state verification:
 
-```text
-bf02196 Complete Lab 01 Terraform load balancer deployment
+```powershell
+terraform state list
 ```
 
-Lab-specific continuation record:
+returned no resources.
+
+Lab-specific completion record:
 
 ```text
 labs/01-load-balancer/handoff/HANDOFF.md
 ```
 
-Detailed manual deployment walkthrough:
+Completed Terraform implementation commit:
 
 ```text
-labs/01-load-balancer/manual-deployment/DEPLOYMENT-WALKTHROUGH.md
+bf02196 Complete Lab 01 Terraform load balancer deployment
 ```
 
 ## Immediate next action
 
-Do not rebuild or modify the running Lab 01 environment.
+Do not rebuild Lab 01 during normal programme progression. The completed Lab 01 material is retained for deliberate practice.
 
-From:
-
-```text
-C:\Users\W_Admin\Azure-Networking\labs\01-load-balancer\terraform
-```
-
-continue with:
+The next lab is:
 
 ```text
-1. Generate and review a Terraform destroy plan.
-2. Apply the reviewed destroy plan.
-3. Verify resource group rg-az700-lb-aue no longer exists.
-4. Confirm Terraform state contains no managed resources.
-5. Update Lab 01 handoff to COMPLETE.
-6. Commit/push final closeout documentation.
-7. Complete learner explain-back / reflection.
-8. Only then begin Lab 02.
+Lab 02 — Azure Traffic Manager
 ```
 
-## Lab 01 final architecture before teardown
-
-Terraform created the following architecture in `australiaeast`:
+Before deploying Lab 02, follow the programme method from the beginning:
 
 ```text
-Internet client
-      |
-      | HTTP TCP/80
-      v
-Standard zone-redundant Public IP
-pip-az700-lb-aue
-40.82.216.41
-      |
-      v
-Standard Azure Load Balancer
-lb-az700-aue
-      |
-      +-- Frontend: fe-public
-      +-- HTTP health probe: probe-http (port 80, path /)
-      +-- Load-balancing rule: rule-http (TCP 80 -> 80)
-      +-- Explicit outbound SNAT rule: outbound-web
-      |
-      v
-Backend pool: be-web
-      |
-      +----------------------+----------------------+----------------------+
-      |                      |                      |
-      v                      v                      v
-vm-web-az1               vm-web-az2               vm-web-az3
-Zone 1                   Zone 2                   Zone 3
-Standard_B2als_v2        Standard_B2als_v2        Standard_B2ls_v2
-10.200.1.5               10.200.1.6               10.200.1.4
-Apache :80               Apache :80               Apache :80
+1. Problem/use case
+2. Mental model
+3. Visual architecture and traffic/DNS flow
+4. Manual Azure deployment
+5. Azure CLI inspection and validation
+6. Teardown if appropriate before IaC rebuild
+7. Terraform implementation
+8. terraform fmt / validate / plan / apply
+9. Independent Azure CLI validation
+10. Failure testing and troubleshooting
+11. Portal inspection where useful
+12. Evidence and lessons
+13. Git/GitHub checkpoint
+14. Handoff update
+15. Safe teardown
+16. Learner explain-back
 ```
 
-Network addressing:
+## Lab 01 completion summary
+
+Lab 01 implemented and validated a Standard Public Azure Load Balancer architecture in Australia East with:
 
 ```text
 VNet:   10.200.0.0/16
 Subnet: 10.200.1.0/24
 ```
 
-All backend VMs have no individual public IP addresses.
+The design used:
 
-## Lab 01 phases completed
+- Standard zone-redundant public IP
+- Standard Azure Load Balancer
+- frontend `fe-public`
+- backend pool `be-web`
+- HTTP health probe on port 80 path `/`
+- TCP/80 inbound load-balancing rule
+- explicit Load Balancer outbound SNAT rule
+- subnet-level NSG allowing public TCP/80
+- three private backend NICs/VMs across Availability Zones 1, 2, and 3
+- Apache installed and configured through cloud-init
+- no individual backend VM public IPs
 
-- [x] Problem/use-case discussion
-- [x] Mental model
-- [x] Visual architecture
-- [x] Manual Azure CLI deployment
-- [x] Manual Azure CLI validation
-- [x] Manual failure/recovery testing
-- [x] Manual outbound SNAT testing
-- [x] Manual environment teardown
-- [x] Terraform syntax and file-structure teaching
-- [x] Terraform `init`, `fmt`, `validate`, `plan`, and `apply`
-- [x] Real Terraform partial-apply recovery
-- [x] Azure zonal-capacity troubleshooting
-- [x] Terraform convergence test
-- [x] Azure CLI validation of Terraform-built resources
-- [x] Application/cloud-init/Apache validation
-- [x] Load distribution validation
-- [x] Terraform health-probe failure/recovery test
-- [x] Explicit outbound SNAT validation
-- [x] Azure Portal inspection
-- [x] Orphaned failed-deployment disk cleanup
-- [x] Terraform outputs
-- [x] Git commit and GitHub push
-- [ ] Terraform teardown
-- [ ] Final resource/state verification
-- [ ] Learner explain-back / reflection
-- [ ] Lab 01 formally marked COMPLETE
+Final Terraform-built VM placement before teardown was:
 
-## Key Lab 01 lessons
+```text
+Zone 1 -> vm-web-az1 -> Standard_B2als_v2 -> 10.200.1.5
+Zone 2 -> vm-web-az2 -> Standard_B2als_v2 -> 10.200.1.6
+Zone 3 -> vm-web-az3 -> Standard_B2ls_v2  -> 10.200.1.4
+```
 
-### Azure Load Balancer mental model
+## Lab 01 key networking lessons
 
-- Clients connect to the Load Balancer frontend rather than directly to backend VMs.
-- Backend pool members are NIC/IP configurations that are candidates for new flows.
-- Health probes continuously determine whether a backend is eligible for new flows.
-- The load-balancing rule ties frontend, backend pool, protocol/ports, and probe together.
-- Azure Load Balancer is Layer 4; it does not perform path- or host-based HTTP routing.
-- Distribution is flow-hash based, not guaranteed request-by-request round-robin.
+### Inbound Load Balancer flow
+
+The validated mental model is:
+
+```text
+Client
+  -> public IP / LB frontend
+  -> matching load-balancing rule
+  -> continuously maintained healthy backend set
+  -> five-tuple-based flow selection
+  -> backend NIC/private IP
+  -> NSG security evaluation
+  -> Apache TCP/80
+  -> response through established flow
+```
+
+The health probe is continuous and is not triggered only when a user request arrives.
+
+Azure Load Balancer uses flow-based selection rather than guaranteed request-by-request round-robin. The default behavior should be thought of as **flow affinity**, not application sticky sessions: one established TCP flow stays with its selected backend, while a new flow may select another healthy backend.
 
 ### Application health versus VM state
 
 A VM can remain powered on while its application is unhealthy. Stopping Apache on VM2 caused the HTTP health probe to remove it from new flows. Restarting Apache allowed it to rejoin automatically after probe recovery.
 
-### Explicit outbound connectivity
-
-The subnet was configured with default outbound access disabled. A dedicated Standard Load Balancer outbound rule supplied SNAT for the private backend VMs. An external-IP test from VM1 returned the same IP as the LB frontend, proving the explicit outbound path.
-
-### Availability and capacity
-
-`Standard_B2als_v2` worked in Zones 1 and 2 but failed in Zone 3 during the Terraform deployment with `ZonalAllocationFailed` due to live capacity.
-
-The final design preserved three-zone placement by using:
+### NSG, routing, and SNAT are separate concepts
 
 ```text
-Zone 1 -> Standard_B2als_v2
-Zone 2 -> Standard_B2als_v2
-Zone 3 -> Standard_B2ls_v2
+NSG   = may this traffic pass?
+Route = where should this traffic go?
+SNAT  = what source identity should outbound traffic use?
 ```
 
-The key lesson remains:
+`defaultOutboundAccess = false` was a subnet setting. The NSG could permit outbound traffic but did not itself create Internet egress or perform NAT.
+
+The dedicated Standard Load Balancer outbound rule supplied SNAT. The backend VMs had different private IPs but shared the Load Balancer frontend public IP as their Internet-visible egress identity.
+
+The Standard Public Load Balancer can perform SNAT through an outbound rule, but it is not a general-purpose router or UDR next hop.
+
+## Lab 01 key Terraform lessons
+
+- Terraform configuration files in one directory form one configuration regardless of filename.
+- Variables provide external input; locals provide internal reusable values.
+- `for_each` created keyed NIC and VM instances.
+- Terraform resource addresses differ from Azure resource names.
+- References create implicit graph dependencies.
+- `depends_on` can represent an operational dependency not expressed by a property reference.
+- Terraform apply is **not transactional**. Successful resources remain and are recorded even if another operation later fails.
+- After the first partial apply, state contained the 20 successful resources, so the next plan proposed only the missing VM3.
+- Azure can retain a failed object even when Terraform did not record it as a successfully managed resource.
+- Terraform does not silently overwrite an unmanaged Azure object at the desired resource ID. The failed VM had to be reconciled deliberately.
+- Failed provider/API operations can leave unmanaged artifacts such as unattached disks.
+- A final no-change plan demonstrated convergence among configuration, Terraform state, and observed Azure infrastructure.
+- A saved destroy plan was reviewed before teardown, then applied exactly.
+
+## Lab 01 real capacity lesson
+
+Azure capacity and subscription availability are runtime constraints, not merely configuration questions.
+
+Observed during the lab:
 
 ```text
-SKU supports a zone
+Standard_B1ms
+-> zone support existed
+-> deployment failed because of live capacity
+
+Standard_B2s
+-> reported unavailable for the subscription
+
+Standard_B2als_v2
+-> worked in Zones 1 and 2
+-> later lacked live capacity in Zone 3 during Terraform apply
+
+Standard_B2ls_v2
+-> used successfully for the Zone 3 backend
+```
+
+Remember:
+
+```text
+SKU exists in region
       !=
-SKU has live capacity right now
+SKU permitted for subscription
       !=
-SKU is permitted for the current subscription
+SKU supports requested zone
+      !=
+live capacity is available right now
 ```
 
-### Terraform behavior
+## Lab 01 documentation retained
 
-- Terraform apply is not transactional; successful resources remain if a later resource fails.
-- Terraform state recorded the 20 successful resources after the first partial apply.
-- A failed Azure VM object could exist even when the resource was absent from Terraform state.
-- Azure may leave provider/API artifacts such as unattached disks after a failed deployment.
-- Suspected orphan resources must be inspected before manual deletion.
-- `for_each` allowed one NIC/VM definition to create three keyed instances.
-- An explicit `depends_on` was used because cloud-init required outbound connectivity before VM bootstrap, even though no VM property directly references the outbound rule.
-- Terraform outputs provide a clean operator/automation interface to runtime-assigned values.
-- A final no-change plan demonstrated convergence between desired configuration, state, and Azure.
-
-## Terraform tooling checkpoint
+Manual CLI walkthrough:
 
 ```text
-Terraform CLI:        1.15.8
-AzureRM provider:     4.81.0
-Provider constraint:  ~> 4.0
+labs/01-load-balancer/manual-deployment/DEPLOYMENT-WALKTHROUGH.md
 ```
 
-`.terraform.lock.hcl` is committed. Local `terraform.tfvars`, `.terraform/`, Terraform state, plan files, credentials, and private keys are ignored and must not be committed.
+Visual-learning assets:
+
+```text
+labs/01-load-balancer/visual-learning/
+```
+
+Terraform implementation:
+
+```text
+labs/01-load-balancer/terraform/
+```
+
+Lab completion handoff:
+
+```text
+labs/01-load-balancer/handoff/HANDOFF.md
+```
+
+A separate full PDF rebuild/practice manual was produced after teardown so Lab 01 can be rebuilt later without relying on the original chat.
 
 ## Agreed learning method
 
@@ -228,7 +283,7 @@ Every applicable lab follows this sequence:
 16. Learner explains the design back in their own words
 ```
 
-Lab 01 has completed steps 1 through 14. Step 15 is the immediate next action; step 16 follows before the lab is marked complete.
+Lab 01 completed all 16 stages.
 
 ## Tooling agreement
 
@@ -244,7 +299,7 @@ Use the normal engineering tools throughout the programme rather than studying t
 
 Terraform and Azure CLI have deliberately different roles:
 
-> Terraform describes and manages the desired infrastructure. Azure CLI helps inspect and prove what actually exists in Azure.
+> Terraform describes and manages desired infrastructure. Azure CLI independently inspects, validates, and troubleshoots what actually exists in Azure.
 
 ## Source curriculum
 
@@ -265,3 +320,13 @@ Use it for lab objectives and concepts. Do not simply copy its workflow. Rebuild
 7. Never commit secrets, credentials, private keys, certificates, `.tfstate`, local `.tfvars`, Azure tokens, or other sensitive execution artifacts.
 8. Update handoffs at the end of a working session or meaningful checkpoint rather than after every command.
 9. Do not begin the next lab until the current lab has been safely torn down and formally closed out.
+
+## Resume instruction
+
+Programme resumes at:
+
+```text
+Lab 02 — Azure Traffic Manager
+```
+
+Lab 01 is complete and should only be revisited for deliberate rebuild practice using its documentation.
