@@ -39,7 +39,7 @@ Problem/use case -> Teach mental model -> Visual architecture -> Understanding c
 | Lab | Topic | Status |
 |---:|---|---|
 | 01 | Azure Load Balancer | COMPLETE |
-| 02 | Azure Traffic Manager | NEXT |
+| 02 | Azure Traffic Manager | IN PROGRESS |
 | 03 | IP Addressing, VNets, Subnets & Public IP Architecture | NOT STARTED |
 | 04 | Azure DNS, Private DNS & DNS Private Resolver | NOT STARTED |
 | 05 | VNet Peering, Gateway Transit & Virtual Network Manager | NOT STARTED |
@@ -76,14 +76,6 @@ Azure-Networking/
 │   └── SOURCE-REFERENCE.md
 └── labs/
     ├── 01-load-balancer/
-    │   ├── README.md
-    │   ├── visual-learning/
-    │   ├── manual-deployment/
-    │   ├── terraform/
-    │   ├── validation/
-    │   ├── troubleshooting/
-    │   ├── evidence/
-    │   └── handoff/
     ├── 02-traffic-manager/
     └── ...
 ```
