@@ -12,14 +12,12 @@ This programme is **not certification-cramming**. The exam blueprint defines the
 - **Learning reference:** `rithinskaria/kodekloud-az700`.
 - **Secondary comparison/reference:** other current AZ-700 lab collections may be reviewed for omissions, but are not copied blindly.
 
-If Microsoft changes the AZ-700 skills outline, this roadmap must be reviewed and rebaselined before continuing blindly.
-
 ## Rebaselined lab sequence
 
 | Lab | Topic | Primary focus | Status |
 |---:|---|---|---|
 | 01 | Azure Load Balancer | L4 load balancing, probes, backend pools, availability zones, explicit outbound SNAT | COMPLETE |
-| 02 | Azure Traffic Manager | Global DNS traffic steering, Geographic routing, endpoint health, DNS TTL | IN PROGRESS |
+| 02 | Azure Traffic Manager | Global DNS traffic steering, Geographic routing, endpoint health, DNS TTL | COMPLETE |
 | 03 | IP Addressing, VNets, Subnets & Public IP Architecture | Address planning, subnet design, delegation, public IPs/prefixes, BYOIP concepts | NOT STARTED |
 | 04 | Azure DNS, Private DNS & DNS Private Resolver | Public/private DNS, VNet links, hybrid name resolution | NOT STARTED |
 | 05 | VNet Peering, Gateway Transit & Virtual Network Manager | Peering, topology, gateway transit, network groups/connectivity management | NOT STARTED |
@@ -43,9 +41,7 @@ If Microsoft changes the AZ-700 skills outline, this roadmap must be reviewed an
 
 ## Important sequencing rule
 
-Do **not** restart the programme because of this rebaseline.
-
-Lab 01 remains complete. Lab 02 is now in progress. The expanded coverage begins after Lab 02.
+Labs 01 and 02 are complete. The expanded coverage begins with Lab 03.
 
 ## Per-lab deliverables
 
@@ -99,7 +95,6 @@ Every lab should develop five levels of understanding:
 Early labs may be mentor-led and explicit. Over time the learner should increasingly:
 
 - design address spaces and dependencies before seeing a solution
-- predict the Azure resources required
 - write Terraform before seeing complete examples
 - select appropriate Azure CLI inspection commands
 - reason from effective routes, DNS results, flow logs and symptoms
@@ -113,17 +108,7 @@ Labs 21 and 22 should be substantially learner-driven.
 
 Full deployment is not mandatory when an Azure service is prohibitively expensive, requires provider involvement, or cannot be realistically provisioned in a personal lab subscription.
 
-In those cases the lab must still teach:
-
-- architecture
-- configuration objects
-- routing/control-plane behaviour
-- validation approach
-- failure modes
-- troubleshooting
-- exam/service-selection trade-offs
-
-ExpressRoute is the main example.
+In those cases the lab must still teach architecture, configuration objects, routing/control-plane behaviour, validation approach, failure modes, troubleshooting and service-selection trade-offs.
 
 ## End-state
 
