@@ -7,7 +7,7 @@ Use this file to resume Lab 02 precisely from a new session.
 - **Lab:** 02 — Azure Traffic Manager
 - **State:** IN PROGRESS
 - **Previous lab:** Lab 01 — Azure Load Balancer — COMPLETE
-- **Current phase:** Manual Azure CLI build — endpoint failure/recovery testing
+- **Current phase:** Manual build/validation/failure-recovery/Portal inspection complete; manual environment deleted; clean-state verification is next, then Terraform rebuild.
 - **Last updated:** 2026-08-30 (Australia/Brisbane)
 
 ## Mental model already taught and understood
@@ -33,9 +33,9 @@ Geographic routing   = explicit geography-to-endpoint mapping
 
 The learner correctly explained that Traffic Manager participates in DNS steering but not the subsequent HTTP data path.
 
-## Manual environment currently deployed
+## Manual implementation completed
 
-Resource group:
+Resource group used:
 
 ```text
 rg-az700-tm-global
@@ -43,7 +43,7 @@ rg-az700-tm-global
 
 ### Real subscription constraint and architecture substitution
 
-The source scenario used Linux App Service F1 plans. The East US plan creation failed with:
+The source scenario used Linux App Service F1 plans. East US App Service plan creation failed because the subscription had zero regional App Service VM quota:
 
 ```text
 Operation cannot be completed without additional quota.
@@ -61,37 +61,39 @@ Azure Container Instances
 + Traffic Manager External endpoints
 ```
 
-### Regional ACI endpoints
+### Regional ACI endpoints used
 
 ```text
 East US
 Container: ci-az700-tm-eus
 FQDN: az700-tm-eus-87004.eastus.azurecontainer.io
-Public IP observed: 20.242.191.210
+Initial public IP observed: 20.242.191.210
 HTTP direct validation: VERIFIED
 
 West Europe
 Container: ci-az700-tm-weu
 FQDN: az700-tm-weu-87004.westeurope.azurecontainer.io
-Public IP observed: 20.8.44.51
+Initial public IP observed: 20.8.44.51
 HTTP direct validation: VERIFIED
 
 Southeast Asia
 Container: ci-az700-tm-sea
 FQDN: az700-tm-sea-87004.southeastasia.azurecontainer.io
-Public IP observed: 40.119.253.24
-HTTP direct validation: VERIFIED before failure test
-CURRENT STATE: STOPPED deliberately for failure test
+Initial public IP observed: 40.119.253.24
+Public IP after stop/start recovery: 20.197.126.249
+HTTP direct validation: VERIFIED
 ```
 
-## Traffic Manager profile
+The Southeast Asia public IP changing after stop/start reinforced why the stable endpoint FQDN, not a transient ACI IP, should be the Traffic Manager target.
+
+## Traffic Manager profile implemented
 
 ```text
 Resource name: tm-az700-global
 FQDN: az700-tm-md-87004.trafficmanager.net
 Profile status: Enabled
 Routing method: Geographic
-DNS TTL: 30 seconds
+Configured DNS TTL: 30 seconds
 Monitor: HTTP / port 80 / path /
 ```
 
@@ -109,33 +111,20 @@ ep-sea -> Southeast Asia container
   GEO-AP -> Australia/Pacific
 ```
 
-Before failure testing all three endpoint monitors were `Online` and `Enabled`.
+All three endpoints reached `Online` and `Enabled`.
 
-## Geographic-routing mapping lesson
+## Geographic routing lessons proven
 
-The first DNS lookup used:
+Initial mappings omitted Australia/Pacific. A workstation DNS lookup returned the Traffic Manager name but no eligible endpoint. This demonstrated that Geographic routing does not automatically choose the nearest endpoint for an unmapped geography.
 
-```text
-dns.adguard-dns.com
-94.140.14.14
-```
-
-Initially only GEO-NA, GEO-EU and GEO-AS were configured. Australia/Pacific was unmapped, so:
-
-```powershell
-nslookup az700-tm-md-87004.trafficmanager.net
-```
-
-returned the Traffic Manager name but no endpoint address.
-
-The Southeast Asia endpoint was corrected to include both:
+`ep-sea` was then updated to include both:
 
 ```text
 GEO-AS
 GEO-AP
 ```
 
-After recovery to `Online`, DNS returned:
+A subsequent lookup returned:
 
 ```text
 Name:    az700-tm-sea-87004.southeastasia.azurecontainer.io
@@ -143,23 +132,27 @@ Address: 40.119.253.24
 Aliases: az700-tm-md-87004.trafficmanager.net
 ```
 
-Application access through the Traffic Manager FQDN was then successfully validated with `curl.exe`, proving end-to-end DNS steering plus direct client-to-endpoint HTTP connectivity.
+HTTP through the Traffic Manager FQDN returned the ACI application successfully. Together, DNS + HTTP proved:
 
-## Failure test completed so far
-
-The Southeast Asia container was deliberately stopped:
-
-```powershell
-az container stop --resource-group rg-az700-tm-global --name ci-az700-tm-sea
+```text
+client -> recursive resolver -> Traffic Manager DNS decision
+       -> Southeast Asia endpoint returned
+       -> client connects directly to ACI
 ```
 
-Azure state verification showed:
+Traffic Manager is not inline after DNS resolution.
+
+## Failure and recovery exercise completed
+
+The Southeast Asia container was deliberately stopped.
+
+Azure confirmed:
 
 ```text
 ci-az700-tm-sea  Stopped
 ```
 
-Traffic Manager endpoint state then showed:
+Traffic Manager then showed:
 
 ```text
 ep-eus  Online    Enabled
@@ -167,83 +160,141 @@ ep-weu  Online    Enabled
 ep-sea  Degraded  Enabled
 ```
 
-This demonstrates the difference between:
+This demonstrated:
 
 ```text
-EndpointStatus = administrative participation (Enabled/Disabled)
-EndpointMonitorStatus = Traffic Manager health observation (Online/Degraded/etc.)
+EndpointStatus        = administrative participation
+EndpointMonitorStatus = Traffic Manager's health observation
 ```
 
-A fresh query through Google DNS while `ep-sea` was degraded still returned the Southeast Asia endpoint:
+A fresh Google DNS query while `ep-sea` was degraded still returned the Southeast Asia endpoint. Geographic routing preserved the configured Australia/Pacific boundary instead of silently sending the client to Europe or North America.
 
-```powershell
-nslookup az700-tm-md-87004.trafficmanager.net 8.8.8.8
-```
-
-Observed:
-
-```text
-Name:    az700-tm-sea-87004.southeastasia.azurecontainer.io
-Address: 40.119.253.24
-Aliases: az700-tm-md-87004.trafficmanager.net
-```
-
-This is a critical Geographic-routing lesson: the configured geographic boundary is preserved; Traffic Manager did not silently send the Australia/Pacific query to Europe or North America just because the mapped endpoint was unhealthy.
-
-The application consequence was then proven with:
-
-```powershell
-curl.exe --max-time 10 http://az700-tm-md-87004.trafficmanager.net
-```
-
-Observed:
+HTTP through the Traffic Manager name then failed with:
 
 ```text
 curl: (28) Connection timed out after 10014 milliseconds
 ```
 
-Therefore:
+This proved that a successful DNS answer does not guarantee application reachability and that Geographic routing should not be assumed to provide cross-geography failover.
+
+The container was started again. HTTP immediately worked again and Traffic Manager subsequently returned all three endpoints to `Online`.
+
+## DNS TTL investigation completed
+
+Azure profile configuration showed:
 
 ```text
-DNS steering can still succeed
-        +
-Traffic Manager can know the mapped endpoint is degraded
-        +
-The final application connection can still fail
+Configured TTL: 30 seconds
 ```
 
-This reinforces that Traffic Manager is not an inline HTTP proxy and Geographic routing should not be assumed to provide cross-geography health failover.
+Direct query to an authoritative `trafficmanager.net` name server returned:
+
+```text
+Traffic Manager CNAME TTL: 30
+```
+
+The workstation's AdGuard recursive resolver returned:
+
+```text
+Traffic Manager CNAME TTL: 60
+ACI endpoint A-record TTL: 300
+```
+
+Directly querying AdGuard reproduced the 60-second CNAME TTL, proving that the discrepancy was introduced in the recursive-resolution path rather than by the Traffic Manager configuration.
+
+Engineering lesson:
+
+```text
+Traffic Manager configured TTL
+        != necessarily
+TTL ultimately presented by every recursive resolver
+```
+
+Also, a DNS chain can contain multiple records with independent TTLs.
+
+## Portal inspection completed
+
+Portal Overview confirmed:
+
+```text
+Profile: tm-az700-global
+Location: global
+Status: Enabled
+Routing method: Geographic
+Monitor status: Online
+Endpoints: 3
+```
+
+Configuration confirmed:
+
+```text
+Routing method: Geographic
+DNS TTL: 30 seconds
+Monitor protocol: HTTP
+Port: 80
+Path: /
+Probe interval: 30 seconds
+Tolerated failures: 3
+Probe timeout: 10 seconds
+Expected status: default 200
+```
+
+Portal endpoint view confirmed all three External endpoints were `Enabled` and `Online`; `ep-sea` visibly contained both Asia and Australia/Pacific geographic mappings.
+
+Important distinction reinforced:
+
+```text
+DNS TTL       = caching lifetime for DNS answers
+Probe interval = cadence of Traffic Manager health checks
+```
+
+## Manual teardown completed
+
+The manual environment was removed with:
+
+```powershell
+az group delete `
+  --name rg-az700-tm-global `
+  --yes `
+  --no-wait
+```
+
+The command returned no output as expected with `--no-wait`. The learner verified in the Azure Portal that the resource group and manual resources were deleted.
 
 ## Immediate next action
 
-Recover the deliberately stopped Southeast Asia container:
+Independently verify the resource group is absent before creating Terraform-managed resources:
 
 ```powershell
-az container start `
-  --resource-group rg-az700-tm-global `
-  --name ci-az700-tm-sea
+az group exists --name rg-az700-tm-global
 ```
 
-Then, one meaningful action at a time:
+Expected:
 
 ```text
-1. Verify the container is Running
-2. Observe ep-sea health return from Degraded to Online
-3. Re-test HTTP through the Traffic Manager FQDN
-4. Inspect DNS TTL/caching behavior
-5. Portal inspection
-6. Record evidence and lessons
-7. Manual teardown before Terraform rebuild where appropriate
-8. Terraform implementation
-9. fmt / validate / plan / apply
-10. Independent Azure/DNS/HTTP validation
-11. Failure/recovery test against Terraform build
-12. final no-change plan
-13. Git/GitHub checkpoint
-14. complete rebuild/practice PDF
-15. Terraform destroy and verification
-16. final learner explain-back
-17. mark Lab 02 COMPLETE
+false
+```
+
+After that:
+
+```text
+1. Sync local Git repository with GitHub checkpoint updates
+2. Enter/create Lab 02 Terraform workspace
+3. Teach the Terraform resource model before writing HCL
+4. Build the ACI + Traffic Manager design in Terraform
+5. terraform fmt
+6. terraform validate
+7. terraform plan
+8. terraform apply
+9. Independent Azure/DNS/HTTP validation
+10. Repeat meaningful failure/recovery test
+11. Confirm final no-change plan
+12. Git/GitHub checkpoint
+13. Create mandatory PNG/JPEG learning visuals reflecting actual ACI implementation
+14. Create complete Lab 02 rebuild/practice PDF
+15. Terraform destroy and independent Azure/state verification
+16. Final learner explain-back
+17. Mark Lab 02 COMPLETE
 ```
 
 ## Working rules that must not drift
