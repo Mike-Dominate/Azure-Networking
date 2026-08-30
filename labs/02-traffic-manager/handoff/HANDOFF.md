@@ -7,10 +7,32 @@ Use this file to resume Lab 02 precisely from a new session.
 - **Lab:** 02 — Azure Traffic Manager
 - **State:** IN PROGRESS
 - **Previous lab:** Lab 01 — Azure Load Balancer — COMPLETE
-- **Current phase:** Manual build/validation/failure-recovery/Portal inspection complete; manual environment deleted; clean-state verification is next, then Terraform rebuild.
+- **Current phase:** Manual Azure phase COMPLETE and fully documented; Azure environment is clean; Terraform rebuild is NEXT.
 - **Last updated:** 2026-08-30 (Australia/Brisbane)
 
-## Mental model already taught and understood
+## Resume point — do not repeat the manual build
+
+The complete manual Traffic Manager phase has already been performed, validated, troubleshot, documented, and torn down.
+
+Do **not** rebuild the manual environment during normal programme progression.
+
+The next phase is:
+
+```text
+Terraform rebuild of the validated ACI + Traffic Manager architecture
+```
+
+Before starting Terraform on the learner workstation, sync the repository:
+
+```powershell
+git pull --rebase
+```
+
+Then enter the Lab 02 Terraform workspace and teach the Terraform resource model before writing HCL.
+
+---
+
+## Core mental model already taught and understood
 
 ```text
 Azure Load Balancer
@@ -33,17 +55,13 @@ Geographic routing   = explicit geography-to-endpoint mapping
 
 The learner correctly explained that Traffic Manager participates in DNS steering but not the subsequent HTTP data path.
 
-## Manual implementation completed
+---
 
-Resource group used:
+## Manual architecture that was validated
 
-```text
-rg-az700-tm-global
-```
+The source exercise intended to use Linux App Service F1 endpoints in East US, West Europe and Southeast Asia.
 
-### Real subscription constraint and architecture substitution
-
-The source scenario used Linux App Service F1 plans. East US App Service plan creation failed because the subscription had zero regional App Service VM quota:
+During deployment, East US App Service plan creation failed because this subscription had zero App Service VM quota:
 
 ```text
 Operation cannot be completed without additional quota.
@@ -51,13 +69,13 @@ Current Limit (Total VMs): 0
 Amount required: 1
 ```
 
-No partial App Service plan remained; this was independently verified.
+No partial App Service plan remained after the failed operation.
 
-To preserve the Traffic Manager learning objective, the lab deliberately substituted:
+The lab therefore deliberately preserved the Traffic Manager learning objective by substituting:
 
 ```text
 Azure Container Instances
-+ public FQDNs
++ public regional ACI FQDNs
 + Traffic Manager External endpoints
 ```
 
@@ -84,9 +102,11 @@ Public IP after stop/start recovery: 20.197.126.249
 HTTP direct validation: VERIFIED
 ```
 
-The Southeast Asia public IP changing after stop/start reinforced why the stable endpoint FQDN, not a transient ACI IP, should be the Traffic Manager target.
+The Southeast Asia public IP changing after stop/start reinforced why the stable FQDN, rather than an observed ACI public IP, was used as the Traffic Manager target.
 
-## Traffic Manager profile implemented
+---
+
+## Traffic Manager profile validated
 
 ```text
 Resource name: tm-az700-global
@@ -111,20 +131,32 @@ ep-sea -> Southeast Asia container
   GEO-AP -> Australia/Pacific
 ```
 
-All three endpoints reached `Online` and `Enabled`.
+All three endpoint monitors reached `Online` while healthy.
 
-## Geographic routing lessons proven
+---
 
-Initial mappings omitted Australia/Pacific. A workstation DNS lookup returned the Traffic Manager name but no eligible endpoint. This demonstrated that Geographic routing does not automatically choose the nearest endpoint for an unmapped geography.
+## Geographic-routing failure and correction
 
-`ep-sea` was then updated to include both:
+The first geographic design mapped only:
+
+```text
+GEO-NA -> East US
+GEO-EU -> West Europe
+GEO-AS -> Southeast Asia
+```
+
+An Australian lookup through the learner's recursive resolver returned the Traffic Manager name but no eligible endpoint.
+
+This proved that Geographic routing is not a nearest-region algorithm and that an unmapped geography is not automatically sent elsewhere.
+
+The Southeast Asia endpoint was corrected to include:
 
 ```text
 GEO-AS
 GEO-AP
 ```
 
-A subsequent lookup returned:
+A subsequent Australian lookup returned:
 
 ```text
 Name:    az700-tm-sea-87004.southeastasia.azurecontainer.io
@@ -132,17 +164,21 @@ Address: 40.119.253.24
 Aliases: az700-tm-md-87004.trafficmanager.net
 ```
 
-HTTP through the Traffic Manager FQDN returned the ACI application successfully. Together, DNS + HTTP proved:
+HTTP through the Traffic Manager FQDN then succeeded.
+
+Together the DNS and HTTP tests proved:
 
 ```text
-client -> recursive resolver -> Traffic Manager DNS decision
-       -> Southeast Asia endpoint returned
-       -> client connects directly to ACI
+client
+  -> recursive DNS resolver
+  -> Traffic Manager geographic DNS decision
+  -> DNS answer points to Southeast Asia endpoint
+  -> client connects DIRECTLY to the ACI endpoint
 ```
 
-Traffic Manager is not inline after DNS resolution.
+---
 
-## Failure and recovery exercise completed
+## Endpoint failure and recovery exercise completed
 
 The Southeast Asia container was deliberately stopped.
 
@@ -160,14 +196,16 @@ ep-weu  Online    Enabled
 ep-sea  Degraded  Enabled
 ```
 
-This demonstrated:
+This demonstrated the difference between:
 
 ```text
 EndpointStatus        = administrative participation
 EndpointMonitorStatus = Traffic Manager's health observation
 ```
 
-A fresh Google DNS query while `ep-sea` was degraded still returned the Southeast Asia endpoint. Geographic routing preserved the configured Australia/Pacific boundary instead of silently sending the client to Europe or North America.
+A fresh query through Google DNS while `ep-sea` was degraded still returned the Southeast Asia endpoint for the Australia/Pacific mapping.
+
+Traffic Manager did **not** silently send the query to Europe or North America.
 
 HTTP through the Traffic Manager name then failed with:
 
@@ -175,19 +213,31 @@ HTTP through the Traffic Manager name then failed with:
 curl: (28) Connection timed out after 10014 milliseconds
 ```
 
-This proved that a successful DNS answer does not guarantee application reachability and that Geographic routing should not be assumed to provide cross-geography failover.
+This is a critical Lab 02 lesson:
 
-The container was started again. HTTP immediately worked again and Traffic Manager subsequently returned all three endpoints to `Online`.
+```text
+Geographic mapping can continue to identify the mapped endpoint
++
+Traffic Manager can know that endpoint is degraded
++
+The final application connection can still fail
+```
+
+Geographic routing must not be assumed to provide cross-geography health failover.
+
+The container was started again; HTTP recovered and all three endpoints returned to `Online`.
+
+---
 
 ## DNS TTL investigation completed
 
-Azure profile configuration showed:
+Azure configuration showed:
 
 ```text
-Configured TTL: 30 seconds
+Traffic Manager configured TTL: 30 seconds
 ```
 
-Direct query to an authoritative `trafficmanager.net` name server returned:
+A direct query to an authoritative `trafficmanager.net` server returned:
 
 ```text
 Traffic Manager CNAME TTL: 30
@@ -200,17 +250,19 @@ Traffic Manager CNAME TTL: 60
 ACI endpoint A-record TTL: 300
 ```
 
-Directly querying AdGuard reproduced the 60-second CNAME TTL, proving that the discrepancy was introduced in the recursive-resolution path rather than by the Traffic Manager configuration.
+Directly querying AdGuard reproduced the 60-second CNAME value, proving that the discrepancy appeared in the recursive-resolution layer rather than in the Traffic Manager profile itself.
 
 Engineering lesson:
 
 ```text
-Traffic Manager configured TTL
+Configured authoritative TTL
         != necessarily
 TTL ultimately presented by every recursive resolver
 ```
 
-Also, a DNS chain can contain multiple records with independent TTLs.
+A DNS resolution chain can also contain multiple records with independent TTLs.
+
+---
 
 ## Portal inspection completed
 
@@ -239,18 +291,20 @@ Probe timeout: 10 seconds
 Expected status: default 200
 ```
 
-Portal endpoint view confirmed all three External endpoints were `Enabled` and `Online`; `ep-sea` visibly contained both Asia and Australia/Pacific geographic mappings.
+The Endpoints view confirmed all three were External endpoints and `ep-sea` contained both Asia and Australia/Pacific mappings.
 
-Important distinction reinforced:
+Important timer distinction:
 
 ```text
-DNS TTL       = caching lifetime for DNS answers
-Probe interval = cadence of Traffic Manager health checks
+DNS TTL        = DNS answer caching lifetime
+Probe interval = Traffic Manager endpoint-health check cadence
 ```
 
-## Manual teardown completed
+---
 
-The manual environment was removed with:
+## Manual teardown and clean-state proof completed
+
+The manual resource group was deleted with:
 
 ```powershell
 az group delete `
@@ -259,64 +313,53 @@ az group delete `
   --no-wait
 ```
 
-The command returned no output as expected with `--no-wait`. The learner verified in the Azure Portal that the resource group and manual resources were deleted.
+Portal inspection confirmed deletion.
 
-## Immediate next action
-
-Independently verify the resource group is absent before creating Terraform-managed resources:
+Independent Azure CLI verification then returned:
 
 ```powershell
 az group exists --name rg-az700-tm-global
 ```
 
-Expected:
-
 ```text
 false
 ```
 
-After that:
+Therefore the Terraform phase starts from a clean Azure environment rather than colliding with manually created resources.
+
+---
+
+## Manual documentation is now at Lab 01 standard
+
+Detailed command-by-command documentation is committed under:
 
 ```text
-1. Sync local Git repository with GitHub checkpoint updates
-2. Enter/create Lab 02 Terraform workspace
-3. Teach the Terraform resource model before writing HCL
-4. Build the ACI + Traffic Manager design in Terraform
-5. terraform fmt
-6. terraform validate
-7. terraform plan
-8. terraform apply
-9. Independent Azure/DNS/HTTP validation
-10. Repeat meaningful failure/recovery test
-11. Confirm final no-change plan
-12. Git/GitHub checkpoint
-13. Create mandatory PNG/JPEG learning visuals reflecting actual ACI implementation
-14. Create complete Lab 02 rebuild/practice PDF
-15. Terraform destroy and independent Azure/state verification
-16. Final learner explain-back
-17. Mark Lab 02 COMPLETE
+labs/02-traffic-manager/manual-deployment/README.md
+labs/02-traffic-manager/manual-deployment/DEPLOYMENT-WALKTHROUGH.md
 ```
 
-## Working rules that must not drift
+The walkthrough records the actual commands and observed behavior, including:
 
-- Azure only.
-- Maximum one lab per day.
-- VS Code is the primary engineering workspace.
-- Prefer Azure CLI for manual deployment, inspection and validation.
-- Terraform follows understanding; it does not replace learning Azure.
-- Teach concepts before testing comprehension.
-- Explain important command/HCL syntax before execution.
-- Work one meaningful action at a time during interactive learning.
-- Interpret actual output before continuing.
-- Use Azure Portal for inspection/troubleshooting, not as the sole deployment mechanism.
-- Create reusable PNG/JPEG visual learning assets.
-- Validate real Azure state independently after Terraform apply.
-- Include real failure/recovery exercises.
-- Record unexpected Azure behavior rather than hiding it.
-- Never commit credentials, Terraform state, tokens, private keys, certificates or sensitive local `.tfvars`.
-- End practical labs with a detailed rebuild/practice PDF sufficient to repeat the lab without chat history.
+- Azure context/provider checks
+- resource-group creation
+- failed App Service F1 attempt and quota diagnosis
+- verification that no partial App Service plan remained
+- ACI fallback decision
+- three ACI endpoint deployments and direct HTTP tests
+- Traffic Manager profile creation
+- all External endpoint commands
+- Geographic mappings including the GEO-AP correction
+- DNS and HTTP validation
+- stop/degrade/timeout failure test
+- recovery test
+- DNS TTL authoritative-versus-recursive investigation
+- Portal inspection findings
+- manual teardown
+- final `az group exists` clean-state proof
 
-## Mandatory Lab 02 visual assets
+---
+
+## Required visual-learning assets are committed
 
 ```text
 labs/02-traffic-manager/visual-learning/Lab02-01-Traffic-Manager-DNS-Mental-Model.png
@@ -325,4 +368,62 @@ labs/02-traffic-manager/visual-learning/Lab02-03-Endpoint-Health-and-DNS-Behavio
 labs/02-traffic-manager/visual-learning/Lab02-04-Final-Lab-Architecture.png
 ```
 
-The final architecture visual must reflect the actual ACI External-endpoint implementation used because of the App Service quota restriction, not the abandoned App Service design.
+The visuals deliberately reflect the **actual ACI External-endpoint implementation**, not the abandoned App Service design.
+
+Visual 03 explicitly records the observed Geographic-routing failure behavior and does **not** invent cross-geography failover.
+
+---
+
+## Immediate next action
+
+Do not repeat manual deployment.
+
+On the learner workstation:
+
+```powershell
+git pull --rebase
+```
+
+Then begin the Terraform phase using this teaching sequence:
+
+```text
+1. Inspect/create labs/02-traffic-manager/terraform/
+2. Teach which Terraform resources represent the Azure objects already understood manually
+3. Teach references and dependency relationships before writing HCL
+4. Build the three regional ACI endpoints
+5. Build the Geographic Traffic Manager profile and External endpoints
+6. terraform fmt
+7. terraform validate
+8. terraform plan
+9. inspect the plan before apply
+10. terraform apply
+11. independently validate Azure state, DNS and HTTP behavior
+12. repeat a meaningful endpoint failure/recovery exercise
+13. verify a final no-change plan
+14. Git/GitHub checkpoint
+15. create the complete Lab 02 rebuild/practice PDF
+16. terraform destroy and independently verify Azure + Terraform state are empty
+17. final learner explain-back
+18. mark Lab 02 COMPLETE
+```
+
+---
+
+## Working rules that must not drift
+
+- Azure only.
+- Maximum one lab per day.
+- VS Code is the primary engineering workspace.
+- Azure CLI is preferred for manual deployment, inspection and validation.
+- Terraform follows understanding; it does not replace learning Azure.
+- Teach concepts before testing comprehension.
+- Explain important command and HCL syntax before execution.
+- Work one meaningful action at a time during interactive learning.
+- Interpret actual output before continuing.
+- Use Azure Portal for inspection/troubleshooting, not as the sole deployment mechanism.
+- Create reusable PNG/JPEG visual learning assets.
+- Validate actual Azure state independently after Terraform apply.
+- Include real failure/recovery exercises.
+- Record unexpected Azure behavior rather than hiding it.
+- Never commit credentials, Terraform state, tokens, private keys, certificates or sensitive local `.tfvars`.
+- End practical labs with a detailed rebuild/practice PDF sufficient to repeat the lab without chat history.
