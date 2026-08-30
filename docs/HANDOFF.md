@@ -6,12 +6,83 @@ This is the **authoritative continuation record** for the programme. Read this f
 
 - **Programme:** Azure Networking Engineering Labs
 - **Repository:** `Mike-Dominate/Azure-Networking`
+- **Coverage baseline:** Microsoft AZ-700 skills measured effective July 27, 2026
 - **Last completed lab:** Lab 01 — Azure Load Balancer
 - **Next lab:** Lab 02 — Azure Traffic Manager
-- **Current phase:** Lab 01 formally complete; ready to begin Lab 02 on the next lab day.
-- **Overall progress:** 1 / 15 labs completed
+- **Current phase:** Lab 01 formally complete; Lab 02 prepared and ready to begin.
+- **Overall progress:** 1 / 22 labs completed
 - **Cadence:** Maximum of one lab per day
-- **Last updated:** 2026-08-29 (Australia/Brisbane)
+- **Last updated:** 2026-08-30 (Australia/Brisbane)
+
+## Important programme rebaseline — 2026-08-30
+
+The original 15-lab roadmap was reviewed against the current Microsoft AZ-700 skills outline and was found to have good engineering depth but incomplete syllabus coverage.
+
+The programme has therefore been expanded to 22 labs.
+
+**Do not restart Lab 01 or Lab 02.**
+
+Lab 01 remains complete. Lab 02 remains the immediate next lab. The additional coverage begins after Lab 02.
+
+The current roadmap is authoritative in:
+
+```text
+docs/PROGRAMME-ROADMAP.md
+```
+
+The Microsoft skills outline is now the coverage authority. The KodeKloud repository remains a learning/scenario reference rather than the definition of programme completeness.
+
+## Rebaselined roadmap
+
+```text
+01  Azure Load Balancer                                      COMPLETE
+02  Azure Traffic Manager                                   NEXT
+03  IP Addressing, VNets, Subnets & Public IP Architecture  NOT STARTED
+04  Azure DNS, Private DNS & DNS Private Resolver            NOT STARTED
+05  VNet Peering, Gateway Transit & Virtual Network Manager  NOT STARTED
+06  UDRs, Forced Tunnelling, NAT Gateway & NVA               NOT STARTED
+07  Azure Route Server & Dynamic Routing                     NOT STARTED
+08  Network Watcher, Azure Monitor, Flow Logs, DDoS & Defender NOT STARTED
+09  Site-to-Site VPN                                         NOT STARTED
+10  Point-to-Site VPN                                        NOT STARTED
+11  ExpressRoute Architecture & BGP                          NOT STARTED
+12  Azure Virtual WAN                                        NOT STARTED
+13  Application Gateway                                      NOT STARTED
+14  Azure Front Door                                         NOT STARTED
+15  Gateway Load Balancer & NVA Service Insertion            NOT STARTED
+16  Private Endpoint, Private Link & Private DNS             NOT STARTED
+17  Service Endpoints & Service Endpoint Policies            NOT STARTED
+18  NSG, ASG & Azure Bastion                                 NOT STARTED
+19  Azure Firewall & Firewall Manager                        NOT STARTED
+20  Web Application Firewall                                 NOT STARTED
+21  Network Troubleshooting Incident Lab                     NOT STARTED
+22  AZ-700 Enterprise Capstone                               NOT STARTED
+```
+
+## Coverage gaps fixed by the rebaseline
+
+The expanded roadmap deliberately adds or deepens:
+
+- IP addressing and subnet architecture
+- subnet delegation and public IP planning
+- Azure DNS public/private zones
+- Azure DNS Private Resolver
+- Virtual Network Manager
+- gateway transit and forced tunnelling
+- Azure Route Server and BGP/dynamic routing
+- Network Watcher
+- IP flow verify, next hop and connection troubleshoot
+- virtual network flow logs and Azure Monitor for Networks
+- DDoS and Defender for Cloud networking signals
+- Site-to-Site VPN
+- ExpressRoute architecture, peering, redundancy and BGP
+- Gateway Load Balancer
+- Private Endpoint and Private Link
+- Service Endpoint Policies
+- Application Security Groups
+- Azure Firewall Manager
+- a dedicated troubleshooting incident lab
+- an enterprise capstone spanning all AZ-700 domains
 
 ## Last completed action
 
@@ -82,7 +153,7 @@ bf02196 Complete Lab 01 Terraform load balancer deployment
 
 ## Immediate next action
 
-Do not rebuild Lab 01 during normal programme progression. The completed Lab 01 material is retained for deliberate practice.
+Do not rebuild Lab 01 during normal programme progression.
 
 The next lab is:
 
@@ -90,26 +161,51 @@ The next lab is:
 Lab 02 — Azure Traffic Manager
 ```
 
-Before deploying Lab 02, follow the programme method from the beginning:
+Resume using:
+
+```text
+1. docs/HANDOFF.md
+2. labs/02-traffic-manager/handoff/HANDOFF.md
+3. labs/02-traffic-manager/README.md
+```
+
+Then begin with teaching, not commands or Terraform:
+
+```text
+A. Why a regional Load Balancer is not enough for a global application
+B. What Azure Traffic Manager is
+C. Why it is DNS-based rather than inline
+D. Client and recursive resolver roles
+E. Traffic Manager DNS response/steering
+F. Direct client connection to selected endpoint
+G. Geographic routing
+H. Endpoint health monitoring
+I. DNS TTL/caching
+J. Traffic Manager vs Azure Load Balancer
+```
+
+## Programme method for every practical lab
 
 ```text
 1. Problem/use case
-2. Mental model
-3. Visual architecture and traffic/DNS flow
-4. Manual Azure deployment
-5. Azure CLI inspection and validation
-6. Teardown if appropriate before IaC rebuild
-7. Terraform implementation
-8. terraform fmt / validate / plan / apply
-9. Independent Azure CLI validation
-10. Failure testing and troubleshooting
-11. Portal inspection where useful
-12. Evidence and lessons
+2. Teach mental model
+3. Visual architecture and traffic/control-plane flow
+4. Learner understanding check
+5. Manual Azure deployment
+6. Azure CLI/protocol inspection and validation
+7. Failure testing and troubleshooting
+8. Portal inspection where useful
+9. Teardown if appropriate before IaC rebuild
+10. Terraform implementation
+11. terraform fmt / validate / plan / apply
+12. Independent Azure CLI/protocol validation
 13. Git/GitHub checkpoint
-14. Handoff update
-15. Safe teardown
+14. Rebuild/practice documentation
+15. Safe teardown and verification
 16. Learner explain-back
 ```
+
+For design-heavy or impractical services, especially ExpressRoute, replace forced deployment with rigorous architecture, BGP/route reasoning, redundancy, validation planning and troubleshooting simulations.
 
 ## Lab 01 completion summary
 
@@ -146,8 +242,6 @@ Zone 3 -> vm-web-az3 -> Standard_B2ls_v2  -> 10.200.1.4
 
 ### Inbound Load Balancer flow
 
-The validated mental model is:
-
 ```text
 Client
   -> public IP / LB frontend
@@ -162,13 +256,13 @@ Client
 
 The health probe is continuous and is not triggered only when a user request arrives.
 
-Azure Load Balancer uses flow-based selection rather than guaranteed request-by-request round-robin. The default behavior should be thought of as **flow affinity**, not application sticky sessions: one established TCP flow stays with its selected backend, while a new flow may select another healthy backend.
+Azure Load Balancer uses flow-based selection rather than guaranteed request-by-request round-robin. The default behaviour should be thought of as flow affinity, not application sticky sessions: one established TCP flow stays with its selected backend, while a new flow may select another healthy backend.
 
 ### Application health versus VM state
 
 A VM can remain powered on while its application is unhealthy. Stopping Apache on VM2 caused the HTTP health probe to remove it from new flows. Restarting Apache allowed it to rejoin automatically after probe recovery.
 
-### NSG, routing, and SNAT are separate concepts
+### NSG, routing and SNAT are separate concepts
 
 ```text
 NSG   = may this traffic pass?
@@ -180,8 +274,6 @@ SNAT  = what source identity should outbound traffic use?
 
 The dedicated Standard Load Balancer outbound rule supplied SNAT. The backend VMs had different private IPs but shared the Load Balancer frontend public IP as their Internet-visible egress identity.
 
-The Standard Public Load Balancer can perform SNAT through an outbound rule, but it is not a general-purpose router or UDR next hop.
-
 ## Lab 01 key Terraform lessons
 
 - Terraform configuration files in one directory form one configuration regardless of filename.
@@ -190,13 +282,12 @@ The Standard Public Load Balancer can perform SNAT through an outbound rule, but
 - Terraform resource addresses differ from Azure resource names.
 - References create implicit graph dependencies.
 - `depends_on` can represent an operational dependency not expressed by a property reference.
-- Terraform apply is **not transactional**. Successful resources remain and are recorded even if another operation later fails.
-- After the first partial apply, state contained the 20 successful resources, so the next plan proposed only the missing VM3.
-- Azure can retain a failed object even when Terraform did not record it as a successfully managed resource.
-- Terraform does not silently overwrite an unmanaged Azure object at the desired resource ID. The failed VM had to be reconciled deliberately.
-- Failed provider/API operations can leave unmanaged artifacts such as unattached disks.
-- A final no-change plan demonstrated convergence among configuration, Terraform state, and observed Azure infrastructure.
-- A saved destroy plan was reviewed before teardown, then applied exactly.
+- Terraform apply is not transactional. Successful resources remain and are recorded even if another operation later fails.
+- Cloud state and Terraform state can diverge after failed provider/API operations.
+- Terraform does not silently overwrite an unmanaged Azure object at the desired resource ID.
+- Failed operations can leave unmanaged artifacts such as unattached disks.
+- A final no-change plan demonstrated convergence among configuration, Terraform state and observed Azure infrastructure.
+- A saved destroy plan was reviewed before teardown and then applied exactly.
 
 ## Lab 01 real capacity lesson
 
@@ -220,113 +311,35 @@ Standard_B2ls_v2
 -> used successfully for the Zone 3 backend
 ```
 
-Remember:
+## Non-negotiable working preferences
+
+- Azure only.
+- Maximum one lab per day.
+- VS Code used throughout the programme.
+- Azure CLI preferred for manual deployment, inspection and validation.
+- Terraform follows understanding; it does not replace learning Azure.
+- Teach concepts before testing comprehension.
+- Explain important command syntax before execution.
+- Work one meaningful action at a time during interactive labs.
+- Interpret actual output before continuing.
+- Use Azure Portal for inspection/troubleshooting, not as the sole deployment method.
+- Create reusable PNG/JPEG visuals where they materially improve understanding.
+- Validate actual Azure state independently after Terraform apply.
+- Include real failure/recovery exercises.
+- Record unexpected Azure behaviour rather than hiding it.
+- Never commit secrets, Terraform state, credentials, tokens, private keys or sensitive local tfvars.
+- End practical labs with detailed rebuild/practice documentation sufficient to repeat the lab without chat history.
+
+## Status consistency rule
+
+The following must agree whenever a lab status changes:
 
 ```text
-SKU exists in region
-      !=
-SKU permitted for subscription
-      !=
-SKU supports requested zone
-      !=
-live capacity is available right now
+README.md
+docs/PROGRAMME-ROADMAP.md
+docs/HANDOFF.md
+labs/<lab>/README.md
+labs/<lab>/handoff/HANDOFF.md
 ```
 
-## Lab 01 documentation retained
-
-Manual CLI walkthrough:
-
-```text
-labs/01-load-balancer/manual-deployment/DEPLOYMENT-WALKTHROUGH.md
-```
-
-Visual-learning assets:
-
-```text
-labs/01-load-balancer/visual-learning/
-```
-
-Terraform implementation:
-
-```text
-labs/01-load-balancer/terraform/
-```
-
-Lab completion handoff:
-
-```text
-labs/01-load-balancer/handoff/HANDOFF.md
-```
-
-A separate full PDF rebuild/practice manual was produced after teardown so Lab 01 can be rebuilt later without relying on the original chat.
-
-## Agreed learning method
-
-Every applicable lab follows this sequence:
-
-```text
-1. Problem and use case
-2. Mental model
-3. Visual architecture and packet/traffic flow
-4. Direct/manual Azure deployment
-5. Azure CLI inspection and validation
-6. Teardown if needed before IaC rebuild
-7. Terraform implementation
-8. terraform fmt / validate / plan / apply
-9. Azure CLI validation of Terraform-built environment
-10. Failure testing and troubleshooting
-11. Portal inspection where visually useful
-12. Capture evidence and lessons learned
-13. Git/GitHub commit history
-14. Complete/update lab handoff
-15. Safe teardown
-16. Learner explains the design back in their own words
-```
-
-Lab 01 completed all 16 stages.
-
-## Tooling agreement
-
-Use the normal engineering tools throughout the programme rather than studying them separately:
-
-- **VS Code** — primary editor/workspace and integrated terminal
-- **Terraform** — primary Infrastructure as Code implementation
-- **Azure CLI** — inspection, verification, troubleshooting, queries, and selected operational tasks
-- **Git** — local source control and progression history
-- **GitHub** — remote source of truth and portfolio/reference repository
-- **Azure Portal** — visual learning and troubleshooting/inspection where useful
-- **PowerShell/Bash** — supporting scripting when appropriate
-
-Terraform and Azure CLI have deliberately different roles:
-
-> Terraform describes and manages desired infrastructure. Azure CLI independently inspects, validates, and troubleshoots what actually exists in Azure.
-
-## Source curriculum
-
-Reference repository:
-
-`https://github.com/rithinskaria/kodekloud-az700`
-
-Use it for lab objectives and concepts. Do not simply copy its workflow. Rebuild the exercises as our own visual + direct deployment + Terraform + validation learning programme.
-
-## Guardrails / anti-drift rules
-
-1. One lab per day maximum.
-2. Never mark a lab complete only because deployment succeeded.
-3. Teach Azure networking before teaching Terraform syntax for it.
-4. Use the Portal for visual understanding, not as the only deployment method.
-5. Use Azure CLI to independently validate what Terraform created.
-6. Rebuild applicable labs with Terraform.
-7. Never commit secrets, credentials, private keys, certificates, `.tfstate`, local `.tfvars`, Azure tokens, or other sensitive execution artifacts.
-8. Update handoffs at the end of a working session or meaningful checkpoint rather than after every command.
-9. Do not begin the next lab until the current lab has been safely torn down and formally closed out.
-
-## Resume instruction
-
-Programme resumes at:
-
-```text
-Lab 02 — Azure Traffic Manager
-```
-
-Lab 01 is complete and should only be revisited for deliberate rebuild practice using its documentation.
+Do not leave stale `NEXT`, `NOT STARTED`, `IN PROGRESS` or `COMPLETE` markers in conflicting files.
