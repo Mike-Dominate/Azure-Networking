@@ -2,7 +2,9 @@
 
 ## Status
 
-`NOT STARTED`
+`COMPLETE`
+
+Completed and formally closed on 2026-08-29. The full completion record is in `handoff/HANDOFF.md` and the programme-level `../../docs/HANDOFF.md`.
 
 ## Objective
 
@@ -23,65 +25,72 @@ The reference lab demonstrates:
 - HTTP health probe
 - load-balancing rule on TCP/80
 
-## What this lab must teach
+## What this lab taught
 
-By the end of the lab, the learner should be able to explain:
+By completion, the learner demonstrated understanding of:
 
 - what problem Azure Load Balancer solves
 - why it is a Layer 4 service
 - frontend IP configuration
-- backend pool
-- health probe
-- load-balancing rule
+- backend pools
+- continuously maintained health probes
+- load-balancing rules
+- five-tuple/flow-based selection rather than guaranteed request-by-request round robin
 - availability zones and backend resilience
 - NSG placement and evaluation in the traffic path
 - how a packet travels from the client to a backend VM
-- what happens when a backend becomes unhealthy
-- when to choose Load Balancer vs Application Gateway, Front Door, or Traffic Manager
+- what happens when the application becomes unhealthy while the VM remains running
+- explicit outbound SNAT through a Standard Load Balancer outbound rule
+- the distinction between NSG, routing and SNAT
+- when to choose Load Balancer vs Application Gateway, Front Door or Traffic Manager
 
-## Learning path
+## Completed learning path
 
 ### 1. Visual learning
 
-Complete `visual-learning/architecture.md` before deployment.
+Completed under `visual-learning/`.
 
 ### 2. Direct Azure deployment
 
-Follow `manual-deployment/README.md` and build the architecture directly so the Azure objects are understood visually.
+Completed using Azure CLI with command-by-command explanation and validation. See `manual-deployment/DEPLOYMENT-WALKTHROUGH.md`.
 
-### 3. Validate
+### 3. Validation and failure testing
 
-Use `validation/README.md` and prove traffic reaches multiple healthy backends.
+Traffic distribution, application failure/recovery and outbound SNAT were independently validated.
 
 ### 4. Terraform rebuild
 
-Build the same architecture under `terraform/` incrementally. Do not paste a complete solution before understanding each resource relationship.
+The architecture was rebuilt with Terraform, including real recovery from Azure capacity/partial-apply conditions.
 
-### 5. Failure/troubleshooting exercise
+### 5. Troubleshooting and recovery
 
-Stop or break one backend safely and observe how the health probe affects traffic distribution. Record findings in `troubleshooting/README.md`.
+The lab captured real Azure capacity constraints, Terraform/cloud-state reconciliation and orphan-resource cleanup rather than hiding unexpected behaviour.
 
-### 6. Handoff
+### 6. Closeout
 
-Update `handoff/HANDOFF.md` and the programme-level `../../docs/HANDOFF.md` before the session ends.
+Git/GitHub checkpointing, rebuild documentation, destroy planning, teardown, Azure resource-group absence verification and Terraform-state verification were completed.
 
 ## Definition of done
 
-- [ ] Mental model explained
-- [ ] Traffic-flow diagram completed
-- [ ] Direct deployment completed
-- [ ] Direct deployment validated with CLI and HTTP traffic
-- [ ] Direct deployment removed/isolation confirmed before Terraform build
-- [ ] Terraform code written incrementally
-- [ ] `terraform fmt` clean
-- [ ] `terraform validate` successful
-- [ ] `terraform plan` reviewed
-- [ ] Terraform deployment successful
-- [ ] Terraform deployment independently validated with Azure CLI
-- [ ] Backend failure scenario tested
-- [ ] Troubleshooting notes recorded
-- [ ] Evidence captured
-- [ ] Git commits tell the progression story
-- [ ] Handoff updated
-- [ ] Lab resources safely destroyed when finished
-- [ ] Learner can explain the design without reading the guide
+- [x] Mental model explained
+- [x] Traffic-flow diagram completed
+- [x] Direct deployment completed
+- [x] Direct deployment validated with CLI and HTTP traffic
+- [x] Direct deployment removed/isolation confirmed before Terraform build
+- [x] Terraform code written incrementally
+- [x] `terraform fmt` clean
+- [x] `terraform validate` successful
+- [x] `terraform plan` reviewed
+- [x] Terraform deployment successful
+- [x] Terraform deployment independently validated with Azure CLI
+- [x] Backend failure scenario tested
+- [x] Troubleshooting notes recorded
+- [x] Evidence captured
+- [x] Git commits tell the progression story
+- [x] Handoff updated
+- [x] Lab resources safely destroyed when finished
+- [x] Learner can explain the design without reading the guide
+
+## Next programme lab
+
+`Lab 02 — Azure Traffic Manager`
