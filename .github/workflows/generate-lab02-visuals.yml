@@ -1,0 +1,48 @@
+name: Generate Lab 02 visual assets
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/generate-lab02-visuals.yml'
+      - 'labs/02-traffic-manager/visual-learning/generate_visuals.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Pillow
+        run: python -m pip install --disable-pip-version-check pillow
+
+      - name: Generate PNG diagrams
+        run: python labs/02-traffic-manager/visual-learning/generate_visuals.py
+
+      - name: Commit generated diagrams
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            labs/02-traffic-manager/visual-learning/Lab02-01-Traffic-Manager-DNS-Mental-Model.png \
+            labs/02-traffic-manager/visual-learning/Lab02-02-Geographic-Routing-Flow.png \
+            labs/02-traffic-manager/visual-learning/Lab02-03-Endpoint-Health-and-DNS-Behaviour.png \
+            labs/02-traffic-manager/visual-learning/Lab02-04-Final-Lab-Architecture.png
+          if git diff --cached --quiet; then
+            echo "No visual changes to commit."
+          else
+            git commit -m "Add Lab 02 Traffic Manager visual learning assets"
+            git push
+          fi
