@@ -19,7 +19,7 @@ If Microsoft changes the AZ-700 skills outline, this roadmap must be reviewed an
 | Lab | Topic | Primary focus | Status |
 |---:|---|---|---|
 | 01 | Azure Load Balancer | L4 load balancing, probes, backend pools, availability zones, explicit outbound SNAT | COMPLETE |
-| 02 | Azure Traffic Manager | Global DNS traffic steering, Geographic routing, endpoint health, DNS TTL | NEXT |
+| 02 | Azure Traffic Manager | Global DNS traffic steering, Geographic routing, endpoint health, DNS TTL | IN PROGRESS |
 | 03 | IP Addressing, VNets, Subnets & Public IP Architecture | Address planning, subnet design, delegation, public IPs/prefixes, BYOIP concepts | NOT STARTED |
 | 04 | Azure DNS, Private DNS & DNS Private Resolver | Public/private DNS, VNet links, hybrid name resolution | NOT STARTED |
 | 05 | VNet Peering, Gateway Transit & Virtual Network Manager | Peering, topology, gateway transit, network groups/connectivity management | NOT STARTED |
@@ -45,7 +45,7 @@ If Microsoft changes the AZ-700 skills outline, this roadmap must be reviewed an
 
 Do **not** restart the programme because of this rebaseline.
 
-Lab 01 remains complete. Lab 02 remains the immediate next lab. The expanded coverage begins after Lab 02.
+Lab 01 remains complete. Lab 02 is now in progress. The expanded coverage begins after Lab 02.
 
 ## Per-lab deliverables
 
