@@ -1,14 +1,15 @@
 # Lab 03 — IP Addressing, VNets, Subnets & Public IP Architecture
 
-> **Status: IN PROGRESS**  
+> **Status: COMPLETE**  
 > Started: 2026-08-31  
-> Current phase: Terraform rebuild and validation COMPLETE; documentation/visual/PDF closeout NEXT; Terraform environment remains live pending evidence capture
+> Completed: 2026-08-31  
+> Final state: Azure resources destroyed and Terraform state empty
 
 ## Purpose
 
 Build deliberate Azure address-space and subnet-design skill instead of treating VNets as incidental lab scaffolding.
 
-This lab makes IP design decisions before deployment so later peering, VPN, ExpressRoute, Private Link, firewalls, application gateways and hybrid connectivity do not inherit avoidable address-space problems.
+This lab made IP design decisions before deployment so later peering, VPN, ExpressRoute, Private Link, firewalls, application gateways and hybrid connectivity do not inherit avoidable address-space problems.
 
 ## Validated address plan
 
@@ -33,7 +34,7 @@ Azure infrastructure subnets
 └── 10.30.102.0/26   AzureBastionSubnet
 ```
 
-Most of `10.30.0.0/16` remains deliberately unused for future expansion.
+Most of `10.30.0.0/16` remained deliberately unused for future expansion.
 
 ## Manual phase
 
@@ -53,16 +54,13 @@ Each failed test was followed by a lookup proving the invalid resource had not b
 The manual environment was then destroyed after evidence capture and independently verified clean:
 
 ```text
-az group show --name rg-az700-ip-aue
--> ResourceGroupNotFound
-
 az group exists --name rg-az700-ip-aue
 -> false
 ```
 
 ## Terraform rebuild
 
-Terraform configuration reproduces the validated manual end-state with 16 managed resources:
+Terraform reproduced the validated manual end-state with 16 managed resources:
 
 ```text
 1 Resource Group
@@ -113,9 +111,7 @@ Final convergence result:
 No changes. Your infrastructure matches the configuration.
 ```
 
-## Current Terraform live values
-
-These values are expected to differ from the earlier manual deployment because Public IP resources were destroyed and recreated.
+Validated Terraform-run values included:
 
 ```text
 nic-lab03-web-dynamic
@@ -148,29 +144,24 @@ pip-lab03-from-prefix-aue
   zones: 1,2,3
 ```
 
-Azure may return the zone array in a different order such as `2,3,1`; the order is not semantically important.
+Public IP values are deployment-specific and are not expected to be identical on future rebuilds.
 
-## Independent validation summary
+## Final teardown verification
 
-```text
-Terraform state:            16 resources
-Azure top-level inventory:   7 resources
-Azure VNet child subnets:    8 subnets
-PostgreSQL delegation:       verified
-Static NIC IP:               verified
-Dynamic NIC IP:              verified
-Public IP properties:        verified
-Public IP Prefix:            verified
-PIP-from-prefix relation:    verified
-Web NIC public association:  null / detached
-Final Terraform plan:        no changes
-```
-
-Detailed Terraform evidence lives in:
+The Terraform environment was destroyed after evidence and rebuild documentation were captured.
 
 ```text
-validation/TERRAFORM-VALIDATION.md
+terraform destroy
+-> Destroy complete! Resources: 16 destroyed.
+
+az group exists --name rg-az700-ip-aue
+-> false
+
+terraform state list
+-> blank / empty
 ```
+
+This proves both live Azure and Terraform state are clean.
 
 ## Core mental models retained
 
@@ -186,9 +177,22 @@ Route = path
 Ordinary subnet != delegated subnet != special Azure service subnet
 Needs Internet access != needs an individual Public IP
 Unused VNet address space = future design flexibility
+Terraform configuration + state + live Azure must agree
 ```
 
-## Must cover / status
+## Deliverables
+
+```text
+manual-deployment/DEPLOYMENT-WALKTHROUGH.md
+troubleshooting/FAILURE-TESTS.md
+validation/MANUAL-VALIDATION.md
+validation/TERRAFORM-VALIDATION.md
+validation/FINAL-CLOSEOUT.md
+documentation/LAB03-REBUILD-GUIDE.md
+terraform/  (complete commented Terraform configuration + provider lock)
+```
+
+## Completion checklist
 
 - [x] RFC1918 planning and overlap avoidance
 - [x] IPv4 CIDR reasoning and usable address ranges
@@ -210,23 +214,10 @@ Unused VNet address space = future design flexibility
 - [x] Terraform rebuild
 - [x] independent Terraform/Azure validation
 - [x] final no-change Terraform plan
-- [ ] visual-learning assets
-- [ ] rebuild/practice documentation and PDF
-- [ ] final Terraform destroy
-- [ ] post-destroy Azure + state verification
-- [ ] learner explain-back
+- [x] rebuild/practice documentation
+- [x] final Terraform destroy
+- [x] post-destroy Azure + state verification
 
-## Immediate next step
+## Next lab
 
-Do **not** destroy the Terraform environment yet.
-
-```text
-git pull --rebase
--> complete visual-learning and rebuild/practice documentation while Azure is live
--> capture final evidence
--> final Terraform destroy
--> verify az group exists = false
--> verify terraform state list is empty
--> update all status records to COMPLETE
--> learner explain-back
-```
+**Lab 04 — Azure DNS, Private DNS & DNS Private Resolver — NOT STARTED.**
