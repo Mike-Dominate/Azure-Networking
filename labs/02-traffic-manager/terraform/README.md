@@ -1,18 +1,15 @@
 # Lab 02 — Terraform Rebuild
 
+> **Terraform phase: COMPLETE**
+
 ## Purpose
 
-Rebuild the understood Azure Traffic Manager architecture as Infrastructure as Code after completing the manual Azure CLI deployment first.
-
-The manual phase established the networking behaviour before automation: Traffic Manager performs DNS steering, endpoint health is monitored separately, and the client connects directly to the selected regional endpoint.
+Rebuild the manually understood Azure Traffic Manager architecture as Infrastructure as Code, then validate the live Azure service independently rather than treating `terraform apply` as proof of networking success.
 
 ## Architecture
 
 ```text
-Azure Traffic Manager
-  tm-az700-global
-        |
-        | Geographic routing
+Azure Traffic Manager — Geographic
         |
 +-------+-------+
 |       |       |
@@ -24,7 +21,7 @@ ACI     ACI     ACI
 East US West EU Southeast Asia
 ```
 
-Traffic Manager is not an inline HTTP proxy. After DNS resolution, the client connects directly to the selected regional ACI endpoint.
+Traffic Manager performs DNS steering. After DNS resolution the client connects directly to the selected regional ACI endpoint.
 
 ## File structure
 
@@ -42,129 +39,104 @@ terraform/
 
 ## Provider baseline
 
-Lab 02 deliberately uses the same Terraform provider baseline as Lab 01:
-
 ```text
 Terraform: >= 1.6.0
 AzureRM constraint: ~> 4.0
 Locked AzureRM version: 4.81.0
 ```
 
-The lock file is committed so later rebuilds use the same provider build unless it is deliberately upgraded.
-
-## Regional design
-
-| Key | Azure region | Traffic Manager geography |
-|---|---|---|
-| `eus` | East US | `GEO-NA` |
-| `weu` | West Europe | `GEO-EU` |
-| `sea` | Southeast Asia | `GEO-AS`, `GEO-AP` |
-
-`GEO-AP` is required for Australia/Pacific. During the manual lab, mapping Southeast Asia only to `GEO-AS` left the Australian DNS path without an eligible Geographic endpoint.
-
-## Backend implementation
-
-The original reference scenario used Azure App Service. The subscription had insufficient App Service quota, so Azure Container Instances were deliberately substituted as lightweight regional HTTP endpoints.
-
-Each ACI uses:
-
-```text
-Image: mcr.microsoft.com/azuredocs/aci-helloworld
-OS: Linux
-CPU: 0.5
-Memory: 0.5 GB
-Port: TCP/80
-```
-
-Traffic Manager targets each ACI FQDN rather than a hard-coded public IP.
+This deliberately matches Lab 01.
 
 ## Terraform design
 
-The three regional endpoints are described once in `local.endpoints` and reused with `for_each`.
-
-Example Terraform resource addresses:
+`local.endpoints` describes East US, West Europe and Southeast Asia once. `for_each` creates repeated ACI and Traffic Manager External-endpoint instances with stable keys:
 
 ```text
-azurerm_container_group.regional["eus"]
-azurerm_container_group.regional["weu"]
-azurerm_container_group.regional["sea"]
+regional["eus"]
+regional["weu"]
+regional["sea"]
 ```
 
-Traffic Manager endpoints reference both the profile and the matching ACI FQDN. Terraform therefore derives the dependency graph automatically from references rather than file order.
+Traffic Manager uses each ACI FQDN:
 
-## Standard workflow
+```hcl
+target = azurerm_container_group.regional[each.key].fqdn
+```
+
+That reference selects the matching regional endpoint and creates an implicit dependency.
+
+## Managed resource graph
+
+```text
+1 azurerm_resource_group
+3 azurerm_container_group instances
+1 azurerm_traffic_manager_profile
+3 azurerm_traffic_manager_external_endpoint instances
+= 8 resources
+```
+
+## Execution results
+
+```text
+terraform init       -> AzureRM 4.81.0 reused from lock file
+terraform validate   -> Success
+terraform plan       -> 8 to add, 0 change, 0 destroy
+terraform apply      -> 8 added
+terraform state list -> 8 resources
+```
+
+Outputs included:
+
+```text
+Traffic Manager: az700-tm-md-87004.trafficmanager.net
+East US ACI:     az700-tm-eus-87004.eastus.azurecontainer.io
+West Europe ACI: az700-tm-weu-87004.westeurope.azurecontainer.io
+Southeast Asia:  az700-tm-sea-87004.southeastasia.azurecontainer.io
+```
+
+## Saved-plan PowerShell note
+
+In the learner's environment this form failed with `Too many command line arguments`:
 
 ```powershell
-terraform fmt -recursive
-terraform init
-terraform validate
-terraform plan
-terraform apply
+terraform plan -out=lab02.tfplan
 ```
 
-A saved execution plan can be used when the exact reviewed plan should be applied:
+The working form was:
 
 ```powershell
 terraform plan -out lab02.tfplan
 terraform apply lab02.tfplan
 ```
 
-The repository `.gitignore` excludes `*.tfplan`, `.terraform/`, and Terraform state files.
+## Independent validation
 
-## Validation principle
-
-A successful `terraform apply` is not sufficient. Lab 02 must also be validated independently using Azure CLI and real network tests:
-
-- verify the regional ACI resources in Azure
-- resolve the Traffic Manager FQDN
-- confirm Geographic routing returns the expected endpoint
-- perform an HTTP request through the Traffic Manager DNS name
-- simulate a regional endpoint failure
-- observe Traffic Manager health state
-- test DNS behaviour while the endpoint is degraded
-- recover the endpoint
-- run a final Terraform convergence plan
-
-## Verified DNS and application behaviour
-
-From the Australian test path, DNS resolution returned the Southeast Asia endpoint:
+A successful apply was followed by real service tests:
 
 ```text
-az700-tm-md-87004.trafficmanager.net
-        -> az700-tm-sea-87004.southeastasia.azurecontainer.io
+Azure CLI inventory -> all three regional ACI resources matched
+Australian DNS      -> selected Southeast Asia via GEO-AP
+HTTP through TM     -> ACI welcome page returned
 ```
 
-An HTTP request to the Traffic Manager FQDN successfully reached the Azure Container Instances welcome page.
+`nslookup` plus `curl` mattered because all three containers served the same page; HTTP alone could not identify which geography DNS selected.
 
-This proves both parts of the design:
+## Failure/recovery validation
+
+The Terraform-created Southeast Asia ACI was stopped outside Terraform.
+
+Observed:
 
 ```text
-DNS steering -> selected regional endpoint
-HTTP request -> direct application reachability
+HTTP through Traffic Manager   -> failed
+Traffic Manager ep-sea         -> initially Online, later Degraded
+Endpoint administrative state  -> Enabled
+Fresh Google DNS               -> still SEA for GEO-AP
 ```
 
-## Failure test result
+After restarting the ACI, HTTP recovered.
 
-The Southeast Asia ACI was deliberately stopped outside Terraform.
-
-Observed behaviour:
-
-```text
-Application request -> failed
-Traffic Manager ep-sea -> eventually Degraded
-Administrative state -> remained Enabled
-Fresh Google DNS query -> still returned SEA
-```
-
-In this lab configuration, Geographic routing did not automatically cross-fail the Australian geography to Europe or North America.
-
-This behaviour should be treated as an observed lab result rather than assuming Geographic routing behaves like Priority routing.
-
-## Recovery
-
-After restarting the Southeast Asia ACI, the HTTP path recovered successfully.
-
-The ACI public IP happened to remain unchanged during the Terraform failure test. ACI public IP persistence across stop/start should not be assumed, which is why Traffic Manager targets the ACI FQDN.
+The public IP happened to remain `40.90.191.16` in this Terraform test. The earlier manual stop/start had changed the Southeast Asia public IP. Therefore neither persistence nor change should be assumed; Traffic Manager correctly targets the ACI FQDN.
 
 ## Convergence
 
@@ -180,30 +152,34 @@ returned:
 No changes. Your infrastructure matches the configuration.
 ```
 
-This confirms that the Terraform configuration, Terraform state, and Azure environment had converged again.
+This proves the desired configuration, Terraform state and live Azure resource configuration converged again.
 
-## Cleanup
+## Git checkpoint
 
-When all documentation and evidence have been completed:
+Terraform source and the provider lock file were committed and pushed as:
 
-```powershell
-terraform destroy
+```text
+7891fe65064620480e2e1125f062f6138b08d3f5
+Complete Lab 02 Terraform Traffic Manager rebuild
 ```
 
-Then independently verify Azure cleanup:
+State, `.terraform/`, local `.tfvars` and saved plan files remain ignored.
+
+## Final cleanup
+
+The final Terraform-managed environment was destroyed successfully:
+
+```text
+Destroy complete! Resources: 8 destroyed.
+```
+
+On every future repeat, independently verify the clean state after destroy:
 
 ```powershell
 az group exists --name rg-az700-tm-global
-```
-
-Expected result:
-
-```text
-false
-```
-
-Finally verify Terraform state contains no managed resources:
-
-```powershell
 terraform state list
 ```
+
+Expected results are `false` for the resource group and no resource addresses from `terraform state list`.
+
+The final chat did not separately capture those two outputs after the Terraform destroy, so they are not claimed as observed final evidence here.
