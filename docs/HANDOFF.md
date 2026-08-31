@@ -1,6 +1,6 @@
 # Programme Handoff — Azure Networking Engineering Labs
 
-This is the **authoritative continuation record** for the programme.
+This is the authoritative continuation record for the programme. Read it before starting new lab work.
 
 ## Current status
 
@@ -8,145 +8,146 @@ This is the **authoritative continuation record** for the programme.
 - **Repository:** `Mike-Dominate/Azure-Networking`
 - **Coverage baseline:** Microsoft AZ-700 skills measured effective July 27, 2026
 - **Last completed lab:** Lab 02 — Azure Traffic Manager
-- **Current lab:** Lab 03 — IP Addressing, VNets, Subnets & Public IP Architecture
-- **Current phase:** Lab 02 complete; ready to begin Lab 03
-- **Overall progress:** 2 / 22 labs completed
+- **Next lab:** Lab 03 — IP Addressing, VNets, Subnets & Public IP Architecture
+- **Lab 03 state:** NOT STARTED
+- **Overall progress:** 2 / 22 labs complete
 - **Cadence:** Maximum of one lab per day
 - **Last updated:** 2026-08-30 (Australia/Brisbane)
 
-## Completed labs
+## Immediate resume instruction
 
-```text
-01  Azure Load Balancer     COMPLETE
-02  Azure Traffic Manager   COMPLETE
+Do not repeat Lab 02 during normal programme progression. At the next session:
+
+```powershell
+git pull --rebase
 ```
+
+Then start Lab 03 by teaching and designing the address-space/subnet/IP mental model before creating Azure resources.
 
 ## Lab 02 completion checkpoint
 
-Lab 02 has completed its required learning and engineering workflow, including:
+Lab 02 completed the full engineering lifecycle:
 
 ```text
-Traffic Manager mental model
-manual Azure deployment
-regional endpoint validation
-Geographic routing configuration
-Australia/Pacific mapping failure and correction
-DNS validation
-HTTP validation
-endpoint health failure/recovery exercise
-Geographic-routing degraded-endpoint behavior test
-DNS TTL authoritative-versus-recursive investigation
-Azure Portal inspection
-manual teardown
-independent clean-state verification
-Terraform rebuild and validation
-failure/recovery validation against IaC
-final convergence/no-change validation
-Git/GitHub checkpoint
-rebuild/practice documentation
-safe teardown and clean-state verification
-final learner explain-back
+Traffic Manager mental model taught
+manual Azure CLI build completed
+App Service quota constraint diagnosed
+architecture deliberately adapted to ACI
+three regional HTTP endpoints validated
+Geographic routing configured
+GEO-AP omission discovered and corrected
+DNS + HTTP behavior validated
+endpoint health failure/recovery tested
+TTL authoritative-versus-recursive behavior investigated
+Azure Portal inspected
+manual environment torn down and independently verified
+Terraform rebuild completed
+Terraform plan: 8 to add
+Terraform apply: 8 added
+Terraform state: 8 managed resources
+Terraform environment independently validated with Azure CLI, DNS and HTTP
+Terraform endpoint failure/recovery test completed
+final Terraform plan: no changes
+Terraform source committed and pushed
+final Terraform destroy: 8 resources destroyed
+rebuild/practice documentation completed
+visual-learning closeout updated
 ```
 
-## Lab 02 actual architecture
-
-The original source scenario intended App Service F1 endpoints in East US, West Europe and Southeast Asia. The subscription's zero App Service VM quota prevented the East US App Service plan from being created, so the lab deliberately used:
+Terraform implementation checkpoint:
 
 ```text
-Azure Container Instances
-+ public regional ACI FQDNs
-+ Azure Traffic Manager External endpoints
-+ Geographic routing
+Commit: 7891fe65064620480e2e1125f062f6138b08d3f5
+Message: Complete Lab 02 Terraform Traffic Manager rebuild
+Terraform >= 1.6.0
+AzureRM constraint ~> 4.0
+Locked AzureRM 4.81.0
 ```
 
-Validated mapping:
+The final Terraform destroy explicitly reported:
 
 ```text
-North America      -> ep-eus -> East US ACI
-Europe             -> ep-weu -> West Europe ACI
-Asia               -> ep-sea -> Southeast Asia ACI
-Australia/Pacific  -> ep-sea -> Southeast Asia ACI
+Destroy complete! Resources: 8 destroyed.
 ```
 
-Traffic Manager profile:
+The final chat did not separately capture `az group exists` and an empty `terraform state list` after that Terraform destroy. Do not claim those two outputs were observed. The rebuild manual records them as required post-destroy checks for every repeat. The earlier manual-phase teardown was independently verified clean.
+
+## Lab 02 mental model to retain
 
 ```text
-Resource: tm-az700-global
-Routing: Geographic
-DNS TTL: 30 seconds
-Health monitor: HTTP / port 80 / path /
+Client
+  -> recursive DNS resolver
+  -> Traffic Manager routing + health decision
+  -> DNS answer
+  -> client connects DIRECTLY to selected regional endpoint
 ```
 
-## Critical Lab 02 lessons
+Traffic Manager performs global DNS steering; it is not an inline HTTP proxy.
 
 ```text
-Traffic Manager = global DNS steering, not an inline application proxy
-Load Balancer   = regional Layer-4 data-path distribution
-
-Geographic routing = explicit geography-to-endpoint mapping
-Performance routing = latency-oriented endpoint selection
-
-Traffic Manager health monitoring and Load Balancer backend health probes
-operate at different levels.
-
-DNS TTL and recursive resolver caching can affect observed failover timing.
+Geographic = explicit geography mapping
+Performance = latency-oriented selection
 ```
 
-The lab also deliberately recorded the observed Geographic-routing behavior: a degraded mapped endpoint was not silently treated as a Priority-routing failover to another geography. The documentation reflects the actual tested behavior rather than inventing a failover path.
+Australia/Pacific required `GEO-AP`; `GEO-AS` alone did not cover the Australian test path.
 
-## Lab 02 artifacts
+In the lab's degraded-endpoint test, a fresh Google DNS query still returned the mapped Southeast Asia endpoint for Australia/Pacific and HTTP failed while that application was stopped. Treat this as **observed behavior in this lab**, not a universal cross-geography failover rule.
 
-Manual deployment documentation, Terraform implementation, validation/troubleshooting material, required visual-learning assets and the rebuild/practice documentation are committed under:
+Manual ACI stop/start changed the Southeast Asia public IP; the Terraform-built stop/start retained it. This proves neither outcome should be assumed; use the ACI FQDN as the Traffic Manager target.
+
+Observed DNS TTL layers:
 
 ```text
-labs/02-traffic-manager/
+Configured Traffic Manager TTL       30s
+Authoritative Traffic Manager CNAME  30s
+AdGuard-presented CNAME              60s
+ACI A record                         300s
 ```
 
-## Immediate resume point
-
-Do **not** return to Lab 02 unless a future maintenance/review task is explicitly requested.
-
-Begin **Lab 03 — IP Addressing, VNets, Subnets & Public IP Architecture** using the standard learning loop:
+## Lab 02 reusable artifacts
 
 ```text
-1. Problem/use case
-2. Teach mental model
-3. Visual architecture and traffic/control flow
-4. Learner understanding check
-5. Manual Azure deployment
-6. Azure CLI/protocol validation
-7. Failure/troubleshooting exercise
-8. Portal inspection where useful
-9. Terraform implementation
-10. Independent IaC validation
-11. Git/GitHub checkpoint
-12. Rebuild/practice documentation
-13. Safe teardown
-14. Learner explain-back
+labs/02-traffic-manager/README.md
+labs/02-traffic-manager/manual-deployment/DEPLOYMENT-WALKTHROUGH.md
+labs/02-traffic-manager/terraform/
+labs/02-traffic-manager/visual-learning/
+labs/02-traffic-manager/documentation/Lab02-Traffic-Manager-Rebuild-Practice-Manual.md
+labs/02-traffic-manager/documentation/Lab02-Traffic-Manager-Rebuild-Practice-Manual.pdf
+labs/02-traffic-manager/handoff/HANDOFF.md
 ```
 
-## Non-negotiable working preferences
+## Roadmap status
 
-- Azure only.
-- Maximum one lab per day.
-- VS Code is the primary engineering workspace.
-- Azure CLI is preferred for manual deployment, inspection and validation.
-- Terraform follows understanding; it does not replace learning Azure.
-- Teach concepts before testing comprehension.
-- Explain important command and HCL syntax before execution.
-- Work one meaningful action at a time during interactive labs.
-- Interpret actual output before continuing.
-- Use Azure Portal for inspection/troubleshooting, not as the sole deployment mechanism.
-- Create reusable PNG/JPEG visual learning assets where useful.
-- Validate actual Azure state independently after Terraform apply.
-- Include real failure/recovery exercises.
-- Record unexpected Azure behavior rather than hiding it.
-- Never commit credentials, Terraform state, tokens, private keys, certificates or sensitive local `.tfvars`.
-- End practical labs with detailed rebuild/practice documentation sufficient to repeat the lab without chat history.
+```text
+01  Azure Load Balancer                                      COMPLETE
+02  Azure Traffic Manager                                   COMPLETE
+03  IP Addressing, VNets, Subnets & Public IP Architecture  NOT STARTED
+04–22                                                       NOT STARTED
+```
+
+## Programme method
+
+```text
+Problem/use case
+-> teach mental model
+-> visual architecture / traffic flow
+-> understanding check
+-> manual Azure implementation
+-> independent validation
+-> failure/troubleshooting
+-> Portal inspection where useful
+-> Terraform rebuild
+-> independent IaC validation
+-> final no-change plan
+-> Git/GitHub checkpoint
+-> rebuild documentation
+-> safe teardown
+-> learner explain-back
+```
 
 ## Status consistency rule
 
-Whenever a lab status changes, keep these records synchronized:
+When a lab status changes, keep these aligned:
 
 ```text
 README.md
