@@ -5,27 +5,31 @@
 - **Lab:** 03 — IP Addressing, VNets, Subnets & Public IP Architecture
 - **State:** IN PROGRESS
 - **Previous lab:** Lab 02 — Azure Traffic Manager — COMPLETE
-- **Current phase:** Manual Azure CLI build, validation, failure testing and Portal inspection COMPLETE
-- **Azure resources:** Manual environment is still LIVE in `rg-az700-ip-aue`
+- **Current phase:** Manual Azure phase COMPLETE and independently torn down; Terraform rebuild NEXT
+- **Azure resources:** Manual resource group `rg-az700-ip-aue` deleted and independently verified absent
 - **Started:** 2026-08-31 (Australia/Brisbane)
 
 ## Immediate resume point
 
-The manual architecture is already built and validated. Do not repeat the design or deployment steps.
+Do not repeat the manual build.
 
 Next sequence:
 
 ```text
 1. git pull --rebase
-2. verify Lab 03 README/handoff/manual evidence synced locally
-3. confirm git working tree clean
-4. destroy manual resource group rg-az700-ip-aue
-5. independently verify Azure clean
-6. begin Terraform rebuild of the validated design
-7. validate Terraform state/live Azure independently
-8. failure/recovery testing where useful
-9. final no-change plan
-10. documentation/visual/PDF closeout before final Terraform destroy
+2. verify git working tree clean
+3. enter labs/03-ip-addressing-vnets-subnets-public-ip/terraform
+4. create Terraform configuration for the validated design
+5. terraform fmt
+6. terraform init
+7. terraform validate
+8. terraform plan
+9. terraform apply
+10. independently validate Terraform state and live Azure
+11. run useful failure/recovery validation
+12. final no-change plan
+13. capture docs/visual/PDF before final destroy
+14. final Terraform destroy and post-destroy verification
 ```
 
 ## Manual address plan
@@ -50,9 +54,7 @@ Azure infrastructure
 10.30.102.0/26   AzureBastionSubnet
 ```
 
-## Manual resource inventory
-
-Top-level resources validated in `rg-az700-ip-aue`:
+## Manual resource inventory before teardown
 
 ```text
 vnet-az700-ip-aue
@@ -121,7 +123,7 @@ failed NIC absent afterward
 
 ## Portal checkpoint
 
-Portal inspection confirmed all 8 subnets and the 7 top-level resources.
+Portal inspection confirmed all 8 subnets and the 7 top-level resources before teardown.
 
 Useful observed counts:
 
@@ -132,7 +134,21 @@ snet-db          27 available
 snet-management  11 available
 ```
 
-This matched the planned usable counts and actual NIC consumption.
+## Teardown evidence
+
+Manual teardown was completed only after documentation/evidence was synchronized.
+
+Observed independent checks:
+
+```text
+az group show --name rg-az700-ip-aue
+-> ResourceGroupNotFound
+
+az group exists --name rg-az700-ip-aue
+-> false
+```
+
+Manual Azure environment is therefore verified clean.
 
 ## Mental model retained
 
@@ -148,16 +164,3 @@ Route = path
 
 ordinary subnet != delegated subnet != special service subnet
 ```
-
-## Teardown warning
-
-The manual environment is still live intentionally. Evidence was captured before teardown.
-
-When teardown is performed, independently verify with at least:
-
-```powershell
-az group delete --name rg-az700-ip-aue --yes --no-wait
-az group exists --name rg-az700-ip-aue
-```
-
-Do not claim Azure is clean until `az group exists` returns `false` after deletion completes.
