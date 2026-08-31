@@ -40,7 +40,7 @@ Problem/use case -> Teach mental model -> Visual architecture -> Understanding c
 |---:|---|---|
 | 01 | Azure Load Balancer | COMPLETE |
 | 02 | Azure Traffic Manager | COMPLETE |
-| 03 | IP Addressing, VNets, Subnets & Public IP Architecture | IN PROGRESS |
+| 03 | IP Addressing, VNets, Subnets & Public IP Architecture | COMPLETE |
 | 04 | Azure DNS, Private DNS & DNS Private Resolver | NOT STARTED |
 | 05 | VNet Peering, Gateway Transit & Virtual Network Manager | NOT STARTED |
 | 06 | UDRs, Forced Tunnelling, NAT Gateway & NVA | NOT STARTED |
@@ -61,7 +61,7 @@ Problem/use case -> Teach mental model -> Visual architecture -> Understanding c
 | 21 | Network Troubleshooting Incident Lab | NOT STARTED |
 | 22 | AZ-700 Enterprise Capstone | NOT STARTED |
 
-**Overall progress: 2 / 22 labs completed; Lab 03 in progress.**
+**Overall progress: 3 / 22 labs completed. Next: Lab 04.**
 
 The detailed coverage, sequencing and cost/practicality rules live in [`docs/PROGRAMME-ROADMAP.md`](docs/PROGRAMME-ROADMAP.md).
 
@@ -86,7 +86,9 @@ Azure-Networking/
 
 **Always read [`docs/HANDOFF.md`](docs/HANDOFF.md) before continuing the programme.** It is the authoritative continuation record and exists specifically to prevent drift between sessions.
 
-**Current lab: Lab 03 — IP Addressing, VNets, Subnets & Public IP Architecture — IN PROGRESS.**
+**Last completed lab: Lab 03 — IP Addressing, VNets, Subnets & Public IP Architecture — COMPLETE.**
+
+**Next lab: Lab 04 — Azure DNS, Private DNS & DNS Private Resolver — NOT STARTED.**
 
 ## Definition of done for every practical lab
 
