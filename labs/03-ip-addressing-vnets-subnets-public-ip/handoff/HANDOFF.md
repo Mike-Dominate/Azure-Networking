@@ -3,107 +3,46 @@
 ## Status
 
 - **Lab:** 03 — IP Addressing, VNets, Subnets & Public IP Architecture
-- **State:** IN PROGRESS
+- **State:** COMPLETE
+- **Completed:** 2026-08-31 (Australia/Brisbane)
 - **Previous lab:** Lab 02 — Azure Traffic Manager — COMPLETE
-- **Current phase:** Terraform rebuild and independent validation COMPLETE; documentation/visual/PDF closeout NEXT
-- **Azure resources:** Terraform environment is currently LIVE in `rg-az700-ip-aue`; do not destroy before final evidence/documentation capture
-- **Started:** 2026-08-31 (Australia/Brisbane)
+- **Next lab:** Lab 04 — Azure DNS, Private DNS & DNS Private Resolver — NOT STARTED
+- **Azure resources:** NONE remaining
+- **Terraform state:** EMPTY
 
-## Immediate resume point
+## Final closeout proof
 
-Do not repeat the manual build or Terraform deployment. Both have been completed and validated.
-
-Next sequence:
+Terraform destroy:
 
 ```text
-1. git pull --rebase
-2. verify git working tree clean
-3. review validation/TERRAFORM-VALIDATION.md if context is needed
-4. create visual-learning assets
-5. create rebuild/practice documentation and PDF while Terraform resources still exist
-6. capture any final live Azure evidence needed by the manual
-7. final terraform destroy
-8. independently verify az group exists --name rg-az700-ip-aue returns false
-9. independently verify terraform state list is empty
-10. update README/roadmap/handoffs to Lab 03 COMPLETE and Lab 04 next
-11. learner explain-back / wrap
+Destroy complete! Resources: 16 destroyed.
 ```
 
-## Terraform checkpoint
+Independent Azure check:
 
-Configuration and provider initialization are complete.
+```powershell
+az group exists --name rg-az700-ip-aue
+```
+
+Observed:
 
 ```text
-AzureRM provider selected: 4.81.0
-Provider constraint: ~> 4.0
-.terraform.lock.hcl: committed and pushed
+false
 ```
 
-Plan:
+Terraform state check:
+
+```powershell
+terraform state list
+```
+
+Observed:
 
 ```text
-Plan: 16 to add, 0 to change, 0 to destroy.
+<blank / no output>
 ```
 
-Apply:
-
-```text
-Apply complete! Resources: 16 added, 0 changed, 0 destroyed.
-```
-
-Terraform state contained exactly 16 resources:
-
-```text
-1 Resource Group
-1 Virtual Network
-8 Subnets
-2 Network Interfaces
-3 Public IP Addresses
-1 Public IP Prefix
-```
-
-Independent Azure CLI validation confirmed:
-
-```text
-7 top-level resources
-8 VNet child subnets
-snet-postgres delegated to Microsoft.DBforPostgreSQL/flexibleServers
-nic-lab03-app-static = 10.30.20.10 / Static
-nic-lab03-web-dynamic = 10.30.10.4 / Dynamic
-web NIC PublicIP = null
-```
-
-Current Public IP values:
-
-```text
-pip-lab03-from-prefix-aue  20.11.118.4
-pip-lab03-web-aue          4.196.170.206
-pip-lab03-zr-aue           4.237.190.4
-pipprefix-lab03-aue        20.11.118.4/30
-```
-
-Zone architecture independently validated:
-
-```text
-pip-lab03-web-aue          zones null
-pip-lab03-zr-aue           zones 1,2,3
-pip-lab03-from-prefix-aue  zones 1,2,3 + references pipprefix-lab03-aue
-pipprefix-lab03-aue        zones 1,2,3 / Standard / Regional / Succeeded
-```
-
-Azure returned zone arrays in the order `2,3,1`; this represents the same zone set and is not drift.
-
-Final Terraform convergence check:
-
-```text
-No changes. Your infrastructure matches the configuration.
-```
-
-Detailed evidence:
-
-```text
-validation/TERRAFORM-VALIDATION.md
-```
+Lab 03 is therefore fully torn down and safe to leave closed.
 
 ## Validated address plan
 
@@ -124,39 +63,65 @@ Address space: 10.30.0.0/16
 
 ## Manual phase retained evidence
 
-The manual phase was completed before Terraform and intentionally included failure testing:
+Completed before Terraform:
 
 ```text
-NetcfgSubnetRangesOverlap
-PrivateIPAddressInReservedRange
-PrivateIPAddressIsAllocated
-PrivateIPAddressNotInSubnet
+Azure CLI build
+independent subnet/resource validation
+Portal validation
+Public IP attach/detach proof
+NetcfgSubnetRangesOverlap failure
+PrivateIPAddressInReservedRange failure
+PrivateIPAddressIsAllocated failure
+PrivateIPAddressNotInSubnet failure
+manual teardown and post-delete verification
 ```
 
-Manual resources were destroyed only after evidence capture and independently verified absent:
+## Terraform phase retained evidence
 
 ```text
-az group exists --name rg-az700-ip-aue
--> false
+AzureRM selected: 4.81.0
+Plan: 16 to add, 0 to change, 0 to destroy
+Apply: 16 added
+State: 16 resources
+Independent Azure validation: passed
+Final plan: No changes
+Destroy: 16 destroyed
+Azure post-destroy: false
+Terraform state post-destroy: empty
 ```
 
-Terraform then recreated the architecture from code.
-
-## Mental model retained
+## Key retained mental model
 
 ```text
-VNet = address/container boundary
+VNet = address/network boundary
 Subnet = functional/policy/routing boundary
 Private IP = private network identity
 Public IP = separate Internet-routable resource
-Public IP Prefix = reserved contiguous public range
+Public IP Prefix = contiguous public address range
 
 NSG = permission
 Route = path
 
-ordinary subnet != delegated subnet != special service subnet
+ordinary subnet != delegated subnet != special Azure service subnet
+needs Internet access != needs an individual Public IP
+configuration + Terraform state + live Azure must agree
 ```
 
-## Critical warning
+## Rebuild/reference files
 
-The Terraform environment is live intentionally. Do not run `terraform destroy` until the rebuild/practice documentation, visuals and useful evidence have been captured and synchronized.
+```text
+manual-deployment/DEPLOYMENT-WALKTHROUGH.md
+troubleshooting/FAILURE-TESTS.md
+validation/MANUAL-VALIDATION.md
+validation/TERRAFORM-VALIDATION.md
+validation/FINAL-CLOSEOUT.md
+documentation/LAB03-REBUILD-GUIDE.md
+terraform/
+```
+
+## Resume instruction
+
+Do not reopen Lab 03 during normal programme progression.
+
+When ready, start **Lab 04 — Azure DNS, Private DNS & DNS Private Resolver** with DNS mental models and topology design before resource creation.
