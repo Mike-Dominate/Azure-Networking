@@ -8,10 +8,11 @@ This is the authoritative continuation record for the programme. Read it before 
 - **Repository:** `Mike-Dominate/Azure-Networking`
 - **Coverage baseline:** Microsoft AZ-700 skills measured effective July 27, 2026
 - **Last completed lab:** Lab 03 — IP Addressing, VNets, Subnets & Public IP Architecture
-- **Current lab:** None active
-- **Next lab:** Lab 04 — Azure DNS, Private DNS & DNS Private Resolver
-- **Lab 04 state:** NOT STARTED
-- **Overall progress:** 3 / 22 labs complete
+- **Current lab:** Lab 04 — Azure DNS, Private DNS & DNS Private Resolver
+- **Lab 04 state:** IN PROGRESS
+- **Current phase:** DNS mental model and topology design
+- **Azure resources:** NONE CREATED YET
+- **Overall progress:** 3 / 22 labs complete; Lab 04 in progress
 - **Cadence:** Maximum of one lab per day
 - **Last updated:** 2026-08-31 (Australia/Brisbane)
 
@@ -19,102 +20,48 @@ This is the authoritative continuation record for the programme. Read it before 
 
 Do not repeat Lab 03. It is complete and fully torn down.
 
-When the learner formally starts Lab 04, begin with the DNS mental model and design before creating resources.
+Lab 04 has formally started. Do not create Azure resources until the DNS mental model and lab topology are understood.
 
-Recommended Lab 04 opening sequence:
+Resume sequence:
 
 ```text
 1. git pull --rebase
 2. verify git working tree clean
-3. mark Lab 04 IN PROGRESS across authoritative status records
-4. teach authoritative vs recursive DNS and Azure-provided DNS behaviour
-5. cover public Azure DNS zones and record types
-6. cover Private DNS zones and VNet links
-7. cover auto-registration behaviour
-8. cover split-horizon/private-name-resolution patterns
-9. teach Azure DNS Private Resolver architecture
-10. design the lab topology before deployment
-11. build manually with Azure CLI
-12. independently validate DNS resolution
-13. failure/troubleshooting exercises
-14. Terraform rebuild
-15. documentation/evidence
-16. safe teardown and independent clean verification
+3. teach what DNS does and does not do
+4. distinguish stub resolver, recursive resolver and authoritative DNS
+5. walk a public DNS query end-to-end
+6. explain Azure-provided DNS behaviour inside a VNet
+7. cover Azure DNS public zones and record types
+8. cover Azure Private DNS zones and VNet links
+9. explain auto-registration behaviour
+10. explain split-horizon/private-name-resolution patterns
+11. teach Azure DNS Private Resolver architecture
+12. distinguish inbound endpoint, outbound endpoint and DNS forwarding ruleset
+13. design the Lab 04 topology before deployment
+14. build manually with Azure CLI
+15. independently validate DNS resolution
+16. run failure/troubleshooting exercises
+17. Terraform rebuild
+18. documentation/evidence
+19. safe teardown and independent clean verification
 ```
+
+## Lab 04 engineering rule
+
+Provisioning state `Succeeded` does not prove DNS is functioning. Actual DNS queries must validate resolution behaviour, returned records and the intended query path.
 
 ## Lab 03 completion checkpoint
 
-Lab 03 is **COMPLETE**.
-
-Validated address plan:
+Lab 03 is COMPLETE.
 
 ```text
-VNet: vnet-az700-ip-aue
-Address space: 10.30.0.0/16
-
-10.30.10.0/26    snet-web
-10.30.20.0/27    snet-app
-10.30.30.0/27    snet-db
-10.30.40.0/28    snet-management
-10.30.50.0/27    snet-postgres (delegated to Microsoft.DBforPostgreSQL/flexibleServers)
-10.30.100.0/27   GatewaySubnet
-10.30.101.0/26   AzureFirewallSubnet
-10.30.102.0/26   AzureBastionSubnet
-```
-
-Manual phase completed:
-
-```text
-Azure CLI deployment                  COMPLETE
-independent Azure validation          COMPLETE
-failure testing                       COMPLETE
-Portal inspection                     COMPLETE
-manual teardown                       COMPLETE
-manual post-delete az group exists    false
-```
-
-Terraform phase completed:
-
-```text
-AzureRM provider selected             4.81.0
-terraform validate                    SUCCESS
-saved plan                            16 add / 0 change / 0 destroy
-terraform apply                       16 added
-Terraform state validation            16 resources
-independent Azure validation          PASSED
-final terraform plan                  NO CHANGES
-terraform destroy                     16 destroyed
-post-destroy az group exists          false
-post-destroy terraform state list     empty
-```
-
-Key retained mental models:
-
-```text
-VNet       = address/network boundary
-Subnet     = functional IP/policy/routing boundary
-Private IP = private network identity
-Public IP  = separate Internet-routable resource
-Public IP Prefix = contiguous public address block
-
-NSG   = permission
-Route = path
-
-ordinary subnet != delegated subnet != Azure service-specific subnet
-needs Internet access != needs an individual Public IP
-configuration + Terraform state + live Azure must agree
-```
-
-Lab 03 evidence/reference files include:
-
-```text
-labs/03-ip-addressing-vnets-subnets-public-ip/manual-deployment/DEPLOYMENT-WALKTHROUGH.md
-labs/03-ip-addressing-vnets-subnets-public-ip/troubleshooting/FAILURE-TESTS.md
-labs/03-ip-addressing-vnets-subnets-public-ip/validation/MANUAL-VALIDATION.md
-labs/03-ip-addressing-vnets-subnets-public-ip/validation/TERRAFORM-VALIDATION.md
-labs/03-ip-addressing-vnets-subnets-public-ip/validation/FINAL-CLOSEOUT.md
-labs/03-ip-addressing-vnets-subnets-public-ip/documentation/LAB03-REBUILD-GUIDE.md
-labs/03-ip-addressing-vnets-subnets-public-ip/terraform/
+Manual Azure build and validation         COMPLETE
+Failure testing                           COMPLETE
+Terraform rebuild                         COMPLETE
+Final Terraform convergence               NO CHANGES
+terraform destroy                         16 destroyed
+post-destroy az group exists              false
+post-destroy terraform state list         empty
 ```
 
 ## Roadmap status
@@ -123,7 +70,7 @@ labs/03-ip-addressing-vnets-subnets-public-ip/terraform/
 01  Azure Load Balancer                                      COMPLETE
 02  Azure Traffic Manager                                   COMPLETE
 03  IP Addressing, VNets, Subnets & Public IP Architecture  COMPLETE
-04  Azure DNS, Private DNS & DNS Private Resolver            NOT STARTED
+04  Azure DNS, Private DNS & DNS Private Resolver            IN PROGRESS
 05–22                                                       NOT STARTED
 ```
 
