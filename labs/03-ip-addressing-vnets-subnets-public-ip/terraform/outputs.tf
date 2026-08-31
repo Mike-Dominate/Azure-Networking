@@ -21,14 +21,14 @@ output "vnet" {
 output "subnet_prefixes" {
   description = "Subnet names mapped to their configured address prefixes."
   value = {
-    snet_web             = azurerm_subnet.web.address_prefixes
-    snet_app             = azurerm_subnet.app.address_prefixes
-    snet_db              = azurerm_subnet.db.address_prefixes
-    snet_management      = azurerm_subnet.management.address_prefixes
-    snet_postgres        = azurerm_subnet.postgres.address_prefixes
-    GatewaySubnet        = azurerm_subnet.gateway.address_prefixes
-    AzureFirewallSubnet  = azurerm_subnet.firewall.address_prefixes
-    AzureBastionSubnet   = azurerm_subnet.bastion.address_prefixes
+    snet_web            = azurerm_subnet.web.address_prefixes
+    snet_app            = azurerm_subnet.app.address_prefixes
+    snet_db             = azurerm_subnet.db.address_prefixes
+    snet_management     = azurerm_subnet.management.address_prefixes
+    snet_postgres       = azurerm_subnet.postgres.address_prefixes
+    GatewaySubnet       = azurerm_subnet.gateway.address_prefixes
+    AzureFirewallSubnet = azurerm_subnet.firewall.address_prefixes
+    AzureBastionSubnet  = azurerm_subnet.bastion.address_prefixes
   }
 }
 
