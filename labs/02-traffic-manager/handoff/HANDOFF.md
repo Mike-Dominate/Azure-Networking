@@ -4,118 +4,139 @@
 
 - **Lab:** 02 — Azure Traffic Manager
 - **State:** COMPLETE
+- **Completed:** 2026-08-30 (Australia/Brisbane)
 - **Previous lab:** Lab 01 — Azure Load Balancer — COMPLETE
-- **Next lab:** Lab 03 — IP Addressing, VNets, Subnets & Public IP Architecture
-- **Last updated:** 2026-08-30 (Australia/Brisbane)
+- **Next lab:** Lab 03 — IP Addressing, VNets, Subnets & Public IP Architecture — NOT STARTED
 
-## Completion record
+## Final completion record
 
-Lab 02 has completed the programme learning and engineering workflow. The manual and Terraform implementations were completed and independently validated, failure/recovery behavior was tested, documentation and visual-learning assets were committed, and the environment was safely torn down and verified clean.
-
-Completed:
+Lab 02 completed the manual Azure and Terraform paths, including independent DNS/HTTP validation, failure/recovery testing, documentation, Git/GitHub and teardown.
 
 ```text
-Traffic Manager mental model
-DNS-based traffic steering
-manual Azure CLI deployment
-regional endpoint validation
-Geographic routing configuration
-Australia/Pacific mapping failure and correction
-DNS validation
-HTTP validation
-endpoint health failure/recovery exercise
-Geographic-routing degraded-endpoint behavior test
-DNS TTL authoritative-versus-recursive investigation
-Azure Portal inspection
-manual teardown
-Terraform implementation
-Terraform fmt / validate / plan / apply
-independent Azure + DNS + HTTP validation
-Terraform failure/recovery validation
-final no-change/convergence validation
-Git/GitHub checkpoint
-rebuild/practice documentation
-Terraform destroy
-Azure clean-state verification
-final learner explain-back
+Traffic Manager mental model                     COMPLETE
+Manual Azure CLI deployment                      COMPLETE
+Regional endpoint validation                     COMPLETE
+Geographic routing + GEO-AP troubleshooting      COMPLETE
+DNS + HTTP validation                            COMPLETE
+Endpoint failure/recovery                        COMPLETE
+TTL investigation                                COMPLETE
+Azure Portal inspection                          COMPLETE
+Manual teardown + clean-state verification       COMPLETE
+Terraform implementation                         COMPLETE
+terraform validate / plan / apply                COMPLETE
+Independent IaC validation                       COMPLETE
+Terraform failure/recovery                       COMPLETE
+Final no-change plan                             COMPLETE
+Terraform Git checkpoint                         COMPLETE
+Rebuild/practice documentation                   COMPLETE
+Final Terraform destroy                          COMPLETE — 8 destroyed
 ```
+
+The final Terraform teardown explicitly returned:
+
+```text
+Destroy complete! Resources: 8 destroyed.
+```
+
+For future repeats, still run these independent post-destroy checks:
+
+```powershell
+az group exists --name rg-az700-tm-global
+terraform state list
+```
+
+The final chat did not separately capture those two outputs after the Terraform destroy, so this handoff does not invent them. The earlier manual teardown was independently verified clean.
 
 ## Actual architecture
 
-The source scenario intended App Service F1 endpoints in East US, West Europe and Southeast Asia. The subscription's zero App Service VM quota prevented the East US App Service plan from being created, so the validated lab implementation used:
+The source scenario intended App Service F1 endpoints. App Service plan creation was blocked by the subscription's zero App Service compute quota, so the lab deliberately used three public Azure Container Instances registered as Traffic Manager External endpoints.
 
 ```text
-Azure Container Instances
-+ public regional ACI FQDNs
-+ Azure Traffic Manager External endpoints
-+ Geographic routing
+North America      GEO-NA -> ep-eus -> East US ACI
+Europe             GEO-EU -> ep-weu -> West Europe ACI
+Asia               GEO-AS -> ep-sea -> Southeast Asia ACI
+Australia/Pacific  GEO-AP -> ep-sea -> Southeast Asia ACI
 ```
 
-Validated mapping:
+Traffic Manager:
 
 ```text
-North America      -> ep-eus -> East US ACI
-Europe             -> ep-weu -> West Europe ACI
-Asia               -> ep-sea -> Southeast Asia ACI
-Australia/Pacific  -> ep-sea -> Southeast Asia ACI
-```
-
-Traffic Manager profile:
-
-```text
-Resource: tm-az700-global
+Name: tm-az700-global
+FQDN: az700-tm-md-87004.trafficmanager.net
 Routing: Geographic
-DNS TTL: 30 seconds
-Health monitor: HTTP / port 80 / path /
+Configured DNS TTL: 30 seconds
+Monitor: HTTP :80 /
+Probe interval: 30 seconds
+Tolerated failures: 3
+Timeout: 10 seconds
 ```
 
-## Key lessons proven
+## Core lessons retained
 
 ```text
-Traffic Manager = global DNS steering, not an inline proxy
-Load Balancer   = regional Layer-4 data-path distribution
+Traffic Manager = global DNS steering, not an inline HTTP proxy.
+Client -> resolver -> Traffic Manager DNS decision -> DNS answer -> direct endpoint connection.
 
-Geographic routing = explicit geography-to-endpoint mapping
-Performance routing = latency-oriented endpoint selection
+Geographic routing = explicit geography mapping.
+Performance routing = latency-oriented selection.
 
-Traffic Manager health monitoring and Load Balancer backend health probes
-operate at different levels.
-
-DNS TTL and recursive resolver caching can affect observed client behavior.
+EndpointStatus = administrative participation.
+EndpointMonitorStatus = Traffic Manager health observation.
 ```
 
-The failure exercise also demonstrated that Geographic routing must not be assumed to behave like Priority routing: a degraded mapped endpoint did not automatically produce the invented cross-geography failover path.
+An Australian lookup initially had no eligible endpoint while Southeast Asia was mapped only to `GEO-AS`; adding `GEO-AP` corrected the design.
 
-## Repository artifacts
+When Southeast Asia was stopped, `ep-sea` eventually became Degraded while remaining administratively Enabled. A fresh Google DNS lookup still returned Southeast Asia for the Australia/Pacific mapping and HTTP failed. Record this as **observed behavior in this lab**, not as a universal Traffic Manager rule.
+
+Manual stop/start changed the Southeast Asia ACI public IP; the Terraform-built stop/start retained it. Therefore neither outcome should be assumed. The Traffic Manager endpoint correctly targets the ACI FQDN.
+
+Observed TTL layers:
 
 ```text
-labs/02-traffic-manager/README.md
-labs/02-traffic-manager/manual-deployment/
+Traffic Manager configured TTL       30s
+Traffic Manager authoritative CNAME  30s
+AdGuard-presented CNAME              60s
+ACI A record                         300s
+```
+
+## Terraform completion
+
+```text
+Terraform >= 1.6.0
+AzureRM constraint ~> 4.0
+Locked AzureRM 4.81.0
+Plan: 8 to add, 0 change, 0 destroy
+Apply: 8 added
+State: 8 resources
+Final recovery plan: No changes
+Final destroy: 8 destroyed
+```
+
+Terraform implementation commit:
+
+```text
+7891fe65064620480e2e1125f062f6138b08d3f5
+Complete Lab 02 Terraform Traffic Manager rebuild
+```
+
+## Reusable artifacts
+
+```text
+labs/02-traffic-manager/manual-deployment/DEPLOYMENT-WALKTHROUGH.md
 labs/02-traffic-manager/terraform/
 labs/02-traffic-manager/visual-learning/
-labs/02-traffic-manager/handoff/
+labs/02-traffic-manager/documentation/Lab02-Traffic-Manager-Rebuild-Practice-Manual.md
+labs/02-traffic-manager/documentation/Lab02-Traffic-Manager-Rebuild-Practice-Manual.pdf
 ```
 
 ## Resume point
 
-**Lab 02 is finished. Do not repeat its deployment unless performing an explicit review or maintenance exercise.**
+**Lab 02 is finished. Normal programme progression now starts Lab 03.**
 
-The programme now resumes at **Lab 03**.
+At the next session, sync the repository first:
 
-Follow the standard sequence:
-
-```text
-Problem/use case
--> Teach mental model
--> Visual architecture / traffic flow
--> Understanding check
--> Manual Azure CLI implementation
--> Independent validation
--> Failure/troubleshooting
--> Terraform rebuild
--> Independent IaC validation
--> Git/GitHub checkpoint
--> Rebuild documentation
--> Safe teardown
--> Explain-back
+```powershell
+git pull --rebase
 ```
+
+Then start Lab 03 with IP-address and subnet planning before deployment.
