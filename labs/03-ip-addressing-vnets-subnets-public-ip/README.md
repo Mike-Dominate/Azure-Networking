@@ -2,7 +2,7 @@
 
 > **Status: IN PROGRESS**  
 > Started: 2026-08-31  
-> Current phase: Manual Azure CLI build, validation, failure testing and Portal inspection COMPLETE; manual environment remains live pending evidence sync and teardown
+> Current phase: Manual Azure phase COMPLETE and independently torn down; Terraform rebuild is NEXT
 
 ## Purpose
 
@@ -35,15 +35,15 @@ Reserved Azure infrastructure subnets
 
 The design intentionally leaves most of `10.30.0.0/16` unused for future expansion. Unused address space is planned capacity, not waste.
 
-## Manual Azure resources currently live
+## Manual Azure resource checkpoint
 
-Resource group:
+The manual build used resource group:
 
 ```text
 rg-az700-ip-aue
 ```
 
-Top-level resources validated in Azure:
+Top-level resources validated before teardown:
 
 ```text
 vnet-az700-ip-aue              Microsoft.Network/virtualNetworks
@@ -55,7 +55,7 @@ pipprefix-lab03-aue            Microsoft.Network/publicIPPrefixes
 pip-lab03-from-prefix-aue      Microsoft.Network/publicIPAddresses
 ```
 
-Total top-level resources: **7**. The eight subnets are child resources of the VNet and therefore are not listed as separate top-level resource-group items.
+Total top-level resources: **7**. The eight subnets were child resources of the VNet.
 
 ## Private IP proofs
 
@@ -107,8 +107,6 @@ pip-lab03-from-prefix-aue
 
 ## Failure tests completed
 
-The manual build deliberately tested invalid designs and independently checked that failed resources were not left behind.
-
 ```text
 NetcfgSubnetRangesOverlap
 Attempt: 10.30.10.32/27 overlapping existing snet-web 10.30.10.0/26
@@ -138,24 +136,40 @@ Troubleshooting checklist reinforced by these tests:
 
 ## Portal validation
 
-Portal inspection confirmed all eight subnets and seven top-level resources.
+Portal inspection confirmed all eight subnets and seven top-level resources before teardown.
 
 Observed available-address counts included:
 
 ```text
-snet-web         58 available  (59 usable originally; one NIC consumes an IP)
-snet-app         26 available  (27 usable originally; one NIC consumes an IP)
+snet-web         58 available  (59 usable originally; one NIC consumed an IP)
+snet-app         26 available  (27 usable originally; one NIC consumed an IP)
 snet-db          27 available  (failed test NICs consumed nothing)
 snet-management  11 available  (unused)
 ```
 
 The Portal also visibly showed the PostgreSQL delegation on `snet-postgres`, while the special Azure service subnets remained non-delegated.
 
+## Manual teardown verification
+
+The manual resource group was deleted after documentation and evidence capture.
+
+Independent post-delete checks observed:
+
+```text
+az group show --name rg-az700-ip-aue
+-> ResourceGroupNotFound
+
+az group exists --name rg-az700-ip-aue
+-> false
+```
+
+Therefore the manual Azure environment is independently verified clean.
+
 ## Core mental models retained
 
 ```text
-VNet     = overall network/address boundary
-Subnet   = functional IP + policy/routing boundary
+VNet       = overall network/address boundary
+Subnet     = functional IP + policy/routing boundary
 Private IP = identity inside the private network
 Public IP  = separate Internet-routable Azure resource
 
@@ -163,9 +177,7 @@ NSG   = permission
 Route = path
 
 Ordinary subnet != delegated subnet != special Azure service subnet
-
 Needs Internet access != needs an individual Public IP
-
 Unused VNet address space = future design flexibility
 ```
 
@@ -187,7 +199,7 @@ Unused VNet address space = future design flexibility
 - [x] independent CLI validation
 - [x] deliberate failure/troubleshooting exercises
 - [x] Portal inspection
-- [ ] manual environment teardown and independent clean verification
+- [x] manual environment teardown and independent clean verification
 - [ ] Terraform rebuild
 - [ ] independent Terraform validation/failure testing
 - [ ] visual-learning assets
@@ -196,15 +208,11 @@ Unused VNet address space = future design flexibility
 
 ## Immediate next step
 
-Do **not** destroy the manual environment until this documentation checkpoint has been synchronized locally.
-
-Resume sequence:
-
 ```text
 git pull --rebase
--> inspect Lab 03 documentation/evidence files
 -> verify working tree clean
--> destroy manual resource group
--> independently verify Azure is clean
--> begin Terraform rebuild
+-> enter labs/03-ip-addressing-vnets-subnets-public-ip/terraform
+-> build the validated architecture in Terraform
+-> terraform fmt / init / validate / plan / apply
+-> independently validate state and live Azure
 ```
