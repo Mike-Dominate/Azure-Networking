@@ -10,48 +10,35 @@ This is the authoritative continuation record for the programme. Read it before 
 - **Last completed lab:** Lab 02 — Azure Traffic Manager
 - **Current lab:** Lab 03 — IP Addressing, VNets, Subnets & Public IP Architecture
 - **Lab 03 state:** IN PROGRESS
-- **Current phase:** Manual phase COMPLETE and verified clean; full Terraform configuration AUTHORED; local init/validate/plan/apply NEXT
+- **Current phase:** Manual phase COMPLETE; Terraform rebuild and independent validation COMPLETE; documentation/visual/PDF closeout NEXT
+- **Azure state:** Terraform environment currently LIVE in `rg-az700-ip-aue` pending final evidence capture and destroy
 - **Overall progress:** 2 / 22 labs complete; Lab 03 in progress
 - **Cadence:** Maximum of one lab per day
 - **Last updated:** 2026-08-31 (Australia/Brisbane)
 
 ## Immediate resume instruction
 
-Do not repeat Lab 03 design or manual deployment. Do not rewrite the Terraform configuration by hand; it is already committed.
+Do not repeat Lab 03 design, manual deployment, Terraform deployment, or validation. Those phases are complete.
 
 Resume sequence:
 
 ```text
 1. git pull --rebase
 2. verify git working tree clean
-3. enter labs/03-ip-addressing-vnets-subnets-public-ip/terraform
-4. terraform fmt -recursive
-5. terraform init
-6. terraform validate
-7. terraform plan -out=lab03.tfplan
-8. inspect plan
-9. terraform apply lab03.tfplan
-10. independently validate Terraform state/live Azure
-11. produce final no-change plan
-12. complete documentation/visual/PDF closeout before final Terraform destroy
-13. destroy and verify Azure false + Terraform state empty
+3. create Lab 03 visual-learning assets
+4. create rebuild/practice documentation and PDF while Terraform resources are still live
+5. capture any final evidence needed by the guide
+6. terraform destroy
+7. verify az group exists --name rg-az700-ip-aue returns false
+8. verify terraform state list is empty
+9. update README.md, docs/PROGRAMME-ROADMAP.md, docs/HANDOFF.md, Lab 03 README and Lab 03 handoff to COMPLETE
+10. set Lab 04 as next
+11. learner explain-back
 ```
 
 ## Lab 03 Terraform checkpoint
 
-Committed Terraform files:
-
-```text
-terraform/versions.tf
-terraform/providers.tf
-terraform/variables.tf
-terraform/main.tf
-terraform/outputs.tf
-terraform/terraform.tfvars.example
-terraform/README.md
-```
-
-The desired state contains:
+Terraform desired state:
 
 ```text
 1 Resource Group
@@ -61,7 +48,56 @@ The desired state contains:
 3 Public IP Addresses
 1 Public IP Prefix
 --------------------
-16 Terraform resources
+16 managed resources
+```
+
+Toolchain:
+
+```text
+Terraform requirement: >= 1.6.0
+AzureRM constraint:    ~> 4.0
+AzureRM selected:      4.81.0
+.terraform.lock.hcl:   committed and pushed
+```
+
+Deployment evidence:
+
+```text
+terraform validate
+-> Success! The configuration is valid.
+
+terraform plan -out lab03.tfplan
+-> Plan: 16 to add, 0 to change, 0 to destroy.
+
+terraform apply "lab03.tfplan"
+-> Apply complete! Resources: 16 added, 0 changed, 0 destroyed.
+
+terraform state list
+-> 16 resources
+
+terraform plan
+-> No changes. Your infrastructure matches the configuration.
+```
+
+Independent Azure validation confirmed:
+
+```text
+7 top-level resources
+8 VNet child subnets
+snet-postgres delegation correct
+web NIC 10.30.10.4 / Dynamic
+app NIC 10.30.20.10 / Static
+web NIC PublicIP association = null
+3 Public IP resources = Standard / Regional / Static
+zone-redundant PIP = zones 1,2,3
+Public IP Prefix = 20.11.118.4/30 / zones 1,2,3 / Succeeded
+PIP 20.11.118.4 allocated from that prefix
+```
+
+Detailed evidence is recorded in:
+
+```text
+labs/03-ip-addressing-vnets-subnets-public-ip/validation/TERRAFORM-VALIDATION.md
 ```
 
 ## Lab 03 validated address plan
@@ -80,12 +116,9 @@ Address space: 10.30.0.0/16
 10.30.102.0/26   AzureBastionSubnet
 ```
 
-Manual teardown was independently verified before Terraform work:
+Manual teardown was independently verified before Terraform recreated the environment:
 
 ```text
-az group show --name rg-az700-ip-aue
--> ResourceGroupNotFound
-
 az group exists --name rg-az700-ip-aue
 -> false
 ```
@@ -144,4 +177,4 @@ labs/<lab>/handoff/HANDOFF.md
 
 ## Teardown evidence rule
 
-Do not destroy a live lab before capturing useful documentation and evidence. After each destroy, independently verify Azure clean before claiming teardown is complete.
+Do not destroy a live lab before capturing useful documentation and evidence. After each destroy, independently verify Azure clean and Terraform state empty before claiming teardown is complete.
