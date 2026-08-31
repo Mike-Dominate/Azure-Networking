@@ -10,33 +10,61 @@ This is the authoritative continuation record for the programme. Read it before 
 - **Last completed lab:** Lab 02 — Azure Traffic Manager
 - **Current lab:** Lab 03 — IP Addressing, VNets, Subnets & Public IP Architecture
 - **Lab 03 state:** IN PROGRESS
-- **Current phase:** Manual Azure CLI build, validation, failure testing and Portal inspection COMPLETE; manual environment remains live pending teardown
+- **Current phase:** Manual phase COMPLETE and verified clean; full Terraform configuration AUTHORED; local init/validate/plan/apply NEXT
 - **Overall progress:** 2 / 22 labs complete; Lab 03 in progress
 - **Cadence:** Maximum of one lab per day
 - **Last updated:** 2026-08-31 (Australia/Brisbane)
 
 ## Immediate resume instruction
 
-Do not repeat Lab 03 design or manual deployment. The manual architecture is already built and validated.
+Do not repeat Lab 03 design or manual deployment. Do not rewrite the Terraform configuration by hand; it is already committed.
 
 Resume sequence:
 
 ```text
 1. git pull --rebase
-2. inspect Lab 03 README and handoff updates
-3. verify git working tree clean
-4. destroy manual resource group rg-az700-ip-aue
-5. independently verify Azure clean
-6. start Terraform rebuild of the validated architecture
-7. independently validate Terraform state/live Azure
-8. perform failure/recovery validation where useful
-9. produce final no-change plan
-10. complete documentation/visual/PDF closeout before final Terraform destroy
+2. verify git working tree clean
+3. enter labs/03-ip-addressing-vnets-subnets-public-ip/terraform
+4. terraform fmt -recursive
+5. terraform init
+6. terraform validate
+7. terraform plan -out=lab03.tfplan
+8. inspect plan
+9. terraform apply lab03.tfplan
+10. independently validate Terraform state/live Azure
+11. produce final no-change plan
+12. complete documentation/visual/PDF closeout before final Terraform destroy
+13. destroy and verify Azure false + Terraform state empty
 ```
 
-## Lab 03 manual checkpoint
+## Lab 03 Terraform checkpoint
 
-Validated address plan:
+Committed Terraform files:
+
+```text
+terraform/versions.tf
+terraform/providers.tf
+terraform/variables.tf
+terraform/main.tf
+terraform/outputs.tf
+terraform/terraform.tfvars.example
+terraform/README.md
+```
+
+The desired state contains:
+
+```text
+1 Resource Group
+1 Virtual Network
+8 Subnets
+2 Network Interfaces
+3 Public IP Addresses
+1 Public IP Prefix
+--------------------
+16 Terraform resources
+```
+
+## Lab 03 validated address plan
 
 ```text
 VNet: vnet-az700-ip-aue
@@ -52,39 +80,15 @@ Address space: 10.30.0.0/16
 10.30.102.0/26   AzureBastionSubnet
 ```
 
-Top-level manual Azure resources validated in `rg-az700-ip-aue`:
+Manual teardown was independently verified before Terraform work:
 
 ```text
-vnet-az700-ip-aue
-nic-lab03-web-dynamic
-nic-lab03-app-static
-pip-lab03-web-aue
-pip-lab03-zr-aue
-pipprefix-lab03-aue
-pip-lab03-from-prefix-aue
+az group show --name rg-az700-ip-aue
+-> ResourceGroupNotFound
+
+az group exists --name rg-az700-ip-aue
+-> false
 ```
-
-Key manual proofs:
-
-```text
-Dynamic private IP: 10.30.10.4
-Static private IP: 10.30.20.10
-Regional Standard Public IP: 4.196.200.103
-Zone-redundant Standard Public IP: 20.227.26.52
-Zone-redundant Public IP Prefix: 4.237.111.112/30
-Public IP allocated from prefix: 4.237.111.112
-```
-
-Intentional failures completed and post-failure absence verified:
-
-```text
-NetcfgSubnetRangesOverlap
-PrivateIPAddressInReservedRange
-PrivateIPAddressIsAllocated
-PrivateIPAddressNotInSubnet
-```
-
-Portal inspection confirmed all 8 subnets, the PostgreSQL delegation, expected available-IP counts, and the 7 top-level resources.
 
 ## Lab 02 completion checkpoint
 
