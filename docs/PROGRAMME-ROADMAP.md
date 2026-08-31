@@ -18,7 +18,7 @@ This programme is **not certification-cramming**. The exam blueprint defines the
 |---:|---|---|---|
 | 01 | Azure Load Balancer | L4 load balancing, probes, backend pools, availability zones, explicit outbound SNAT | COMPLETE |
 | 02 | Azure Traffic Manager | Global DNS traffic steering, Geographic routing, endpoint health, DNS TTL | COMPLETE |
-| 03 | IP Addressing, VNets, Subnets & Public IP Architecture | Address planning, subnet design, delegation, public IPs/prefixes, BYOIP concepts | NOT STARTED |
+| 03 | IP Addressing, VNets, Subnets & Public IP Architecture | Address planning, subnet design, delegation, public IPs/prefixes, BYOIP concepts | IN PROGRESS |
 | 04 | Azure DNS, Private DNS & DNS Private Resolver | Public/private DNS, VNet links, hybrid name resolution | NOT STARTED |
 | 05 | VNet Peering, Gateway Transit & Virtual Network Manager | Peering, topology, gateway transit, network groups/connectivity management | NOT STARTED |
 | 06 | UDRs, Forced Tunnelling, NAT Gateway & NVA | Static routing, egress, service chaining, custom next hops | NOT STARTED |
@@ -41,7 +41,7 @@ This programme is **not certification-cramming**. The exam blueprint defines the
 
 ## Important sequencing rule
 
-Labs 01 and 02 are complete. The expanded coverage begins with Lab 03.
+Labs 01 and 02 are complete. Lab 03 is now in progress.
 
 ## Per-lab deliverables
 
@@ -57,8 +57,6 @@ troubleshooting/
 evidence/
 handoff/
 ```
-
-Design-heavy labs such as ExpressRoute may substitute architecture simulations, route tables, BGP reasoning exercises and failure scenarios where provisioning the real service would be impractical or unnecessarily expensive.
 
 ## Required engineering learning loop
 
@@ -79,46 +77,3 @@ Problem/use case
   -> Safe teardown
   -> Learner explain-back
 ```
-
-## Learning depth
-
-Every lab should develop five levels of understanding:
-
-1. **Conceptual** — what problem does the service solve?
-2. **Architectural** — where does it sit in the traffic path and what are the trade-offs?
-3. **Implementation** — how is it configured directly and, where appropriate, through Terraform?
-4. **Operational** — how is it validated, monitored and troubleshot?
-5. **Selection** — when should it be chosen over the nearest alternative?
-
-## Progression of independence
-
-Early labs may be mentor-led and explicit. Over time the learner should increasingly:
-
-- design address spaces and dependencies before seeing a solution
-- write Terraform before seeing complete examples
-- select appropriate Azure CLI inspection commands
-- reason from effective routes, DNS results, flow logs and symptoms
-- diagnose deliberately broken architectures
-- explain service-selection trade-offs
-- improve repository documentation independently
-
-Labs 21 and 22 should be substantially learner-driven.
-
-## Cost and practicality rule
-
-Full deployment is not mandatory when an Azure service is prohibitively expensive, requires provider involvement, or cannot be realistically provisioned in a personal lab subscription.
-
-In those cases the lab must still teach architecture, configuration objects, routing/control-plane behaviour, validation approach, failure modes, troubleshooting and service-selection trade-offs.
-
-## End-state
-
-At the end of Lab 22, the repository should function as:
-
-- a current AZ-700 coverage map
-- an Azure networking learning journal
-- a rebuild/reference library
-- a Terraform implementation portfolio
-- an operational troubleshooting reference
-- evidence of Azure CLI, VS Code, Git and GitHub progression
-- an enterprise Azure networking architecture portfolio
-- a foundation for advanced Azure architecture and cloud network engineering work
