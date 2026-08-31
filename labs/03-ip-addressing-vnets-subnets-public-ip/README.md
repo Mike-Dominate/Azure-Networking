@@ -2,7 +2,7 @@
 
 > **Status: IN PROGRESS**  
 > Started: 2026-08-31  
-> Current phase: Manual Azure phase COMPLETE and independently torn down; Terraform rebuild is NEXT
+> Current phase: Terraform rebuild and validation COMPLETE; documentation/visual/PDF closeout NEXT; Terraform environment remains live pending evidence capture
 
 ## Purpose
 
@@ -10,7 +10,7 @@ Build deliberate Azure address-space and subnet-design skill instead of treating
 
 This lab makes IP design decisions before deployment so later peering, VPN, ExpressRoute, Private Link, firewalls, application gateways and hybrid connectivity do not inherit avoidable address-space problems.
 
-## Final manual-phase address plan
+## Validated address plan
 
 ```text
 VNet: vnet-az700-ip-aue
@@ -18,142 +18,39 @@ Address space: 10.30.0.0/16
 Region: Australia East
 
 Workload subnets
-├── 10.30.10.0/26    snet-web          59 usable before consumption
-├── 10.30.20.0/27    snet-app          27 usable before consumption
-├── 10.30.30.0/27    snet-db           27 usable
-└── 10.30.40.0/28    snet-management   11 usable
+├── 10.30.10.0/26    snet-web
+├── 10.30.20.0/27    snet-app
+├── 10.30.30.0/27    snet-db
+└── 10.30.40.0/28    snet-management
 
 Delegated service subnet
 └── 10.30.50.0/27    snet-postgres
     └── Microsoft.DBforPostgreSQL/flexibleServers
 
-Reserved Azure infrastructure subnets
+Azure infrastructure subnets
 ├── 10.30.100.0/27   GatewaySubnet
 ├── 10.30.101.0/26   AzureFirewallSubnet
 └── 10.30.102.0/26   AzureBastionSubnet
 ```
 
-The design intentionally leaves most of `10.30.0.0/16` unused for future expansion. Unused address space is planned capacity, not waste.
+Most of `10.30.0.0/16` remains deliberately unused for future expansion.
 
-## Manual Azure resource checkpoint
+## Manual phase
 
-The manual build used resource group:
+Manual Azure CLI deployment, independent validation, deliberate failure testing and Portal inspection were completed first.
 
-```text
-rg-az700-ip-aue
-```
-
-Top-level resources validated before teardown:
-
-```text
-vnet-az700-ip-aue              Microsoft.Network/virtualNetworks
-nic-lab03-web-dynamic          Microsoft.Network/networkInterfaces
-nic-lab03-app-static           Microsoft.Network/networkInterfaces
-pip-lab03-web-aue              Microsoft.Network/publicIPAddresses
-pip-lab03-zr-aue               Microsoft.Network/publicIPAddresses
-pipprefix-lab03-aue            Microsoft.Network/publicIPPrefixes
-pip-lab03-from-prefix-aue      Microsoft.Network/publicIPAddresses
-```
-
-Total top-level resources: **7**. The eight subnets were child resources of the VNet.
-
-## Private IP proofs
-
-```text
-nic-lab03-web-dynamic
-├── subnet: snet-web
-├── private IP: 10.30.10.4
-└── allocation: Dynamic
-
-nic-lab03-app-static
-├── subnet: snet-app
-├── private IP: 10.30.20.10
-└── allocation: Static
-```
-
-The dynamic NIC received `10.30.10.4`, demonstrating that Azure reserves the first four addresses in the subnet before normal resource assignment.
-
-## Public IP proofs
-
-```text
-pip-lab03-web-aue
-├── IP: 4.196.200.103
-├── SKU: Standard
-├── tier: Regional
-├── allocation: Static
-└── zones: null
-
-pip-lab03-zr-aue
-├── IP: 20.227.26.52
-├── SKU: Standard
-├── tier: Regional
-├── allocation: Static
-└── zones: 1, 2, 3
-
-pipprefix-lab03-aue
-├── prefix: 4.237.111.112/30
-├── SKU: Standard
-├── tier: Regional
-└── zones: 1, 2, 3
-
-pip-lab03-from-prefix-aue
-├── IP: 4.237.111.112
-├── source prefix: pipprefix-lab03-aue
-├── allocation: Static
-└── zones: 1, 2, 3
-```
-
-`pip-lab03-web-aue` was temporarily associated with `nic-lab03-web-dynamic` and then detached. The NIC retained private IP `10.30.10.4`, while the standalone Public IP resource remained `4.196.200.103`. This proves that private NIC addressing and Public IP resource lifecycles are separate.
-
-## Failure tests completed
+Intentional failures included:
 
 ```text
 NetcfgSubnetRangesOverlap
-Attempt: 10.30.10.32/27 overlapping existing snet-web 10.30.10.0/26
-Result: rejected; snet-overlap-test absent afterward
-
 PrivateIPAddressInReservedRange
-Attempt: NIC private IP 10.30.30.1 in snet-db 10.30.30.0/27
-Result: rejected; test NIC returned ResourceNotFound afterward
-
 PrivateIPAddressIsAllocated
-Attempt: second NIC using existing 10.30.20.10
-Result: rejected; test NIC returned ResourceNotFound afterward
-
 PrivateIPAddressNotInSubnet
-Attempt: 10.30.21.10 on snet-app 10.30.20.0/27
-Result: rejected; test NIC returned ResourceNotFound afterward
 ```
 
-Troubleshooting checklist reinforced by these tests:
+Each failed test was followed by a lookup proving the invalid resource had not been partially created.
 
-```text
-1. Is the address inside the correct subnet?
-2. Is the subnet CIDR valid and non-overlapping?
-3. Is the requested address Azure-reserved?
-4. Is the requested address already allocated?
-```
-
-## Portal validation
-
-Portal inspection confirmed all eight subnets and seven top-level resources before teardown.
-
-Observed available-address counts included:
-
-```text
-snet-web         58 available  (59 usable originally; one NIC consumed an IP)
-snet-app         26 available  (27 usable originally; one NIC consumed an IP)
-snet-db          27 available  (failed test NICs consumed nothing)
-snet-management  11 available  (unused)
-```
-
-The Portal also visibly showed the PostgreSQL delegation on `snet-postgres`, while the special Azure service subnets remained non-delegated.
-
-## Manual teardown verification
-
-The manual resource group was deleted after documentation and evidence capture.
-
-Independent post-delete checks observed:
+The manual environment was then destroyed after evidence capture and independently verified clean:
 
 ```text
 az group show --name rg-az700-ip-aue
@@ -163,7 +60,117 @@ az group exists --name rg-az700-ip-aue
 -> false
 ```
 
-Therefore the manual Azure environment is independently verified clean.
+## Terraform rebuild
+
+Terraform configuration reproduces the validated manual end-state with 16 managed resources:
+
+```text
+1 Resource Group
+1 Virtual Network
+8 Subnets
+2 Network Interfaces
+3 Public IP Addresses
+1 Public IP Prefix
+```
+
+Toolchain checkpoint:
+
+```text
+Terraform requirement: >= 1.6.0
+AzureRM constraint:    ~> 4.0
+AzureRM selected:      4.81.0
+Lock file:             committed
+```
+
+Validation sequence completed:
+
+```text
+terraform fmt -recursive
+terraform init
+terraform validate
+terraform plan -out lab03.tfplan
+terraform apply "lab03.tfplan"
+terraform state list
+independent Azure CLI validation
+terraform plan
+```
+
+Saved plan result:
+
+```text
+Plan: 16 to add, 0 to change, 0 to destroy.
+```
+
+Apply result:
+
+```text
+Apply complete! Resources: 16 added, 0 changed, 0 destroyed.
+```
+
+Final convergence result:
+
+```text
+No changes. Your infrastructure matches the configuration.
+```
+
+## Current Terraform live values
+
+These values are expected to differ from the earlier manual deployment because Public IP resources were destroyed and recreated.
+
+```text
+nic-lab03-web-dynamic
+  private IP: 10.30.10.4
+  allocation: Dynamic
+  public IP association: null
+
+nic-lab03-app-static
+  private IP: 10.30.20.10
+  allocation: Static
+
+pip-lab03-web-aue
+  IP: 4.196.170.206
+  Standard / Regional / Static
+  zones: null
+
+pip-lab03-zr-aue
+  IP: 4.237.190.4
+  Standard / Regional / Static
+  zones: 1,2,3
+
+pipprefix-lab03-aue
+  prefix: 20.11.118.4/30
+  Standard / Regional
+  zones: 1,2,3
+
+pip-lab03-from-prefix-aue
+  IP: 20.11.118.4
+  allocated from pipprefix-lab03-aue
+  zones: 1,2,3
+```
+
+Azure may return the zone array in a different order such as `2,3,1`; the order is not semantically important.
+
+## Independent validation summary
+
+```text
+Terraform state:            16 resources
+Azure top-level inventory:   7 resources
+Azure VNet child subnets:    8 subnets
+PostgreSQL delegation:       verified
+Static NIC IP:               verified
+Dynamic NIC IP:              verified
+Public IP properties:        verified
+Public IP Prefix:            verified
+PIP-from-prefix relation:    verified
+Web NIC public association:  null / detached
+Final Terraform plan:        no changes
+```
+
+Detailed Terraform evidence lives in:
+
+```text
+validation/TERRAFORM-VALIDATION.md
+```
 
 ## Core mental models retained
 
@@ -200,19 +207,26 @@ Unused VNet address space = future design flexibility
 - [x] deliberate failure/troubleshooting exercises
 - [x] Portal inspection
 - [x] manual environment teardown and independent clean verification
-- [ ] Terraform rebuild
-- [ ] independent Terraform validation/failure testing
+- [x] Terraform rebuild
+- [x] independent Terraform/Azure validation
+- [x] final no-change Terraform plan
 - [ ] visual-learning assets
 - [ ] rebuild/practice documentation and PDF
-- [ ] final teardown and explain-back
+- [ ] final Terraform destroy
+- [ ] post-destroy Azure + state verification
+- [ ] learner explain-back
 
 ## Immediate next step
 
+Do **not** destroy the Terraform environment yet.
+
 ```text
 git pull --rebase
--> verify working tree clean
--> enter labs/03-ip-addressing-vnets-subnets-public-ip/terraform
--> build the validated architecture in Terraform
--> terraform fmt / init / validate / plan / apply
--> independently validate state and live Azure
+-> complete visual-learning and rebuild/practice documentation while Azure is live
+-> capture final evidence
+-> final Terraform destroy
+-> verify az group exists = false
+-> verify terraform state list is empty
+-> update all status records to COMPLETE
+-> learner explain-back
 ```
