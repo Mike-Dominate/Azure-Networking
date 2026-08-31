@@ -18,7 +18,7 @@ This programme is **not certification-cramming**. The exam blueprint defines the
 |---:|---|---|---|
 | 01 | Azure Load Balancer | L4 load balancing, probes, backend pools, availability zones, explicit outbound SNAT | COMPLETE |
 | 02 | Azure Traffic Manager | Global DNS traffic steering, Geographic routing, endpoint health, DNS TTL | COMPLETE |
-| 03 | IP Addressing, VNets, Subnets & Public IP Architecture | Address planning, subnet design, delegation, public IPs/prefixes, BYOIP concepts | IN PROGRESS |
+| 03 | IP Addressing, VNets, Subnets & Public IP Architecture | Address planning, subnet design, delegation, public IPs/prefixes, BYOIP concepts | COMPLETE |
 | 04 | Azure DNS, Private DNS & DNS Private Resolver | Public/private DNS, VNet links, hybrid name resolution | NOT STARTED |
 | 05 | VNet Peering, Gateway Transit & Virtual Network Manager | Peering, topology, gateway transit, network groups/connectivity management | NOT STARTED |
 | 06 | UDRs, Forced Tunnelling, NAT Gateway & NVA | Static routing, egress, service chaining, custom next hops | NOT STARTED |
@@ -41,7 +41,7 @@ This programme is **not certification-cramming**. The exam blueprint defines the
 
 ## Important sequencing rule
 
-Labs 01 and 02 are complete. Lab 03 is now in progress.
+Labs 01, 02 and 03 are complete. Lab 04 is next and remains NOT STARTED until formally begun.
 
 ## Per-lab deliverables
 
