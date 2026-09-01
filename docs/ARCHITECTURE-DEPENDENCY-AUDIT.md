@@ -11,8 +11,8 @@ This is the running gate record for the progressive BlueHarbor project. Audit on
 | 3 | Module 3 -> Module 4 | **PASS — corrected and approved** |
 | 4 | Module 4 -> Module 5 | **PASS — corrected and approved** |
 | 5 | Module 5 -> Module 6 | **PASS — corrected and approved** |
-| 6 | Module 6 -> Module 7 | **NEXT** |
-| 7 | Module 7 -> Module 8 | PENDING |
+| 6 | Module 6 -> Module 7 | **PASS — corrected and approved** |
+| 7 | Module 7 -> Module 8 | **NEXT** |
 
 A gate passes only when story continuity, Azure architecture continuity and Terraform/state continuity agree.
 
@@ -22,17 +22,7 @@ A gate passes only when story continuity, Azure architecture continuity and Terr
 
 **Status:** PASS
 
-Canonical network contracts:
-
-```text
-bhi-vnet-core-aue       10.10.0.0/16
-bhi-vnet-mfg-aue        10.20.0.0/16
-bhi-vnet-research-sea   10.30.0.0/16
-```
-
-Module 1 establishes DNS, direct peerings, routing and `nat-mfg-aue` on `snet-mfg-app`.
-
-Module 2 adds a classic VPN edge, then evolves production transit into `bhi-vwan` / `bhi-vhub-aue` while hybrid DNS is anchored in Core.
+Module 1 creates the canonical Core, Manufacturing and Research VNets plus DNS, routing, initial peerings and explicit Manufacturing NAT. Module 2 adds classic hybrid connectivity and then evolves production transit to Virtual WAN.
 
 ---
 
@@ -40,27 +30,7 @@ Module 2 adds a classic VPN edge, then evolves production transit into `bhi-vwan
 
 **Status:** PASS
 
-Approved progression:
-
-```text
-classic VPN learning
- -> Virtual WAN production transit
- -> ExpressRoute added to same AUE hub
- -> ExpressRoute preferred for approved critical routes
- -> VPN retained as alternate path
-```
-
-AUE hub:
-
-```text
-bhi-vhub-aue   10.200.0.0/22
-```
-
-SEA hub CIDR reserved:
-
-```text
-10.200.4.0/22
-```
+ExpressRoute is added to the existing Virtual WAN architecture rather than creating a second hub. Brisbane and Perth are the physical-site continuity anchors.
 
 ---
 
@@ -68,31 +38,13 @@ SEA hub CIDR reserved:
 
 **Status:** PASS
 
-Module 4 introduces Device Telemetry Ingest on TCP/9000.
+Device Telemetry Ingest is introduced as TCP/9000 with AUE/SEA public Standard Load Balancers and Traffic Manager Priority failover.
 
-AUE:
+Gate 5 later made SEA outbound explicit with `nat-telemetry-sea`.
 
-```text
-snet-mfg-app
- -> telemetry backends
- -> lb-telemetry-aue
- -> nat-mfg-aue
-```
+### Gate 6 backward compatibility correction
 
-SEA:
-
-```text
-snet-telemetry-dr 10.30.3.0/24
- -> telemetry backends
- -> lb-telemetry-sea
- -> nat-telemetry-sea
-```
-
-### Gate 5 correction to Gate 3
-
-`nat-telemetry-sea` is now explicit. The original Gate 3 design omitted SEA backend outbound/return-path ownership. This is corrected before deployment.
-
-Traffic Manager provides Priority DNS failover AUE -> SEA.
+`lb-telemetry-aue` must use NIC-backed backend-pool membership. Module 7 reuses the exact Load Balancer as a Private Link Service provider, so an incompatible Load Balancer backend-pool model would create an unnecessary rebuild.
 
 ---
 
@@ -100,41 +52,11 @@ Traffic Manager provides Priority DNS failover AUE -> SEA.
 
 **Status:** PASS
 
-Partner Hub is a separate HTTP(S) application.
+Partner Hub is a separate HTTP(S) application with AUE/SEA Partner VNets, regional Application Gateways and global Front Door. Module 5's public Front Door origins are a real intermediate stage.
 
-AUE:
+### Gate 6 forward evolution note
 
-```text
-bhi-vnet-partner-aue 10.40.0.0/16
-  snet-appgw       10.40.1.0/24
-  snet-partner-app 10.40.2.0/24
-  nat-partner-aue
-  appgw-partner-aue Standard_v2
-  connection -> bhi-vhub-aue
-```
-
-SEA:
-
-```text
-bhi-vhub-sea 10.200.4.0/22
-
-bhi-vnet-partner-sea 10.50.0.0/16
-  snet-appgw       10.50.1.0/24
-  snet-partner-app 10.50.2.0/24
-  nat-partner-sea
-  appgw-partner-sea Standard_v2
-  connection -> bhi-vhub-sea
-```
-
-Research Virtual WAN connection moves from AUE to SEA hub; the Research VNet itself remains intact.
-
-Global web:
-
-```text
-Front Door Standard
- -> appgw-partner-aue
- -> appgw-partner-sea
-```
+Module 6 hardens the public origins. Module 7 then migrates Front Door Premium to Private-Link-enabled Application Gateway origins using new provider-side Private Link subnets. The original public origin group is not treated as the final architecture.
 
 ---
 
@@ -142,185 +64,206 @@ Front Door Standard
 
 **Status:** PASS
 
-## Problem resolved
+Module 6 hardens the actual cumulative estate using DDoS, NSG/ASG, Azure Firewall in both existing Virtual WAN hubs, Firewall Policy, secured-hub routing intent, WAF and origin-bypass restrictions.
 
-The original Module 6 mixed standalone firewall/UDR language with a later secured-Virtual-WAN exercise, contained cost-driven teardown logic, left DDoS/NSG targets vague, and did not account for public Load Balancer/Application Gateway return-path symmetry.
-
-Approved correction: security hardens the exact cumulative estate and makes the existing Virtual WAN the central enforcement architecture.
-
-## Terraform lifecycle — FIXED
-
-No routine security-resource teardown.
-
-```text
-existing Modules 1–5 state
-+
-security controls / intentional route changes / tier changes
-=
-same state lineage
-```
-
-A resource may be retired only because an approved architecture replaces its function.
-
-## DDoS scope — FIXED
-
-Create one BlueHarbor DDoS Network Protection plan and associate it with eligible VNets that contain public-IP-backed services, especially:
-
-```text
-bhi-vnet-mfg-aue
-bhi-vnet-research-sea
-bhi-vnet-partner-aue
-bhi-vnet-partner-sea
-```
-
-Evaluate other public-gateway VNets against current service eligibility at implementation time.
-
-Front Door is not associated with this VNet DDoS plan. Do not attach the plan to Virtual WAN secured hubs.
-
-## NSG/ASG target — FIXED
-
-Module 6 Unit 05 adds a real controlled data target in the existing Manufacturing data subnet:
-
-```text
-snet-mfg-app  10.20.1.0/24 -> asg-mfg-app
-snet-mfg-data 10.20.2.0/24 -> vm-mfg-data-01 / asg-mfg-data
-```
-
-The existing Module 4 functional NSG is evolved. Partner application subnets are also segmented around intended Application Gateway/backend flows.
-
-## Firewall topology — FIXED
-
-Do not build a separate hub/spoke firewall VNet.
-
-Use:
-
-```text
-fwpol-bhi-global
-  |
-  +-- azfw-bhi-aue -> bhi-vhub-aue
-  +-- azfw-bhi-sea -> bhi-vhub-sea
-```
-
-Unit 07 secures AUE first and proves policy. Unit 08 centralises policy/governance. Unit 09 adds SEA enforcement and the production routing-intent model.
-
-## Routing Intent — ADDED
-
-Configure the current supported secured-Virtual-WAN routing model for approved Internet and Private traffic requirements.
-
-Before apply:
-
-```text
-capture routes
- -> terraform plan
- -> inspect intended changes
- -> apply
- -> validate effective routes / representative flows
-```
-
-Unexpected route mutation means STOP.
-
-## Public-ingress symmetry — CRITICAL FIX
-
-Do not force every subnet through the firewall.
-
-Preserve the current supported explicit Internet-return design for:
-
-```text
-AUE/SEA snet-appgw
-AUE snet-mfg-app + nat-mfg-aue
-SEA snet-telemetry-dr + nat-telemetry-sea
-```
-
-The exact UDR/service requirements are verified against current Azure documentation during implementation.
-
-## Partner NAT evolution — APPROVED REPLACEMENT
-
-Module 5 Partner app subnets begin with NAT-managed egress.
-
-After secured-hub firewall egress is proven:
-
-```text
-retire nat-partner-aue / nat-partner-sea associations/resources
-snet-partner-app -> secured Virtual WAN -> Azure Firewall -> approved Internet
-```
-
-This is an architectural replacement, not cleanup.
-
-## Direct peering bypass — FIXED
-
-Once centrally inspected Private routing is active and validated, retire:
-
-```text
-Core <-> Manufacturing direct peering
-Core <-> Research global peering
-```
-
-These peerings were correct earlier but would bypass the new inspected-transit policy. VNets/workloads remain intact.
-
-## WAF/tier progression — FIXED
-
-```text
-Front Door Standard
- -> Premium
- -> edge WAF policy
-
-appgw-partner-aue Standard_v2
- -> WAF_v2 + regional policy
-
-appgw-partner-sea Standard_v2
- -> WAF_v2 + regional policy
-```
-
-Terraform plan must prove whether each provider change is in-place or requires controlled migration/replacement.
-
-## Front Door origin bypass — FIXED
-
-Regional Application Gateway origins remain public, but direct arbitrary Internet access is restricted using the current supported combination of:
-
-```text
-AzureFrontDoor.Backend source restriction
-+
-BlueHarbor X-Azure-FDID validation
-```
-
-while preserving required Application Gateway infrastructure traffic.
-
-## Gate 5 verdict
-
-```text
-Story transition                     PASS
-Terraform lifecycle                  PASS
-DDoS target scope                    PASS with current-eligibility verification
-NSG/ASG concrete target              PASS
-Existing functional NSG evolution    PASS
-Azure Firewall topology              PASS — existing Virtual WAN
-AUE/SEA firewall progression         PASS
-Routing Intent                       PASS
-Public App Gateway symmetry          PASS with explicit exception
-Public Load Balancer symmetry        PASS with explicit NAT/Internet exception
-SEA telemetry outbound               PASS — nat-telemetry-sea added
-Partner NAT evolution                PASS — intentional replacement
-Direct peering bypass                PASS — retire after secured path verified
-Front Door managed-WAF tier          PASS — Premium progression
-Regional Application Gateway WAF     PASS — WAF_v2 progression
-Origin bypass restriction            PASS
-Existing applications                PASS — preserved
-```
+Partner backend NAT egress is intentionally replaced by firewall egress. Telemetry NAT remains for public Load Balancer symmetry. Direct Module 1 peerings are retired once they would bypass centrally inspected private transit.
 
 ---
 
 # Gate 6 — Module 6 -> Module 7
 
+**Status:** PASS
+
+## Problem resolved
+
+The original Module 7 described generic "Storage / SQL / App Service" possibilities and optional Private Link Service/App Service integration. That was too ambiguous for a cumulative build.
+
+Gate 6 fixes exact workloads, subnets, DNS ownership and migration paths.
+
+## Service Endpoint target — FIXED
+
+Manufacturing uses the existing data subnet:
+
+```text
+snet-mfg-data 10.20.2.0/24
+ -> Microsoft.Storage service endpoint
+ -> restricted Azure Storage archive account
+ -> Storage service endpoint policy where supported
+```
+
+Do not use `snet-mfg-app`; that subnet carries the public telemetry Load Balancer service and has different routing constraints.
+
+## Azure SQL Private Endpoint target — FIXED
+
+Partner AUE adds:
+
+```text
+snet-private-endpoints 10.40.3.0/24
+```
+
+Canonical PaaS target:
+
+```text
+Azure SQL logical server + Partner database
+ -> SQL Private Endpoint
+ -> privatelink.database.windows.net
+```
+
+After private application/hybrid validation, disable SQL public network access according to the current service model.
+
+## App Service VNet Integration — MADE REAL
+
+Partner `/orders` migrates to App Service.
+
+Add:
+
+```text
+snet-appsvc-integration 10.40.4.0/26
+```
+
+with the current required App Service subnet delegation.
+
+Flow:
+
+```text
+Application Gateway WAF_v2
+ -> App Service Private Endpoint
+ -> App Service `/orders`
+ -> VNet Integration
+ -> SQL Private Endpoint
+```
+
+This preserves the distinction between App Service outbound VNet Integration and private inbound/service reachability via Private Endpoint.
+
+## Private Link Service — MADE REAL
+
+Reuse:
+
+```text
+lb-telemetry-aue Standard
+TCP/9000
+NIC-backed backend membership
+```
+
+Provider addition:
+
+```text
+snet-pls-nat 10.20.3.0/27
+pls-telemetry-aue
+```
+
+Consumer addition:
+
+```text
+bhi-vnet-core-aue
+snet-private-endpoints 10.10.20.0/24
+consumer PE -> pls-telemetry-aue
+```
+
+Use `services.blueharbor.internal` for the BlueHarbor-owned private service naming path.
+
+Brisbane/Perth consume the service through the existing hybrid network and Core DNS resolver path.
+
+## Private DNS / hybrid forwarding — FIXED
+
+Private zones include the current service-specific zones such as:
+
+```text
+privatelink.database.windows.net
+privatelink.azurewebsites.net
+```
+
+Hybrid DNS uses the existing Core DNS Private Resolver. For Azure SQL, on-premises conditional forwarding targets the appropriate public service namespace (for example `database.windows.net`) toward Azure so Azure DNS can follow the CNAME into the linked private zone.
+
+## PE routing in secured Virtual WAN — FIXED
+
+Private Endpoint subnets use the current network-policy mode required for NSG/route-table enforcement and symmetric hybrid routing.
+
+Do not claim Azure Firewall automatically sees same-VNet Private Endpoint traffic. Same-VNet flows require explicit local subnet/NSG/UDR reasoning.
+
+For branch/on-premises -> PE flows, validate route and return-path behaviour through the secured Virtual WAN.
+
+## Front Door origin privacy — ADDED
+
+Module 6 left Front Door Premium with hardened public Application Gateway origins. Module 7 progresses to Private Link.
+
+Add:
+
+```text
+AUE snet-appgw-pl 10.40.5.0/27
+SEA snet-appgw-pl 10.50.3.0/27
+```
+
+Migration:
+
+```text
+public origin group
+ -> create private-link origin group
+ -> approve AUE/SEA private connections
+ -> validate health
+ -> switch route
+ -> validate end-to-end
+ -> retire public origin data path after rollback window
+```
+
+Do not mix public and Private-Link-enabled origins in a single origin group when current service behaviour does not support that combination.
+
+## Canonical Module 7 address delta
+
+```text
+CORE AUE
+10.10.20.0/24   snet-private-endpoints
+
+MFG AUE
+10.20.3.0/27    snet-pls-nat
+
+PARTNER AUE
+10.40.3.0/24    snet-private-endpoints
+10.40.4.0/26    snet-appsvc-integration
+10.40.5.0/27    snet-appgw-pl
+
+PARTNER SEA
+10.50.3.0/27    snet-appgw-pl
+```
+
+No new VNet/hub is introduced.
+
+## Gate 6 verdict
+
+```text
+Story handoff                         PASS
+Service Endpoint target               PASS — Manufacturing data -> Storage
+Service endpoint policy               PASS — Storage-specific design
+Private Endpoint target               PASS — Azure SQL
+Private Endpoint subnet               PASS
+Secured-vWAN PE routing               PASS with network-policy/route validation
+Hybrid PE DNS                         PASS
+SQL public exposure                   PASS — disable after private proof
+App Service VNet Integration          PASS — real `/orders` modernization
+App Service integration subnet        PASS
+Private Link Service                  PASS — existing telemetry LB
+PLS NAT subnet                        PASS
+Module 4 LB compatibility             PASS — NIC-backed pool contract
+PLS hybrid/on-prem integration        PASS — Core consumer PE
+Front Door Private Link               PASS — private AppGW origin migration
+Terraform continuity                  PASS
+```
+
+---
+
+# Gate 7 — Module 7 -> Module 8
+
 **Status:** NEXT
 
 Audit next:
 
-- which exact PaaS services Partner Hub and Manufacturing will consume;
-- where service endpoints are used versus where private endpoints are used;
-- whether private endpoints belong in Partner/Manufacturing/Core and which dedicated subnets/CIDRs are required;
-- how private DNS zones link into the existing Core DNS Private Resolver/hybrid-DNS design;
-- how Brisbane/Perth/ExpressRoute/VPN clients reach private endpoints through the now-secured Virtual WAN;
-- whether service endpoint policies are practical against the chosen Storage service;
-- whether Private Link Service reuses the real Module 4 Standard Load Balancer and what producer/consumer topology is justified;
-- whether App Service VNet Integration is needed at all or remains a comparison concept;
-- how Module 7 private access interacts with Azure Firewall routing, NSGs and the removed direct peerings.
+- which exact resources receive diagnostic settings and where logs/metrics land;
+- whether one or multiple Log Analytics workspaces are justified;
+- how Azure Monitor Network Insights represents the real multi-hub estate;
+- exact Connection Monitor source/destination pairs across VNet, branch, PaaS PE and public service paths;
+- where VNet flow logs are enabled and how Traffic Analytics is connected;
+- how Network Watcher automatic regional enablement is represented in Terraform without duplicate-resource conflicts;
+- which Load Balancer is used by the Microsoft monitoring exercise;
+- alert rules for backend health, firewall/network conditions and key private-path failures;
+- whether DDoS, WAF, Firewall, Front Door, Application Gateway, Private Endpoint and DNS evidence all land in an observable operating model;
+- how the final incident/capstone proves troubleshooting across the complete cumulative environment.

@@ -10,6 +10,7 @@ Expected Terraform delta:
 ```text
 existing snet-mfg-app
 + telemetry backend compute/NICs
++ NIC-backed Load Balancer backend-pool membership
 + minimal functional NSG
 + Standard public IP
 + Standard public Load Balancer
@@ -17,6 +18,8 @@ existing snet-mfg-app
 ```
 
 Do not build a fresh VNet or a separate Terraform root.
+
+The NIC-backed backend membership is an intentional forward dependency: Module 7 will reuse `lb-telemetry-aue` as the provider Load Balancer for a real Private Link Service.
 
 ## Deliberate failure
 

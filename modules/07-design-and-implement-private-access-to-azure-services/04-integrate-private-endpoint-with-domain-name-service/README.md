@@ -1,52 +1,45 @@
 # Unit 04 — Integrate private endpoint with Domain Name Service
 
-**BlueHarbor chapter:** Make existing DNS return the private service path  
+**BlueHarbor chapter:** Extend the existing DNS architecture so private paths are actually used  
 **Status:** NOT STARTED
 
-## Business event
+Private Endpoint provisioning is not enough. Clients must resolve the service name to the intended private IP.
 
-A Private Endpoint can exist and still fail the intended architecture if clients resolve the service name to the wrong destination.
-
-## Mental model
+## Canonical private zones/names
 
 ```text
-client
-  |
-DNS query
-  |
-existing BlueHarbor DNS architecture
-  |
-Private DNS / appropriate resolution path
-  |
-private endpoint IP
-  |
-Private Endpoint
+Azure SQL
+privatelink.database.windows.net
+
+App Service Private Endpoint
+privatelink.azurewebsites.net
+
+BlueHarbor-owned telemetry PLS consumer
+services.blueharbor.internal
 ```
 
-## Progressive dependency
+Link the required private DNS zones to the VNets that must resolve them, including Partner AUE and Core according to the final design.
 
-This unit **extends Module 1 DNS**. Do not create an unrelated DNS environment solely for Private Endpoint testing.
+## Hybrid DNS path
 
-Hybrid clients must also use the DNS path already designed for BlueHarbor's on-premises connectivity.
+Reuse the Core DNS Private Resolver. Do not build another DNS server.
 
-## Key failure
+For Azure SQL hybrid resolution, configure on-premises DNS forwarding for the appropriate public service namespace, for example:
 
 ```text
-Private Endpoint       healthy
-routing                valid
-private IP             present
-DNS answer             wrong/public path
+database.windows.net
 ```
 
-The correct troubleshooting target is name resolution, not random endpoint recreation.
+toward the BlueHarbor/Azure resolver path so Azure DNS can follow the service CNAME to `privatelink.database.windows.net`.
 
-## Explain-back
+## Failure model
 
-Be able to distinguish:
+```text
+PE exists + route works + DNS returns public target
+ -> wrong network path
 
-- endpoint provisioning;
-- IP reachability;
-- DNS resolution;
-- service access policy.
+Azure workload resolves private + Brisbane resolves public
+ -> hybrid DNS forwarding/link issue
+```
 
-A failure in any one can look like "Private Endpoint is broken" from the application perspective.
+Troubleshoot name resolution separately from routing and endpoint health.

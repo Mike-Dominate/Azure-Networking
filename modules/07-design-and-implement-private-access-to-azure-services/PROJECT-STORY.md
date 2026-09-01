@@ -1,410 +1,348 @@
 # BlueHarbor Industries — Module 7 Project Story
 
-## Project — Remove unnecessary public PaaS exposure
+## Project — Remove unnecessary public service paths
 
 **Microsoft Learn module:** Design and implement private access to Azure Services  
-**Company:** BlueHarbor Industries (BHI)  
-**Terraform model:** extend the same cumulative `blueharbor/terraform/` stack  
-**Status:** NOT STARTED
+**Status:** NOT STARTED  
+**Terraform model:** extend the same cumulative `blueharbor/terraform/` state
 
 ## Starting point from Module 6
 
-BlueHarbor already has a progressively built enterprise network:
+BlueHarbor already has:
 
 ```text
-Module 1 -> VNets, DNS, peering, routing, NAT
-Module 2 -> hybrid VPN / remote connectivity / Virtual WAN concepts
-Module 3 -> ExpressRoute enterprise-connectivity design
-Module 4 -> regional L4 availability and global DNS steering
-Module 5 -> Application Gateway and Front Door for HTTP(S)
-Module 6 -> Defender posture, DDoS, NSGs/ASGs, Azure Firewall, secured hub and WAF
+secured Virtual WAN / routing intent
+AUE + SEA Azure Firewall
+VPN / ExpressRoute / hybrid routing
+Core DNS Private Resolver
+DDoS / NSG / ASG
+Front Door Premium + edge WAF
+AUE + SEA Application Gateway WAF_v2
+public telemetry Load Balancers
 ```
 
-The network and application-delivery paths are now controlled, but application teams begin replacing self-managed infrastructure with Azure PaaS services.
+The new question is not "how do we build another network?"
 
-Examples include:
+It is:
 
-```text
-Azure Storage
-Azure SQL / data services
-App Service / managed application components
-```
-
-The next security review asks:
-
-> If these services are consumed by BlueHarbor's private workloads, why should the network path depend on a publicly reachable service endpoint?
-
-Module 7 therefore changes the **service-access boundary** while preserving the architecture already built.
+> Which managed/service paths should remain public, which should trust a subnet identity, and which should be represented by private IP addresses inside BlueHarbor?
 
 ---
 
-## Chapter 01 — Introduction: Our network is private, our PaaS is not
+## Chapter 01 — Introduction: Azure-hosted is not automatically private
 
-BlueHarbor's Partner Hub and Manufacturing workloads begin using managed Azure services.
-
-Conceptually:
+Three requirements appear:
 
 ```text
-Partner Hub -> Azure SQL public service endpoint
-Manufacturing -> Azure Storage public service endpoint
+Manufacturing archive
+ -> approved subnet may use Azure Storage
+
+Partner Hub data
+ -> application and hybrid clients require private-addressed Azure SQL
+
+BlueHarbor telemetry service
+ -> selected consumers should reach BlueHarbor's own service through Private Link
 ```
 
-The resources are in Azure, but that does not automatically mean they are members of BlueHarbor's VNets.
-
-### Core lesson
-
-```text
-resource hosted in Azure
-!=
-resource privately addressed inside my VNet
-```
-
-### Business requirement
-
-Choose an appropriate private-access pattern based on the real requirement rather than using every private networking feature everywhere.
+These requirements intentionally use different technologies.
 
 ---
 
-## Chapter 02 — Service endpoints: Manufacturing restricts Storage access
+## Chapter 02 — Service endpoints: Manufacturing archive access
 
-The existing Manufacturing application subnet must write production archives to Azure Storage.
-
-Security requires:
-
-> Only approved BlueHarbor subnets should be able to use this Storage account through the intended network path.
-
-This introduces virtual network service endpoints.
+Use the existing Module 6 data subnet, not the public telemetry subnet:
 
 ```text
-existing Manufacturing subnet
-        |
-  service endpoint
-        |
-        v
-Azure Storage
+bhi-vnet-mfg-aue
+  snet-mfg-data 10.20.2.0/24
 ```
 
-### Critical mental model
-
-A service endpoint does **not** place a private endpoint NIC or private IP for the service into the subnet.
-
-Instead, it extends the subnet identity to supported Azure services so service-side network restrictions can trust the approved VNet/subnet path.
-
-### Design question
+Add:
 
 ```text
-Do I need:
-"Only this subnet should be permitted to use the service"
-
-or
-
-"This service should be represented by a private IP in my network"?
+Microsoft.Storage service endpoint
+Azure Storage archive account
+Storage network/VNet restriction
+Storage service endpoint policy where supported/appropriate
 ```
 
-The first can point toward a service endpoint. The second points toward Private Endpoint/Private Link.
+The service endpoint does not create a private NIC or private Storage IP in the VNet. It allows the supported service to recognise the approved subnet identity and enforce service-side restrictions.
 
-### Study-guide depth
-
-Attach service endpoint policies here where required. The goal is to understand how BlueHarbor can constrain supported service-endpoint traffic more deliberately rather than treating every service endpoint as equivalent.
+This keeps the lesson distinct from Private Endpoint.
 
 ---
 
-## Chapter 03 — Private Endpoint and Private Link: Partner Hub data becomes private-addressed
+## Chapter 03 — Private Link Service and Private Endpoint: make both provider and consumer real
 
-The Partner Hub now consumes a sensitive managed data service.
+### BlueHarbor-owned provider service
 
-Security strengthens the requirement:
-
-> The service should be reachable using a private IP from the BlueHarbor network and from approved hybrid clients through the connectivity already built.
-
-This introduces a private endpoint.
+Reuse the existing Module 4 service:
 
 ```text
-Partner Hub network
-      |
-      v
-Private Endpoint
-10.x.x.x
-      |
-Azure Private Link
-      |
-      v
-Azure PaaS service
+lb-telemetry-aue
+Standard public Load Balancer
+TCP/9000
+NIC-backed backend membership
 ```
 
-A private endpoint is represented by a network interface with a private IP from the selected VNet/subnet and connects privately to the supported service through Azure Private Link.
-
-### Earlier modules now matter
-
-The private endpoint does not create a new connectivity universe. Approved Brisbane/Perth/on-premises paths should use the hybrid network already designed in Modules 2 and 3.
+Add to Manufacturing:
 
 ```text
-on-premises client
-      |
-VPN / ExpressRoute design
-      |
-existing Azure routing
-      |
-Private Endpoint
-      |
-Azure PaaS
+snet-pls-nat 10.20.3.0/27
+privateLinkServiceNetworkPolicies = Disabled
+
+pls-telemetry-aue
+ -> existing lb-telemetry-aue frontend
 ```
 
-The module must therefore test route and DNS dependencies rather than treating the private endpoint as an isolated object.
+The telemetry backend NSG must allow the required PLS NAT-source path on TCP/9000 according to the current service behaviour.
 
-### Private Link Service extension
+### BlueHarbor consumer
 
-Where appropriate, BlueHarbor can also publish its **own** service privately.
-
-The regional service created around Azure Load Balancer in Module 4 provides the story connection:
+Add to Core:
 
 ```text
-existing BlueHarbor service
-        |
-Standard Load Balancer
-        |
-Private Link Service
-        |
-consumer Private Endpoint
+bhi-vnet-core-aue
+  snet-private-endpoints 10.10.20.0/24
 ```
 
-This demonstrates that Private Link is not limited to Microsoft-managed PaaS services.
+Create a consumer Private Endpoint from Core to `pls-telemetry-aue`.
+
+Use a BlueHarbor private DNS name, for example:
+
+```text
+telemetry.services.blueharbor.internal
+```
+
+mapped to the Core consumer Private Endpoint IP through the existing BlueHarbor private-DNS architecture.
+
+### Hybrid proof
+
+```text
+Brisbane / Perth client
+  -> existing VPN / ExpressRoute
+  -> secured Virtual WAN
+  -> Core consumer PE
+  -> Private Link
+  -> pls-telemetry-aue
+  -> existing telemetry Load Balancer/backends
+```
+
+This fulfills the private consumption story without inventing a second telemetry application.
 
 ---
 
-## Chapter 04 — DNS: A private IP is useless if clients resolve the wrong destination
+## Chapter 04 — DNS: make private names resolve through the existing architecture
 
-Private access becomes operational only when name resolution returns the correct private destination.
+Private Endpoint resources are useful only when clients resolve the intended private address.
 
-```text
-Partner Hub
-    |
-DNS query
-    |
-BlueHarbor DNS architecture
-    |
-Private DNS zone / appropriate DNS path
-    |
-private endpoint IP
-    |
-Private Endpoint
-    |
-Azure PaaS
-```
-
-### Module 1 returns directly
-
-DNS is not recreated in Module 7. We extend the name-resolution architecture built earlier.
-
-A classic failure is:
+Canonical private DNS requirements include:
 
 ```text
-Private Endpoint exists
-Private IP exists
-routing is valid
+Azure SQL
+privatelink.database.windows.net
 
-BUT
+App Service private endpoint
+privatelink.azurewebsites.net
 
-client DNS returns the public path
+BlueHarbor-owned PLS consumer
+services.blueharbor.internal
 ```
 
-The private-network design then fails its intended objective even though the endpoint resource itself looks healthy.
+Link service-specific private DNS zones to the VNets that must resolve them, including Partner AUE and Core where required by the design.
 
-### Hybrid DNS test
+### Hybrid forwarding
 
-An Azure workload may resolve the private endpoint correctly while an on-premises client does not.
+For on-premises clients, keep using the Core DNS Private Resolver introduced earlier.
 
-That should drive troubleshooting toward the hybrid DNS forwarding/resolution path instead of random changes to the private endpoint.
+For a service such as Azure SQL, conditional forwarding should target the appropriate public service namespace (for example `database.windows.net`) toward the Azure resolver path, allowing Azure DNS to follow the service CNAME into the private zone.
+
+Do not create an unrelated DNS server merely for this module.
+
+### Required failures
+
+```text
+PE healthy + wrong DNS answer     -> private design fails
+Azure client resolves privately
+but Brisbane does not             -> hybrid DNS path problem
+```
 
 ---
 
-## Chapter 05 — Exercise: Restrict PaaS with service endpoints
+## Chapter 05 — Exercise: Manufacturing Storage service endpoint
 
-Microsoft's service-endpoint exercise becomes a BlueHarbor Manufacturing change to the **existing** Terraform environment.
-
-Expected Terraform delta:
+Preserve Microsoft's exercise objective but implement the real cumulative delta:
 
 ```text
-existing Manufacturing subnet
-        +
-Azure Storage
-        +
-service endpoint configuration
-        +
-service-side network restriction
-        +
-service endpoint policy where justified
+existing snet-mfg-data
+  + Microsoft.Storage service endpoint
+
+new Storage archive account
+  + default-deny / public network firewall posture required by the exercise
+  + allow approved snet-mfg-data path
+  + service endpoint policy to approved Storage resource where supported
 ```
 
-The plan should preserve all earlier infrastructure.
-
-### Validation
-
-Prove both sides:
+Validation:
 
 ```text
-approved Manufacturing source -> Storage   ALLOWED
-unapproved source              -> Storage   DENIED
+approved data workload -> Storage   ALLOW
+unapproved source       -> Storage   DENY
 ```
 
-Do not accept `terraform apply` as proof that the network restriction behaves correctly.
-
-### Deliberate failure
-
-Permit the wrong subnet or omit the expected service-side network rule and determine why access behaviour does not match policy.
-
-Permanent corrections must end in Terraform.
+Do not treat a successful apply as proof.
 
 ---
 
-## Chapter 06 — Exercise: Create a private endpoint
+## Chapter 06 — Exercise: Partner Hub private data and App Service modernization
 
-Microsoft's PowerShell exercise objective is preserved, but BlueHarbor implements the persistent infrastructure through the cumulative Terraform root.
-
-The existing Partner Hub/data architecture gains:
+### Canonical AUE subnet additions
 
 ```text
-existing application network
-        +
-managed PaaS resource
-        +
-Private Endpoint
-        +
-private DNS integration
-        +
-appropriate public-network restriction
+bhi-vnet-partner-aue 10.40.0.0/16
+
+snet-private-endpoints   10.40.3.0/24
+snet-appsvc-integration  10.40.4.0/26
+snet-appgw-pl            10.40.5.0/27
 ```
 
-Public access behaviour is service-specific. A private endpoint alone must not be assumed to disable every possible public path; configure the target service according to its own network-access model and the BlueHarbor requirement.
+`snet-appsvc-integration` is delegated to the current App Service integration service (`Microsoft.Web/serverFarms` in the expected model) and is not shared with Private Endpoints.
 
-### App Service VNet Integration
+Private Endpoint network policies are enabled where required for the secured Virtual WAN/NSG/route-table design. App Gateway Private Link provider-side subnets use the current required Private Link service policy setting.
 
-Where the Microsoft module/study guide requires App Service VNet integration, use the existing Partner Hub story:
+### Azure SQL becomes the canonical managed-data target
+
+Create:
 
 ```text
-App Service / managed app
-        |
-VNet Integration
-        |
-existing BlueHarbor VNet
-        |
-Private Endpoint
-        |
-Azure SQL / PaaS
+Azure SQL logical server
+Partner database
+SQL Private Endpoint in snet-private-endpoints
+private DNS: privatelink.database.windows.net
 ```
 
-Keep the distinction clear:
+Migration sequence:
+
+```text
+create SQL
+ -> add PE
+ -> prove Partner private DNS + connectivity
+ -> prove Brisbane/private hybrid resolution and route where required
+ -> disable SQL public network access
+ -> prove unintended public path is gone
+```
+
+A Private Endpoint alone is not assumed to disable the public service path.
+
+### `/orders` moves to App Service
+
+Modernize the Partner Hub `/orders` backend:
+
+```text
+Application Gateway WAF_v2
+  -> App Service Private Endpoint
+  -> App Service orders component
+  -> VNet Integration through snet-appsvc-integration
+  -> SQL Private Endpoint
+  -> Azure SQL
+```
+
+Add App Service private DNS using the current service-specific private zone, including `privatelink.azurewebsites.net` where applicable.
+
+After Application Gateway reaches the App Service through the private endpoint and application health is proven, disable unnecessary App Service public network access according to the current service model.
+
+Mental distinction:
 
 ```text
 VNet Integration
--> how supported app compute sends traffic through/into the VNet path
+ -> App Service outbound access into the VNet
 
 Private Endpoint
--> how a supported service is privately reachable through a private IP
+ -> private inbound/service reachability through a private IP
 ```
 
-### Failure tests
+### Front Door origin path becomes private
 
-Useful failures include:
+Module 6 already upgraded Front Door to Premium and App Gateways to WAF_v2.
 
-1. private endpoint healthy but DNS resolves the public path;
-2. Azure workload resolves privately but on-premises client does not;
-3. private endpoint works but unintended public network access remains available;
-4. incorrect subnet/DNS link prevents the expected application path.
+Add provider-side Application Gateway Private Link subnets:
 
-Each test should isolate whether the fault is DNS, route/connectivity, service policy or endpoint configuration.
+```text
+AUE: snet-appgw-pl 10.40.5.0/27
+SEA: snet-appgw-pl 10.50.3.0/27
+```
+
+Then migrate Front Door safely:
+
+```text
+existing public origin group
+  -> create new Private-Link-enabled AUE/SEA origin group
+  -> approve private connections
+  -> validate both origins healthy
+  -> switch Front Door route to private origin group
+  -> validate end-to-end traffic
+  -> retire public origin data path when rollback window closes
+```
+
+Do not mix public and Private-Link-enabled origins in one origin group when current Azure Front Door behaviour does not support that design.
+
+Module 6's public-origin FDID/source restrictions remain useful during migration and as protection for any retained public regional frontend.
+
+### Secured Virtual WAN nuance
+
+Do not say "the firewall sees all Private Endpoint traffic." Same-VNet Partner App -> SQL PE traffic may remain local unless explicitly routed through another path. Use Private Endpoint subnet network policies, NSGs and route-table design consciously.
+
+For on-premises/branch -> PE flows, verify the secured Virtual WAN route and return path so `/32` endpoint routes do not create asymmetry.
 
 ---
 
-## Chapter 07 — Summary: BlueHarbor private-access architecture review
+## Chapter 07 — Private-access architecture review
 
-By the end of Module 7, BlueHarbor should understand several distinct patterns rather than using "private access" as one vague feature.
+Final patterns:
 
 ```text
 Service Endpoint
--> approved VNet/subnet identity can access a supported Azure service
+ -> Manufacturing subnet identity -> restricted Storage
 
 Private Endpoint
--> specific supported service is represented by a private IP in a VNet
-
-Private Link
--> private connectivity technology used by private endpoints
-
-Private Link Service
--> publish BlueHarbor's own supported service privately
+ -> Azure SQL / App Service represented by private IPs
 
 App Service VNet Integration
--> supported App Service outbound connectivity into a VNet path
+ -> App Service outbound into Partner VNet
+
+Private Link Service
+ -> publish BlueHarbor-owned telemetry privately
+
+Front Door Private Link
+ -> global Front Door Premium reaches regional App Gateway origins privately
 ```
 
-## Cumulative end state
-
-Conceptually:
+## Canonical Module 7 address delta
 
 ```text
-GLOBAL / WEB
-Internet
-  |
-Front Door + WAF
-  |
-Application Gateway
-  |
-Partner Hub
-  |
-App Service / workloads
-  |
-VNet Integration / existing network
-  |
-Private DNS
-  |
-Private Endpoint
-  |
-Azure Private Link
-  |
-Azure PaaS data service
+CORE AUE
+10.10.20.0/24   snet-private-endpoints
 
-MANUFACTURING
-existing Manufacturing subnet
-  |
-Service Endpoint
-  |
-restricted Azure Storage
+MFG AUE
+10.20.3.0/27    snet-pls-nat
 
-BLUEHARBOR PRIVATE SERVICE
-existing Module 4 Load Balancer
-  |
-Private Link Service
-  |
-consumer Private Endpoint
+PARTNER AUE
+10.40.3.0/24    snet-private-endpoints
+10.40.4.0/26    snet-appsvc-integration
+10.40.5.0/27    snet-appgw-pl
 
-HYBRID
-Brisbane / Perth / approved clients
-  |
-existing VPN / ExpressRoute / routing / DNS
-  |
-Private Endpoint
+PARTNER SEA
+10.50.3.0/27    snet-appgw-pl
 ```
 
-All of this remains part of the same Terraform codebase/state lineage created earlier.
-
-## Architecture-board questions
-
-The learner must be able to explain:
-
-- why an Azure PaaS resource is not automatically inside a VNet;
-- service endpoint versus private endpoint;
-- Private Link versus Private Link Service;
-- why DNS is fundamental to private endpoint designs;
-- how on-premises clients reach/resolve private endpoints through existing hybrid architecture;
-- why a private endpoint does not automatically imply that every public access path is disabled;
-- App Service VNet Integration versus Private Endpoint;
-- how the Module 4 Load Balancer can participate in a Private Link Service design;
-- how to determine whether a failure is DNS, routing, service policy or private endpoint configuration.
+No new VNet and no new transit hub are introduced.
 
 ## Handoff to Module 8
 
-The environment is now highly capable and highly interconnected. Operations raises the final programme problem:
+The estate now contains hybrid/private DNS, secured hub routing, public and private application paths, Private Endpoints, Private Link Service, service endpoints, WAF and multiple regions.
 
-> Configuration tells us what the network should do. How do we prove what this complete environment is actually doing in production?
+Operations asks:
 
-That leads directly into Module 8 — Design and implement network monitoring.
+> Configuration says what should happen. How do we prove what this complete network is actually doing?
+
+That is Module 8.

@@ -34,3 +34,9 @@ Use a TCP/9000 health probe so the practical remains explicitly non-HTTP(S).
 The existing Module 1 NAT association on `snet-mfg-app` remains the explicit backend-initiated outbound path.
 
 Add only the minimal NSG policy required for approved TCP/9000 service traffic and Azure Load Balancer probe traffic. Module 6 provides the deeper security design later.
+
+## Gate 6 forward-compatibility contract
+
+`lb-telemetry-aue` must use **NIC-backed backend-pool membership**, not the Load Balancer IP-address backend-pool model.
+
+Reason: Module 7 will publish this same BlueHarbor-owned telemetry service through Azure Private Link Service. The Module 4 design must therefore be compatible with that later Private Link Service dependency instead of forcing a rebuild.

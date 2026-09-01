@@ -12,7 +12,7 @@ One Terraform state lineage.
 Each unit = previous deployed estate + next requirement.
 ```
 
-No routine destroy between units/modules. Persistent infrastructure is Terraform-managed; CLI/Portal/protocol/diagnostic tools validate and troubleshoot.
+No routine destroy between units/modules. Persistent infrastructure is Terraform-managed; CLI/Portal/PowerShell/protocol/diagnostic tools validate and troubleshoot.
 
 ## Architecture audit status
 
@@ -22,105 +22,98 @@ Gate 2  M2 -> M3   PASS
 Gate 3  M3 -> M4   PASS
 Gate 4  M4 -> M5   PASS
 Gate 5  M5 -> M6   PASS
-Gate 6  M6 -> M7   NEXT
-Gate 7  M7 -> M8   PENDING
+Gate 6  M6 -> M7   PASS
+Gate 7  M7 -> M8   NEXT
 ```
 
 See [`ARCHITECTURE-DEPENDENCY-AUDIT.md`](ARCHITECTURE-DEPENDENCY-AUDIT.md).
 
-## Approved architecture through Module 5
+## Approved architecture through Module 6
+
+The estate includes:
 
 ```text
-M1
-Core / Manufacturing / Research VNets
-DNS / routing / initial direct peerings
-nat-mfg-aue
-
-M2
-classic VPN learning
--> Virtual WAN production transit
-bhi-vhub-aue 10.200.0.0/22
-
-M3
-ExpressRoute added to AUE hub
-
-M4
-Telemetry TCP/9000
-AUE lb + nat-mfg-aue
-SEA lb + nat-telemetry-sea
-Traffic Manager
-
-M5
-Partner Hub
-AUE/SEA Partner VNets
-AUE/SEA Application Gateway Standard_v2
-activate bhi-vhub-sea 10.200.4.0/22
-Front Door Standard
-```
-
-## Approved Module 6 security evolution
-
-Distributed controls:
-
-```text
-DDoS Network Protection plan
-NSG / ASG segmentation
-Manufacturing test data target
-Partner backend segmentation
-```
-
-Central transit security:
-
-```text
-fwpol-bhi-global
-  |
-  +-- azfw-bhi-aue -> bhi-vhub-aue
-  +-- azfw-bhi-sea -> bhi-vhub-sea
-```
-
-Production routing intent secures approved Internet/private transit.
-
-Public-return-path exceptions remain for:
-
-```text
-AUE/SEA Application Gateway subnets
-AUE telemetry subnet + nat-mfg-aue
-SEA telemetry subnet + nat-telemetry-sea
-```
-
-Partner backend egress evolves from:
-
-```text
-nat-partner-aue / nat-partner-sea
-```
-
-to:
-
-```text
-snet-partner-app -> secured Virtual WAN -> Azure Firewall -> approved Internet
-```
-
-The Partner NAT resources/associations are retired after the firewall path is proven.
-
-Direct Module 1 peerings are retired after secured private transit is proven because they would bypass central inspection.
-
-Partner Hub web security evolves to:
-
-```text
+Core / Manufacturing / Research / Partner VNets
+AUE + SEA Virtual WAN hubs
+VPN + ExpressRoute
+secured-hub Azure Firewalls + central policy
+DDoS / NSG / ASG
+AUE + SEA telemetry Load Balancers + Traffic Manager
 Front Door Premium + edge WAF
-        |
-AUE / SEA Application Gateway WAF_v2
-        |
-Partner backends
+AUE + SEA Application Gateway WAF_v2
+Core DNS Private Resolver / hybrid DNS
 ```
 
-Regional origins restrict direct arbitrary Internet bypass using the current supported Front Door backend-source restriction plus BlueHarbor `X-Azure-FDID` validation.
+## Approved Module 7 private-access evolution
+
+Manufacturing Storage:
+
+```text
+snet-mfg-data
+ -> Microsoft.Storage service endpoint
+ -> restricted Storage archive account
+ -> Storage service endpoint policy where supported
+```
+
+Partner AUE:
+
+```text
+snet-private-endpoints   10.40.3.0/24
+snet-appsvc-integration  10.40.4.0/26
+snet-appgw-pl            10.40.5.0/27
+```
+
+Canonical path:
+
+```text
+Application Gateway WAF_v2
+ -> App Service Private Endpoint
+ -> `/orders` App Service
+ -> VNet Integration
+ -> SQL Private Endpoint
+ -> Azure SQL
+```
+
+SQL/App Service private DNS extends the existing Core/Partner DNS design. SQL public network access is disabled after the private path is proven.
+
+BlueHarbor-owned Private Link Service:
+
+```text
+lb-telemetry-aue
+ -> pls-telemetry-aue
+ -> Core consumer PE in 10.10.20.0/24
+```
+
+Provider NAT subnet:
+
+```text
+snet-pls-nat 10.20.3.0/27
+```
+
+Module 4 AUE Load Balancer uses NIC-backed backend membership for this dependency.
+
+Front Door origin privacy:
+
+```text
+Front Door Premium
+ -> Private Link
+ -> AUE / SEA Application Gateway WAF_v2
+```
+
+Provider-side subnets:
+
+```text
+AUE 10.40.5.0/27
+SEA 10.50.3.0/27
+```
+
+Migrate through a new private-link origin group, validate, then switch the Front Door route. Keep Module 6 public-origin restrictions during migration/rollback as required.
 
 ## Current programme phase
 
 - **Curriculum execution position:** Module 1 Unit 01 remains the first teaching/build unit.
 - **Story design:** COMPLETE.
-- **Architecture audit:** Gates 1–5 PASS; Gate 6 NEXT.
+- **Architecture audit:** Gates 1–6 PASS; Gate 7 NEXT.
 - **Terraform build:** NOT STARTED.
 - **Azure deployment:** NOT STARTED for the new BlueHarbor build.
 
@@ -131,7 +124,7 @@ Do not start implementation yet.
 Proceed with:
 
 ```text
-Gate 6 — Module 6 -> Module 7
+Gate 7 — Module 7 -> Module 8
 ```
 
-Audit only that transition, fix conflicts, obtain approval, then move to Gate 7.
+Audit the final transition, fix conflicts, obtain approval, then perform the whole-programme audit closeout before starting Module 1 Unit 01.

@@ -1,52 +1,53 @@
 # Unit 03 — Define Private Link Service and private endpoint
 
-**BlueHarbor chapter:** Give sensitive services a private network identity  
+**BlueHarbor chapter:** Publish the existing telemetry service privately and create a real consumer  
 **Status:** NOT STARTED
 
-## Business event
-
-The Partner Hub data tier needs a stronger network-access model: approved BlueHarbor and hybrid clients should reach the managed service through a private IP rather than rely on its public service endpoint.
-
-## Private Endpoint mental model
+## Provider side — reuse Module 4
 
 ```text
-existing BlueHarbor VNet
-        |
-Private Endpoint NIC
-private IP
-        |
-Azure Private Link
-        |
-        v
-supported Azure service
+lb-telemetry-aue
+Standard Load Balancer
+TCP/9000
+NIC-backed backend pool
 ```
 
-A Private Endpoint represents the target supported service through a private IP in the selected VNet/subnet.
-
-## Progressive dependency
-
-The endpoint does not replace Modules 1–3. Routing and hybrid connectivity already exist and must carry approved traffic to the private IP.
+Add:
 
 ```text
-Brisbane / Perth / approved client
-        |
-existing VPN / ExpressRoute design
-        |
-existing Azure routes
-        |
-Private Endpoint
+bhi-vnet-mfg-aue
+  snet-pls-nat 10.20.3.0/27
+
+pls-telemetry-aue
+ -> existing Load Balancer frontend
 ```
 
-## Private Link Service
+Use the current Private Link Service subnet policy requirements, including disabling Private Link Service network policies on the provider NAT subnet when required.
 
-Where appropriate, extend the existing Module 4 regional service:
+The telemetry backend NSG must allow the current documented PLS NAT-source path on TCP/9000.
+
+## Consumer side — Core
+
+Add:
 
 ```text
-existing Standard Load Balancer
-        |
-Private Link Service
-        |
-consumer Private Endpoint
+bhi-vnet-core-aue
+  snet-private-endpoints 10.10.20.0/24
 ```
 
-This demonstrates private consumption of BlueHarbor-owned services without inventing a disconnected application.
+Create a Private Endpoint in Core to `pls-telemetry-aue`.
+
+Private Endpoint network policies are enabled where required by BlueHarbor's secured Virtual WAN/NSG/route-table design.
+
+## Hybrid dependency
+
+```text
+Brisbane / Perth
+ -> VPN / ExpressRoute
+ -> secured Virtual WAN
+ -> Core consumer Private Endpoint
+ -> Private Link Service
+ -> existing telemetry service
+```
+
+This demonstrates that Private Link can publish BlueHarbor-owned services, not just Microsoft PaaS.

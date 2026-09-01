@@ -3,59 +3,62 @@
 **BlueHarbor chapter:** Private-access architecture review  
 **Status:** NOT STARTED
 
-## Final mental model
+## Five distinct patterns
 
 ```text
 Service Endpoint
--> approved VNet/subnet identity can access a supported Azure service
+ -> Manufacturing subnet identity -> restricted Azure Storage
 
 Private Endpoint
--> a supported service is represented by a private IP in a VNet
-
-Private Link
--> private-connectivity technology used by private endpoints
-
-Private Link Service
--> publish an eligible BlueHarbor-owned service privately
+ -> Azure SQL / App Service represented by private IPs in Partner AUE
 
 App Service VNet Integration
--> supported App Service outbound connectivity into a VNet path
+ -> `/orders` App Service outbound into the Partner VNet
+
+Private Link Service
+ -> existing BlueHarbor telemetry service published privately
+
+Front Door Private Link
+ -> Front Door Premium reaches existing regional App Gateway WAF_v2 origins privately
 ```
 
-## Cumulative architecture
-
-By this point the private-access design must use infrastructure created earlier:
+## Canonical address additions
 
 ```text
-existing DNS
-existing VNets/subnets
-existing hybrid connectivity
-existing Module 4 Load Balancer
-existing Partner Hub
-existing security controls
-        |
-        + service endpoints
-        + private endpoints
-        + private DNS integration
-        + VNet integration
-        + Private Link Service where appropriate
+CORE AUE
+snet-private-endpoints   10.10.20.0/24
+
+MFG AUE
+snet-pls-nat             10.20.3.0/27
+
+PARTNER AUE
+snet-private-endpoints   10.40.3.0/24
+snet-appsvc-integration  10.40.4.0/26
+snet-appgw-pl            10.40.5.0/27
+
+PARTNER SEA
+snet-appgw-pl            10.50.3.0/27
 ```
 
-All remain in the same `blueharbor/terraform/` state lineage.
+No new VNet or hub was required.
 
-## Explain-back requirements
+## Hybrid explain-back
 
-Be able to explain:
+Be able to trace:
 
-- service endpoint versus private endpoint;
-- Private Link versus Private Link Service;
-- why DNS is a dependency of private endpoint designs;
-- how hybrid/on-premises clients reach and resolve private endpoints;
-- why private endpoint does not automatically mean all public access is disabled;
-- App Service VNet Integration versus Private Endpoint;
-- how the existing Load Balancer can participate in Private Link Service;
-- how to isolate DNS, routing, endpoint and service-policy failures.
+```text
+Brisbane DNS
+ -> Core DNS Private Resolver
+ -> private zone
+ -> Private Endpoint IP
+ -> secured Virtual WAN route
+ -> service
+```
 
-## Handoff
+and identify when a same-VNet PE flow remains local rather than traversing Azure Firewall.
 
-Operations now has to observe a very large cumulative environment. Module 8 adds monitoring to **this exact estate** rather than creating a toy monitoring environment.
+## Handoff to Module 8
+
+The complete estate now contains public delivery, private delivery, hybrid routing, secured hubs, DNS Private Resolver, service endpoints, Private Endpoints, Private Link Service, WAF and multi-region applications.
+
+Module 8 must monitor **this exact environment** rather than creating a small monitoring demo.

@@ -38,8 +38,12 @@ routes / health probes
 - compare this directly with Module 4 Traffic Manager DNS failover;
 - troubleshoot one route/origin/host configuration error.
 
-## Deliberate security boundary
+## Progressive security/private-access handoff
 
-Application Gateway origins are public in Module 5 so the delivery architecture is visible and testable. Gate 5/Module 6 must decide how to prevent or control direct origin bypass and where WAF enforcement belongs.
+The public-origin model is intentional **at this stage**, not the final programme state.
+
+Module 6 hardens these public origins with WAF and direct-origin restrictions. Module 7 then upgrades the Front Door Premium -> Application Gateway origin path to **Private Link**, using new Application Gateway Private Link subnets while preserving the same regional Application Gateways.
+
+Therefore the Module 5 public origin group is a real intermediate architecture stage, not a disconnected demo and not a permanent assumption.
 
 No teardown follows; Front Door and both regional Partner Hub stacks remain deployed.

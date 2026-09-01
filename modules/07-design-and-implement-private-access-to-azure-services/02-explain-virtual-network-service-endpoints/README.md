@@ -1,39 +1,41 @@
 # Unit 02 — Explain virtual network service endpoints
 
-**BlueHarbor chapter:** Restrict Manufacturing access to Azure Storage  
+**BlueHarbor chapter:** Restrict Manufacturing archive access to Azure Storage  
 **Status:** NOT STARTED
 
 ## Business event
 
-The existing Manufacturing application subnet must write production archives to Azure Storage, but Security wants access restricted to approved BlueHarbor network sources.
+The controlled Manufacturing data service introduced in Module 6 must write archives/backups to Azure Storage.
+
+Use:
+
+```text
+bhi-vnet-mfg-aue
+  snet-mfg-data 10.20.2.0/24
+        |
+Microsoft.Storage service endpoint
+        |
+Azure Storage archive account
+```
+
+Do **not** use the public telemetry subnet for this scenario.
 
 ## Mental model
 
-```text
-existing Manufacturing subnet
-        |
-service endpoint
-        |
-        v
-supported Azure service
-```
+A service endpoint does not create a private endpoint NIC or private service IP in the subnet.
 
-A service endpoint does not create a private endpoint NIC or assign the service a private IP inside the subnet. It enables supported Azure services to recognise/trust the approved VNet/subnet path so service-side network restrictions can be applied.
+It extends supported subnet identity to the service so the service-side network policy can trust only approved network sources.
 
-## Design question
+## BlueHarbor policy
+
+Add a Storage service endpoint policy where the current service/API supports it so `snet-mfg-data` can be constrained to the approved archive Storage resource rather than arbitrary Storage destinations.
+
+## Decision rule
 
 ```text
-"Only approved subnet identity may access the service"
-        -> consider service endpoint
+approved subnet identity + service restriction
+ -> Service Endpoint
 
-"The service must be represented by a private IP in our network"
-        -> consider Private Endpoint
+private IP representing the target service
+ -> Private Endpoint
 ```
-
-## Study-guide depth
-
-Cover service endpoint policies inside this unit where required. Do not create a separate curriculum branch.
-
-## Terraform rule
-
-When implemented in Unit 05, extend the existing Manufacturing subnet definition in the cumulative Terraform stack rather than building another VNet.

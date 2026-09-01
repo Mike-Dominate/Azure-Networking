@@ -3,45 +3,35 @@
 **BlueHarbor chapter:** Apply the Manufacturing Storage restriction  
 **Status:** NOT STARTED
 
-## Microsoft objective, BlueHarbor implementation
+Preserve the Microsoft exercise objective, but apply it to the existing Manufacturing data subnet.
 
-Preserve the Microsoft exercise objective but implement the persistent BlueHarbor change through the existing Terraform root.
-
-Expected incremental change:
+## Terraform delta
 
 ```text
-existing Manufacturing subnet
-        +
-Azure Storage
-        +
-service endpoint configuration
-        +
-service-side network restriction
-        +
-service endpoint policy where justified
+existing snet-mfg-data 10.20.2.0/24
+  + Microsoft.Storage service endpoint
+
+new Storage archive account
+  + service-side network/VNet rule
+  + approved snet-mfg-data access
+  + service endpoint policy to approved Storage resource where supported
 ```
 
-Do **not** create a replacement Manufacturing VNet.
+No replacement Manufacturing VNet is created.
 
-## Plan expectation
+## Plan guardrail
 
 ```text
-previous BlueHarbor infrastructure: preserved
-new PaaS/service-endpoint resources: added
-unexpected destroy/replace: STOP AND INVESTIGATE
+previous BlueHarbor estate preserved
+new Storage/private-access resources added
+unexpected destroy/replace -> STOP
 ```
 
 ## Validation
 
-Prove both outcomes:
-
 ```text
-approved Manufacturing source -> Storage   ALLOW
-unapproved source              -> Storage   DENY
+approved Manufacturing data workload -> Storage   ALLOW
+unapproved source                     -> Storage   DENY
 ```
 
-A successful `terraform apply` is not sufficient evidence.
-
-## Deliberate failure
-
-Misconfigure the approved subnet or service-side network rule, diagnose the mismatch, then encode the permanent correction in Terraform before completing the unit.
+Deliberately misconfigure one subnet/service rule, prove the failure, then encode the permanent correction in Terraform.

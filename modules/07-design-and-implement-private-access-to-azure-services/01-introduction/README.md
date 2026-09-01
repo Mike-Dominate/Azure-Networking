@@ -1,30 +1,21 @@
 # Unit 01 — Introduction
 
-**BlueHarbor chapter:** Our network is private, our PaaS is not  
+**BlueHarbor chapter:** Azure-hosted does not automatically mean privately reachable  
 **Status:** NOT STARTED
 
-## Starting state
-
-BlueHarbor enters this unit with the cumulative environment from Modules 1–6: VNets, DNS, routing, hybrid connectivity, application delivery and security controls already exist in the same Terraform state.
-
-## Business event
-
-Application teams begin adopting Azure Storage, SQL/data services and App Service-style managed services.
-
-Security asks:
-
-> Why should services consumed only by BlueHarbor workloads depend on publicly reachable service endpoints?
-
-## Core lesson
+Module 7 begins with three real requirements:
 
 ```text
-resource hosted in Azure
-!=
-resource privately addressed inside BlueHarbor's VNet
+Manufacturing archive
+ -> Azure Storage access restricted to approved subnet identity
+
+Partner Hub data
+ -> Azure SQL privately reachable through a VNet private IP
+
+BlueHarbor telemetry
+ -> publish BlueHarbor's own service privately to selected consumers
 ```
 
-This unit frames the private-access problem before choosing service endpoints, Private Link or VNet integration.
+These requirements deliberately lead to different technologies rather than using every feature everywhere.
 
-## Terraform impact
-
-None yet unless the story explicitly requires a resource to support the tutorial. The unit defines the requirement; later practical units extend the existing `blueharbor/terraform/` stack.
+The existing secured Virtual WAN, hybrid DNS, WAF, DDoS, NSGs and applications remain intact.

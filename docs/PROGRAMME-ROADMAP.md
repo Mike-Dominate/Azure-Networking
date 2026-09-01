@@ -4,25 +4,11 @@
 
 Follow Microsoft's AZ-700 Microsoft Learn path in exact module/unit order while one BlueHarbor Industries architecture, Terraform codebase and state lineage evolve continuously.
 
-## Cumulative rule
-
-```text
-previous code + state + Azure resources
-        + next BlueHarbor requirement
-        = next project state
-```
-
 Canonical Terraform root:
 
 ```text
 blueharbor/terraform/
 ```
-
-No disposable Terraform root per lab and no routine destroy at module boundaries.
-
-## Story-design status
-
-Modules 1–8: **DESIGNED**.
 
 ## Architecture audit status
 
@@ -33,56 +19,75 @@ Modules 1–8: **DESIGNED**.
 | 3 | M3 -> M4 | **PASS** |
 | 4 | M4 -> M5 | **PASS** |
 | 5 | M5 -> M6 | **PASS** |
-| 6 | M6 -> M7 | **NEXT** |
-| 7 | M7 -> M8 | PENDING |
+| 6 | M6 -> M7 | **PASS** |
+| 7 | M7 -> M8 | **NEXT** |
 
-Do not start the BlueHarbor Terraform deployment until all gates pass.
+Do not begin BlueHarbor deployment until Gate 7 and the audit closeout pass.
 
-## Approved cumulative architecture through Module 6
+## Approved cumulative architecture through Module 7
 
 ```text
 M1
-Core / Manufacturing / Research VNets
-DNS / routing / initial direct peerings
-nat-mfg-aue
+VNets / DNS / routing / NAT
   |
 M2
-classic VPN learning -> Virtual WAN
-bhi-vhub-aue 10.200.0.0/22
+VPN -> Virtual WAN
   |
 M3
-ExpressRoute added to AUE hub
+ExpressRoute on existing hub
   |
 M4
 Telemetry TCP/9000
-AUE public LB + nat-mfg-aue
-SEA public LB + nat-telemetry-sea
+AUE/SEA Standard Load Balancers
 Traffic Manager
   |
 M5
-Partner AUE/SEA VNets
-Application Gateway Standard_v2 in both regions
-bhi-vhub-sea 10.200.4.0/22 activated
+Partner AUE/SEA application VNets
+Application Gateway Standard_v2
 Front Door Standard
   |
-M6 distributed security
-DDoS Network Protection
-NSG / ASG segmentation
-  |
-M6 central security
-azfw-bhi-aue + azfw-bhi-sea
-fwpol-bhi-global
-secured Virtual WAN routing intent
-retire direct peering bypasses
-replace Partner NAT egress with firewall egress
-  |
-M6 web security
+M6
+secured Virtual WAN
+AUE/SEA Azure Firewall
+DDoS / NSG / ASG
 Front Door Premium + WAF
-Application Gateway WAF_v2 + regional WAF
-Front Door origin-bypass restrictions
+Application Gateway WAF_v2
+  |
+M7 Manufacturing
+Storage Service Endpoint + service-side restriction/policy
+  |
+M7 Partner
+App Service Private Endpoint + VNet Integration
+Azure SQL Private Endpoint
+private DNS / hybrid DNS
+  |
+M7 BlueHarbor-owned private service
+existing AUE telemetry LB -> Private Link Service
+Core consumer Private Endpoint
+  |
+M7 global web origin privacy
+Front Door Premium -> Private Link -> AUE/SEA App Gateway WAF_v2
 ```
 
-Public Application Gateway and telemetry Load Balancer paths retain deliberate direct-return/NAT exceptions so central firewall routing does not create asymmetric ingress failures.
+Module 7 adds no new VNet or transit hub.
+
+## Canonical Module 7 subnet additions
+
+```text
+CORE AUE
+10.10.20.0/24   snet-private-endpoints
+
+MFG AUE
+10.20.3.0/27    snet-pls-nat
+
+PARTNER AUE
+10.40.3.0/24    snet-private-endpoints
+10.40.4.0/26    snet-appsvc-integration
+10.40.5.0/27    snet-appgw-pl
+
+PARTNER SEA
+10.50.3.0/27    snet-appgw-pl
+```
 
 ## Official module sequence
 
@@ -94,16 +99,14 @@ Public Application Gateway and telemetry Load Balancer paths retain deliberate d
 | 4 | Load balance non-HTTP(S) traffic in Azure | NOT STARTED | DESIGNED / AUDITED |
 | 5 | Load balance HTTP(S) traffic in Azure | NOT STARTED | DESIGNED / AUDITED |
 | 6 | Design and implement network security | NOT STARTED | DESIGNED / AUDITED |
-| 7 | Design and implement private access to Azure Services | NOT STARTED | DESIGNED / GATE 6 NEXT |
-| 8 | Design and implement network monitoring | NOT STARTED | DESIGNED |
+| 7 | Design and implement private access to Azure Services | NOT STARTED | DESIGNED / AUDITED |
+| 8 | Design and implement network monitoring | NOT STARTED | DESIGNED / GATE 7 NEXT |
 
 ## Current phase
 
 ```text
 STORY DESIGN        COMPLETE
-AUDIT GATES 1–5     PASS
-AUDIT GATE 6        NEXT
+AUDIT GATES 1–6     PASS
+AUDIT GATE 7        NEXT
 TERRAFORM BUILD     NOT STARTED
 ```
-
-See [`ARCHITECTURE-DEPENDENCY-AUDIT.md`](ARCHITECTURE-DEPENDENCY-AUDIT.md) for the decision record.
