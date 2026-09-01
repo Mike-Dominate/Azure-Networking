@@ -2,36 +2,30 @@
 
 ## Purpose
 
-Build real Azure networking engineering capability by following Microsoft's official AZ-700 Microsoft Learn path in exact module/unit order while one BlueHarbor Industries architecture and Terraform stack evolve across the programme.
+Follow Microsoft's AZ-700 Microsoft Learn path in exact order while one BlueHarbor Industries architecture, Terraform codebase and Azure state evolve continuously.
 
 ## Authority
 
 ```text
-Microsoft Learn path = structure and order
-Microsoft Learn unit = atomic teaching step
-Microsoft Learn exercise = practical objective where present
-BlueHarbor story = progressive business scenario
-AZ-700 study guide = completeness additions inside matching units
-Azure product docs = exact implementation behaviour
+Microsoft Learn path = structure/order
+Microsoft Learn unit = teaching step
+Microsoft exercise = practical objective
+BlueHarbor story = business progression
+AZ-700 study guide = completeness inside matching unit
+Azure product docs = exact technical behaviour
 ```
 
 ## Cumulative Terraform rule
 
-All practical units contribute to one living implementation:
+All persistent practical infrastructure lives in one evolving root:
 
 ```text
 blueharbor/terraform/
 ```
 
-Each unit inherits all previous Terraform code, the same state lineage, the deployed Azure resources and architecture decisions, then adds the smallest coherent change required by the next BlueHarbor business event.
-
-Do not create disposable Terraform roots per lab. Do not routinely destroy infrastructure at unit/module boundaries. Git commits are the historical checkpoints.
-
-Before every apply, inspect `terraform plan` for unexpected destroy/replace actions.
+Every unit inherits all previous code/state/resources and adds the smallest coherent delta. Git commits provide historical checkpoints.
 
 ## Story-design status
-
-The complete BlueHarbor narrative across Microsoft Learn Modules 1–8 is now designed.
 
 ```text
 M1 network foundation
@@ -44,7 +38,7 @@ M1 network foundation
  -> M8 monitoring / operations
 ```
 
-The next programme activity is a full architecture and Terraform dependency audit before implementation begins.
+All eight stories are designed.
 
 ## Official module sequence
 
@@ -59,64 +53,68 @@ The next programme activity is a full architecture and Terraform dependency audi
 | 7 | Design and implement private access to Azure Services | NOT STARTED | DESIGNED |
 | 8 | Design and implement network monitoring | NOT STARTED | DESIGNED |
 
+## Architecture & Terraform Dependency Audit
+
+```text
+Gate 1  M1 -> M2   PASS
+Gate 2  M2 -> M3   NEXT
+Gate 3  M3 -> M4   PENDING
+Gate 4  M4 -> M5   PENDING
+Gate 5  M5 -> M6   PENDING
+Gate 6  M6 -> M7   PENDING
+Gate 7  M7 -> M8   PENDING
+```
+
+See [`ARCHITECTURE-DEPENDENCY-AUDIT.md`](ARCHITECTURE-DEPENDENCY-AUDIT.md) for findings and decisions.
+
+### Gate 1 authoritative contract
+
+```text
+M1 deployed:
+  bhi-vnet-core-aue       10.10.0.0/16
+  bhi-vnet-mfg-aue        10.20.0.0/16
+  bhi-vnet-research-sea   10.30.0.0/16
+  DNS / peerings / routing / selected NAT
+
+M2 adds:
+  bhi-vnet-connectivity-aue 10.100.0.0/16
+  GatewaySubnet              10.100.255.0/26
+  DNS resolver subnets       10.100.10.0/28 and 10.100.10.16/28
+  VPN Gateway
+  gateway transit
+  Brisbane S2S
+  P2S 172.31.240.0/24
+  hybrid DNS extension
+  later Virtual WAN
+```
+
+The next audit must settle how the classic VPN/gateway-transit design evolves into Virtual WAN and ExpressRoute without contradictory remote-gateway ownership.
+
 ## Current phase
 
 ```text
 STORY DESIGN        COMPLETE
-ARCHITECTURE AUDIT  NEXT
+ARCHITECTURE AUDIT  IN PROGRESS — Gate 2 next
 TERRAFORM BUILD     NOT STARTED
 ```
 
-Do not start the new BlueHarbor Azure deployment until the audit validates the full module chain.
+Do not start Azure deployment until all dependency gates pass.
 
-## Architecture & Terraform Dependency Audit
-
-Walk:
-
-```text
-M1 -> M2 -> M3 -> M4 -> M5 -> M6 -> M7 -> M8
-```
-
-For each transition record:
-
-```text
-previous end state
--> reused resources
--> new business requirement
--> Terraform additions
--> Terraform in-place changes
--> intentional replacements if any
--> validation dependencies
--> resulting next state
-```
-
-Audit naming, regions, address spaces, special-purpose subnet requirements, DNS, route propagation, hybrid dependencies, load-balancing/application-delivery dependencies, security enforcement points, private-access dependencies and monitoring targets.
-
-A later module must not depend on a resource that was never introduced earlier.
-
-## Required engineering loop after the audit
-
-For each Microsoft Learn unit:
+## Engineering loop after audit
 
 ```text
 Microsoft Learn objective
 -> BlueHarbor requirement
--> explanation / analogy
--> architecture or traffic/query flow
+-> explanation / architecture
 -> understanding check
--> identify the delta from the CURRENT BlueHarbor environment
--> update the SAME Terraform root
--> terraform fmt / init / validate
--> terraform plan and inspect intended delta
--> terraform apply
--> independent validation using Azure CLI / Portal / protocol tools
--> deliberate failure / troubleshooting
--> encode permanent infrastructure fix in Terraform
--> re-plan / re-apply / re-validate
--> evidence / rebuild notes
+-> identify delta from CURRENT environment
+-> update SAME Terraform root
+-> fmt / init / validate
+-> plan and inspect intended delta
+-> apply
+-> independent validation
+-> failure / troubleshooting
+-> permanent fix in Terraform
 -> Git checkpoint
--> carry code + state + Azure resources into next unit
--> explain-back
+-> carry state/resources forward
 ```
-
-See [`MSLEARN-UNIT-MAP.md`](MSLEARN-UNIT-MAP.md), [`PROJECT-NARRATIVE.md`](PROJECT-NARRATIVE.md), [`HANDOFF.md`](HANDOFF.md) and [`../blueharbor/terraform/README.md`](../blueharbor/terraform/README.md).

@@ -1,14 +1,19 @@
 # Unit 08 — Exercise: Connect two Azure virtual networks using global virtual network peering
 
-## BlueHarbor chapter: Prove isolation, then connect the networks
+**BlueHarbor chapter:** Research must reach Core across regions  
+**Status:** NOT STARTED
 
-The exercise should first prove that the selected BlueHarbor workloads cannot communicate across isolated VNets, then create the required peering and prove the changed behaviour.
+Preserve Microsoft's global-peering objective with the canonical BlueHarbor VNets:
+
+```text
+bhi-vnet-core-aue <-> bhi-vnet-research-sea
+```
+
+First prove the relevant workloads are isolated, then add the global VNet peering through the same Terraform root and prove the changed connectivity.
 
 ```text
 before peering -> expected failure
 after peering  -> expected success
 ```
 
-Keep Microsoft's global-peering objective intact when mapping it to the BlueHarbor regions.
-
-**Status:** NOT STARTED.
+This peering remains part of the environment carried into Module 2. Do not create a second Research VNet later to satisfy hybrid examples.

@@ -1,39 +1,38 @@
 # Unit 02 — Design and implement Azure VPN Gateway
 
-**BlueHarbor chapter:** Build the Azure hybrid-network edge  
+**BlueHarbor chapter:** Add a dedicated Azure hybrid-network edge  
 **Status:** NOT STARTED
+
+## Starting state
+
+The Module 1 workload VNets, DNS, peerings, routes and selected NAT configuration already exist in the cumulative Terraform state.
 
 ## Business event
 
 Management approves encrypted Internet-based connectivity between BlueHarbor sites and Azure.
 
-## Problem to solve
-
-Azure needs a managed termination point for hybrid VPN traffic before a Site-to-Site connection can exist.
-
 ## Architecture introduced
 
 ```text
-Remote BlueHarbor network
-        |
-    IPsec/IKE
-        |
-Azure VPN Gateway
-        |
-BlueHarbor Azure VNets
+bhi-vnet-connectivity-aue   10.100.0.0/16
+  snet-dns-inbound          10.100.10.0/28
+  snet-dns-outbound         10.100.10.16/28
+  GatewaySubnet             10.100.255.0/26
 ```
+
+The VPN Gateway will terminate in this dedicated connectivity VNet rather than a workload VNet.
 
 ## Concepts to master
 
 - `GatewaySubnet`
 - Azure VPN Gateway
-- gateway SKU selection
-- gateway public IP
+- gateway SKU / public IP
 - route-based versus policy-based concepts
 - availability / active-active considerations
-- throughput and resiliency
+- throughput / resiliency
 - non-overlapping address spaces
+- dedicated connectivity VNet design
 
-## Engineering check
+## Terraform rule
 
-Before deployment, be able to explain the networks, prefixes, availability, throughput, remote VPN capability and route requirements driving the design.
+This unit adds to `blueharbor/terraform/`; it does not recreate `bhi-vnet-core-aue`, `bhi-vnet-mfg-aue` or `bhi-vnet-research-sea`.

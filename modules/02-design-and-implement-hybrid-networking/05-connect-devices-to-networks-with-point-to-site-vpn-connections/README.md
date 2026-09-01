@@ -1,42 +1,32 @@
 # Unit 05 — Connect devices to networks with Point-to-site VPN connections
 
-**BlueHarbor chapter:** A remote engineer needs access  
+**BlueHarbor chapter:** Give an individual remote engineer private access  
 **Status:** NOT STARTED
 
 ## Business event
 
-A BlueHarbor engineer is working from a home, hotel or customer network and needs secure access to Azure administration services.
+A BlueHarbor engineer working from a hotel/customer site needs private access without creating a network-to-network relationship for the location.
 
-Connecting the entire remote network to BlueHarbor is inappropriate. Only the engineer's device needs the private path.
-
-## Architecture
+## Reserved client pool
 
 ```text
-Remote laptop
-     |
-client VPN
-     |
-Azure VPN Gateway
-     |
-permitted Azure networks
+172.31.240.0/24
 ```
 
-## Concepts to master
+This pool is deliberately non-overlapping with Brisbane (`172.16.0.0/16`), Perth (`172.17.0.0/16`) and the BlueHarbor Azure `10.x` allocations.
 
-- Point-to-Site VPN
-- Azure VPN Client
-- client address pool
-- supported tunnelling protocol concepts
-- Entra ID authentication concepts
-- RADIUS / AD authentication concepts
-- routes presented to the client
-- DNS behaviour while connected
-
-## Key distinction
+## Mental model
 
 ```text
-S2S = network <-> network
-P2S = individual device <-> Azure network
+Site-to-Site
+network <-> network
+
+Point-to-Site
+individual device <-> Azure network
 ```
 
-The validation exercise should prove private reachability changes when the client VPN is established.
+Cover client VPN protocols/authentication, client routes and DNS behaviour.
+
+Validate that the chosen private destination is unavailable before the tunnel and reachable through the intended path afterward.
+
+Persistent gateway/client configuration changes belong in the same cumulative Terraform stack where supported; client-side operational steps are documented separately.

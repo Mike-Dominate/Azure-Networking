@@ -1,35 +1,20 @@
 # Unit 06 — Connect remote resources by using Azure Virtual WANs
 
-**BlueHarbor chapter:** The company outgrows a few individual tunnels  
+**BlueHarbor chapter:** Scale beyond individually managed hybrid relationships  
 **Status:** NOT STARTED
 
-## Business event
+BlueHarbor now has classic VPN connectivity knowledge plus growing branch/remote-user requirements.
 
-BlueHarbor adds more branches, factories, remote users and Azure regions. Managing every connectivity relationship independently is becoming operationally complex.
+Virtual WAN is introduced as an evolution of the same enterprise architecture.
 
-## Problem to solve
+## Important dependency guardrail
 
-Create a scalable WAN model for branches, users and Azure networks.
+Do not assume a workload VNet that currently uses a remote VPN Gateway through peering can also be attached to a Virtual WAN hub with no change to gateway ownership/peering settings.
 
-## Architecture evolution
+Before implementation, the architecture audit must decide whether Virtual WAN:
 
-```text
-Few sites:
-site -> VPN relationship -> Azure
+- initially serves new branches/spokes alongside the classic VPN design;
+- becomes an intentional migration target for selected existing workload VNets; or
+- uses another staged coexistence pattern supported by current Azure constraints.
 
-Growth:
-many sites/users -> Virtual WAN hub -> Azure networks
-```
-
-## Concepts to master
-
-- Azure Virtual WAN
-- Virtual Hub
-- sites
-- hub VNet connections
-- hub routing
-- branch connectivity
-- S2S and P2S integration
-- transitive connectivity concepts
-
-Virtual WAN is introduced because BlueHarbor has reached a scale where a central connectivity model has a clear operational purpose.
+Any required peering/gateway change must be represented as an understood Terraform delta, not hidden by building a disconnected demo environment.

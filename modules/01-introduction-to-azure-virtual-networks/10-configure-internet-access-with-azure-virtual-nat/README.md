@@ -1,15 +1,21 @@
 # Unit 10 — Configure internet access with Azure Virtual NAT
 
-## BlueHarbor chapter: Private servers need a controlled Internet exit
+## BlueHarbor chapter: Selected private workloads need a controlled Internet exit
 
-Manufacturing workloads need outbound Internet access for approved updates and services, but Security does not want individual public IP addresses on the VMs.
+**Status:** NOT STARTED
+
+Selected Manufacturing workload subnet(s) need outbound Internet access for approved updates/services, but Security does not want individual public IP addresses on those workloads.
 
 NAT Gateway becomes the managed subnet-level outbound solution.
-
-Key lesson:
 
 ```text
 outbound Internet access != unsolicited inbound access
 ```
 
-**Status:** NOT STARTED.
+## Terraform guardrail
+
+Associate NAT Gateway only with explicitly selected workload subnets.
+
+Do **not** implement a generic rule such as "attach NAT to every subnet in every VNet". Later modules add special-purpose subnets such as `GatewaySubnet`, DNS resolver endpoint subnets and application/security subnets that require their own design.
+
+The selected NAT configuration remains part of the cumulative state entering Module 2.

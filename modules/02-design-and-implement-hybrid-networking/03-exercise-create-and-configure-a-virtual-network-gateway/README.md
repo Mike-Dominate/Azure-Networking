@@ -1,24 +1,36 @@
 # Unit 03 — Exercise: Create and configure a virtual network gateway
 
-**BlueHarbor chapter:** Build the approved Azure gateway  
+**BlueHarbor chapter:** Build the approved Azure gateway and connect it to the existing estate  
 **Status:** NOT STARTED
 
-## Business event
+## Microsoft objective, cumulative implementation
 
-Architecture approves the VPN-edge design. BlueHarbor can now create the Azure-side gateway infrastructure.
+Preserve Microsoft's gateway exercise objective while extending the existing Terraform environment.
 
-## Microsoft exercise baseline
+Expected Terraform additions:
 
-Complete the Microsoft Learn gateway exercise in its published order.
+```text
+bhi-vnet-connectivity-aue
+GatewaySubnet 10.100.255.0/26
+VPN Gateway public IP
+Azure VPN Gateway
+connectivity <-> workload VNet peerings
+```
 
-## BlueHarbor engineering extension
+## Gateway-transit requirement
 
-After deployment, inspect and explain:
+Do not assume peering is transitive.
 
-- the `GatewaySubnet`;
-- gateway type and SKU;
-- the gateway public IP;
-- which parts Microsoft manages;
-- where the gateway sits relative to BlueHarbor's Module 1 VNets.
+When the classic VPN gateway is intended to provide hybrid reachability for a workload VNet, explicitly configure and understand directional gateway-transit settings such as `allow_gateway_transit`, `use_remote_gateways` and forwarded-traffic behaviour.
 
-A successful deployment is not sufficient evidence until the resulting architecture can be explained.
+## Validation
+
+Inspect:
+
+- special-purpose subnet placement;
+- gateway type/SKU/public IP;
+- peering direction/settings;
+- effective routes after a connection exists;
+- Terraform plan for unexpected Module 1 replacement/destruction.
+
+A successful deployment alone is not sufficient evidence.

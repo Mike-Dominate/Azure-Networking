@@ -1,26 +1,14 @@
 # Unit 07 — Exercise: Create a Virtual WAN by using the Azure portal
 
-**BlueHarbor chapter:** Validate the central WAN model  
+**BlueHarbor chapter:** Add the approved Virtual WAN evolution to the same estate  
 **Status:** NOT STARTED
 
-## Business event
+Preserve Microsoft's Virtual WAN exercise objective, but persistent BlueHarbor infrastructure is implemented through the cumulative Terraform stack.
 
-Architecture approves a Virtual WAN proof of concept for future BlueHarbor branch growth.
+## Rule
 
-## Microsoft exercise baseline
+Do not destroy/recreate the Module 1 estate or the classic Module 2 VPN edge merely to obtain a clean Virtual WAN exercise.
 
-Complete the published Microsoft Learn Virtual WAN exercise.
+Before connecting an existing workload VNet to the Virtual Hub, verify current Azure gateway/remote-gateway constraints and document the intentional Terraform change required.
 
-## BlueHarbor engineering extension
-
-Inspect and explain:
-
-- the Virtual WAN resource;
-- virtual hub address space;
-- VNet connections;
-- hub-routing concepts;
-- which point-to-point operational relationships the hub simplifies.
-
-## Cost rule
-
-Virtual WAN and gateway resources can be billable. Plan a short-lived deployment, capture evidence while live, then tear down safely when the exercise is complete.
+The exercise must end with one coherent state lineage and a clear explanation of which connectivity model currently owns which workload/site paths.
