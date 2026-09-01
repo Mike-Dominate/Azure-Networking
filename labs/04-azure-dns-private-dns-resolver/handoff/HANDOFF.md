@@ -1,85 +1,96 @@
-# Lab 04 Handoff — Azure DNS, Private DNS & DNS Private Resolver
+# Lab 04 Handoff — Azure DNS / Name Resolution
+
+## Microsoft Learn alignment
+
+**Module 1:** Introduction to Azure Virtual Networks  
+**Unit:** Design name resolution for your virtual network
+
+Primary curriculum source:
+
+`https://learn.microsoft.com/en-us/training/paths/design-implement-microsoft-azure-networking-solutions-az-700/`
+
+Coverage completeness source:
+
+`https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/az-700`
 
 ## Status
 
-- **Lab:** 04 — Azure DNS, Private DNS & DNS Private Resolver
 - **State:** IN PROGRESS
-- **Current phase:** Tutorial / mental model
+- **Current phase:** Microsoft Learn tutorial / mental model
 - **Deployment phase:** NOT STARTED
-- **Previous lab:** Lab 03 — COMPLETE
+- **Azure resources:** NONE
+- **Previous Module 1 practical:** Lab 03 — COMPLETE
 
-## Authoritative Lab 04 scope
+## Authoritative scope
 
-Use the original Lab 04 scope only:
-
-- Azure public DNS zones
-- private DNS zones
-- VNet links and auto-registration concepts
-- custom DNS settings on VNets
-- Azure DNS Private Resolver
-- inbound and outbound endpoints
-- forwarding rulesets
-- hybrid/on-premises name resolution
-- DNS troubleshooting and packet/query flow
-
-Supporting DNS fundamentals may be taught only where they directly support these topics; they are not separate Lab 04 scope items.
-
-## Tutorial progress completed so far
-
-The following supporting public-DNS fundamentals have already been demonstrated interactively with `nslookup`:
-
-- recursive resolver versus authoritative DNS
-- public DNS hierarchy and delegation concepts
-- NS records
-- CNAME chains across different authoritative providers
-- MX records
-- SOA records
-- common record types: A, AAAA, CNAME, MX, TXT, NS, SOA, PTR
-- a normal recursive resolver returning no usable A record for `web.lab04.example.com`
-
-Observed examples included Microsoft public DNS hosted on Azure DNS authoritative name servers and a CNAME chain from Microsoft into Akamai authoritative DNS.
-
-## Important workflow correction
-
-The programme pattern is:
+Teach the Microsoft Learn name-resolution unit first, then add only the current AZ-700 study-guide requirements that belong to the same objective area:
 
 ```text
-complete tutorial / mental model
--> visual architecture and query flows
--> understanding check
--> design the lab
+1. design name resolution inside a VNet
+2. configure DNS settings for a VNet
+3. design public DNS zones
+4. design private DNS zones
+5. configure public and private DNS zones
+6. link a private DNS zone to a VNet
+7. design and implement Azure DNS Private Resolver
+```
+
+Supporting concepts such as recursive vs authoritative DNS, common record types and delegation may be used only to explain these objectives.
+
+Do not expand Lab 04 into Private Endpoint / Private Link DNS integration. That belongs primarily to Microsoft Learn Module 7.
+
+## Tutorial progress already completed
+
+Supporting DNS fundamentals already demonstrated interactively:
+
+- recursive resolver versus authoritative DNS
+- public DNS hierarchy and delegation
+- NS, CNAME, MX and SOA records
+- common record types: A, AAAA, CNAME, MX, TXT, NS, SOA and PTR
+- Microsoft public DNS authority on Azure DNS
+- Microsoft-to-Akamai CNAME / authority handoff
+
+These are foundation knowledge, not separate programme topics.
+
+## Resume point
+
+Restart the teaching structure from the Microsoft Learn unit rather than the previous improvised nine-topic list.
+
+Resume with:
+
+```text
+Microsoft Learn Module 1
+-> Design name resolution for your virtual network
+```
+
+Use the Microsoft Learn lesson's structure as the spine. Explain each concept with:
+
+```text
+technical concept
+-> everyday analogy
+-> Azure-specific behaviour
+-> query-flow diagram
+-> short understanding check
+```
+
+Only after the complete name-resolution tutorial plus the study-guide Private Resolver extension is understood should the implementation be designed.
+
+## Practical workflow after tutorial
+
+```text
+understanding check
+-> design practical scenario
 -> manual Azure CLI deployment
--> validation
--> deliberate failure and troubleshooting
+-> DNS query validation
+-> deliberate failure / troubleshooting
 -> Portal inspection where useful
 -> Terraform rebuild
--> evidence and documentation
+-> independent validation
+-> evidence / rebuild documentation
 -> safe teardown
 -> explain-back
 ```
 
-Do not begin or continue Lab 04 deployment until the complete tutorial covering the authoritative nine-topic scope is finished.
+## Critical rule
 
-## Resume point
-
-Continue the tutorial from the first official topic:
-
-```text
-Azure public DNS zones
-```
-
-Then proceed through the original scope in order:
-
-```text
-1. Azure public DNS zones
-2. private DNS zones
-3. VNet links and auto-registration concepts
-4. custom DNS settings on VNets
-5. Azure DNS Private Resolver
-6. inbound and outbound endpoints
-7. forwarding rulesets
-8. hybrid/on-premises name resolution
-9. DNS troubleshooting and packet/query flow
-```
-
-Only after all nine topics are understood should the Lab 04 implementation be designed and started.
+Provisioning state `Succeeded` never proves DNS is functioning. Actual DNS queries must prove the resolver path and returned answer.
