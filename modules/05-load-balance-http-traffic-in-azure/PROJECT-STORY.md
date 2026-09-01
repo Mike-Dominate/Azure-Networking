@@ -3,355 +3,396 @@
 ## Project — Launch the BlueHarbor Partner Hub globally
 
 **Microsoft Learn module:** Load balance HTTP(S) traffic in Azure  
-**Company:** BlueHarbor Industries (BHI)  
-**Status:** NOT STARTED
+**Status:** NOT STARTED  
+**Terraform model:** extend the same cumulative `blueharbor/terraform/` state
 
 ## Starting point from Module 4
 
-BlueHarbor already understands two important availability patterns:
+Everything from Modules 1–3 remains deployed, and Module 4 has added a separate non-HTTP production service:
 
 ```text
-Azure Load Balancer
--> regional Layer 4 TCP/UDP distribution
+Device Telemetry Ingest
+TCP/9000
 
-Azure Traffic Manager
--> global DNS-based endpoint selection
+Australia East
+ -> public Standard Load Balancer
+
+Southeast Asia
+ -> public Standard Load Balancer
+
+Traffic Manager
+ -> Priority DNS failover AUE -> SEA
 ```
 
-Those patterns solve useful problems, but BlueHarbor is now launching an HTTP/HTTPS application whose routing decisions depend on the application request itself.
+Module 5 does not relabel or repurpose that telemetry architecture.
 
-The new service is the **BlueHarbor Partner Hub**:
+The new application is the **BlueHarbor Partner Hub**.
+
+Narrative URLs:
 
 ```text
-https://portal.blueharbor.example
-https://portal.blueharbor.example/engineering
-https://portal.blueharbor.example/orders
-https://portal.blueharbor.example/support
+https://portal.blueharbor.example/
+https://portal.blueharbor.example/engineering/
+https://portal.blueharbor.example/orders/
+https://portal.blueharbor.example/support/
 ```
+
+The `.example` hostname is documentation-only. The live lab uses Azure-generated reachable hostnames/endpoints until a real learner-controlled public domain is intentionally introduced.
 
 The Module 5 business question is:
 
 > How should BlueHarbor deliver HTTP(S) applications when routing decisions depend on hostnames, URL paths, TLS, backend health and global web performance?
 
-The Microsoft Learn unit order remains authoritative. Each unit below is the next chapter of this same project.
-
 ---
 
 ## Chapter 01 — Introduction: Layer 4 is no longer enough
 
-The Partner Hub initially runs behind a simple regional network path, but application teams now require different HTTP requests to reach different backend services.
+**Unit 01 — Introduction**
+
+Partner Hub is introduced here as a new application. It is not assumed to exist at the end of Module 4.
 
 Example request:
 
 ```text
-GET /engineering
+GET /engineering/
 Host: portal.blueharbor.example
 ```
 
-The routing decision now depends on application-layer information such as:
+The application team needs decisions based on:
 
-- hostname;
+- HTTP host;
 - URL path;
 - HTTP/HTTPS behaviour;
-- backend application health;
-- TLS requirements.
+- application-specific health;
+- TLS design.
 
-### Core lesson
+Mental model:
 
 ```text
-Layer 4 decision
+Layer 4
 IP + port + protocol
 
-Layer 7 decision
+Layer 7
 HTTP host + path + application behaviour
 ```
 
-This creates the reason for Azure Application Gateway.
+This creates the reason for Application Gateway.
 
 ---
 
-## Chapter 02 — Design Azure Application Gateway: Build the regional web entrance
+## Chapter 02 — Design Application Gateway and the Australia East landing zone
 
-BlueHarbor needs one controlled HTTP(S) entry point for the Partner Hub in Australia East.
+**Unit 02 — Design Azure Application Gateway**
+
+Partner Hub deserves an explicit application landing zone rather than being inserted into Core, Manufacturing or the telemetry estate.
+
+Add:
+
+```text
+bhi-vnet-partner-aue   10.40.0.0/16
+  snet-appgw           10.40.1.0/24
+  snet-partner-app     10.40.2.0/24
+```
+
+Then connect the new VNet to the existing production transit:
+
+```text
+bhi-vnet-partner-aue
+        |
+Virtual Hub VNet connection
+        |
+bhi-vhub-aue
+```
+
+The Application Gateway subnet is dedicated to the gateway service. The `/24` allocation deliberately gives Application Gateway v2 room for scale/maintenance rather than planning to the minimum.
+
+The Partner application subnet receives explicit Terraform-managed outbound connectivity:
+
+```text
+snet-partner-app
+  |
+nat-partner-aue
+  |
+Internet for approved backend-initiated outbound traffic
+```
+
+### Regional delivery design
 
 ```text
 Internet
    |
- HTTPS
+HTTP(S)
    |
-Application Gateway
+appgw-partner-aue   Standard_v2
    |
-+-- Engineering backend pool
-+-- Orders backend pool
-+-- Support backend pool
+   +-- Engineering backend
+   +-- Orders backend
+   +-- Support backend
+   |
+snet-partner-app
 ```
 
-### Business requirements
-
-- one regional HTTP(S) entry point;
-- multiple backend services;
-- application-aware health checks;
-- hostname and URL-path routing;
-- TLS-aware design;
-- public or private frontend according to audience.
-
-### Concepts to master
-
-- frontend IP configuration;
-- listener;
-- request-routing rule;
-- backend pool;
-- backend setting;
-- health probe;
-- TLS certificate and TLS termination concepts;
-- public versus private frontend;
-- Application Gateway subnet requirement and placement.
-
-### Mental model
-
-The gateway is not merely selecting a server. It can understand **what web request arrived** and apply application-layer routing rules.
+Application Gateway starts on Standard_v2. WAF is intentionally not pre-enabled; Module 6 must add security because of a real security requirement.
 
 ---
 
-## Chapter 03 — Configure Azure Application Gateway: Route the Partner Hub intelligently
+## Chapter 03 — Configure HTTP(S)-aware routing
 
-The application team now provides concrete routing requirements.
+**Unit 03 — Configure Azure Application Gateway**
 
-### URL path-based routing
-
-```text
-portal.blueharbor.example/engineering/*
-        -> Engineering pool
-
-portal.blueharbor.example/orders/*
-        -> Orders pool
-
-portal.blueharbor.example/support/*
-        -> Support pool
-```
-
-### Multi-site / hostname routing
-
-BlueHarbor may later separate the applications by hostname:
+Partner Hub routing contract:
 
 ```text
-engineering.blueharbor.example -> Engineering pool
-orders.blueharbor.example      -> Orders pool
-support.blueharbor.example     -> Support pool
+/engineering/* -> Engineering backend/pool
+/orders/*      -> Orders backend/pool
+/support/*     -> Support backend/pool
 ```
 
-### TLS questions
+Hostname routing can also be taught against the same architecture where the practical hostname/DNS setup supports it.
 
-The learner must be able to reason about where TLS begins and ends:
+The learner must reason through:
 
-```text
-Client -- HTTPS --> Application Gateway -- HTTP/HTTPS --> Backend
-```
+- listeners;
+- request-routing rules;
+- URL path maps;
+- backend pools;
+- backend settings;
+- custom probes;
+- host-header behaviour;
+- TLS termination versus end-to-end TLS.
 
-and distinguish TLS termination from end-to-end TLS.
+A backend may be fully IP-reachable yet fail because the HTTP health path, host header or backend TLS/application setting is wrong.
 
-### Health lesson
+### Practical hostname/TLS guardrail
 
-An application can be reachable at `/` but fail the configured probe at `/health`. Health is defined by the check we configure, not by assumption.
+`portal.blueharbor.example` remains the narrative identifier. Do not pretend a reserved `.example` name has public DNS ownership or publicly trusted certificates.
+
+Use Azure-generated hostnames and appropriate lab TLS material where required by the exercise. A real custom domain can be added later if the learner intentionally supplies one.
 
 ---
 
-## Chapter 04 — Exercise: Deploy Azure Application Gateway
+## Chapter 04 — Deploy and troubleshoot the Australia East Partner Hub
 
-BlueHarbor now builds the regional Partner Hub entry point as a fresh story-driven practical.
+**Unit 04 — Exercise: Deploy Azure Application Gateway**
 
-### Conceptual regional design
+Preserve the Microsoft exercise objective, but implement persistent BlueHarbor resources through the same Terraform root.
 
-```text
-Australia East
-
-bhi-vnet-app-aue
-|
-+-- snet-appgw
-|      |
-|      +-- Application Gateway
-|
-+-- snet-web
-       |
-       +-- web01
-       +-- web02
-```
-
-### Practical flow
+Expected cumulative delta:
 
 ```text
-Microsoft exercise
--> inspect the resulting gateway
--> validate listener/rule/pool/probe relationships
--> test normal HTTP(S) behaviour
--> deliberately break one backend
--> deliberately break health-probe behaviour
--> troubleshoot an HTTP-layer misconfiguration
--> rebuild with Azure CLI where practical
--> rebuild with Terraform where appropriate
--> capture evidence
--> safe teardown
+existing Modules 1–4
+        +
+bhi-vnet-partner-aue 10.40.0.0/16
+        +
+snet-appgw 10.40.1.0/24
+snet-partner-app 10.40.2.0/24
+        +
+Virtual WAN VNet connection to bhi-vhub-aue
+        +
+nat-partner-aue / explicit app-subnet egress
+        +
+Partner Hub backend compute/services
+        +
+appgw-partner-aue Standard_v2
 ```
 
-### Deliberate failure scenarios
+Validation/failure work:
 
-1. Stop one backend and prove the service continues through a healthy backend.
-2. Make the configured health path return an unhealthy response and observe backend health.
-3. Introduce an HTTP host-header or backend-setting mismatch and diagnose why network connectivity can be healthy while the application fails.
+1. prove path-based request routing;
+2. stop/break one backend and inspect health/routing behaviour;
+3. break the configured health path;
+4. introduce a host-header/backend-setting mismatch;
+5. distinguish HTTP-layer failure from basic IP reachability failure.
+
+No safe-teardown step follows. All correct resources remain for Units 05–07 and later modules.
 
 ---
 
-## Chapter 05 — Design and configure Azure Front Door: BlueHarbor becomes global
+## Chapter 05 — The Partner Hub becomes multi-region
 
-The Partner Hub succeeds and users now access it from Australia, Asia, Europe and North America.
+**Unit 05 — Design and configure Azure Front Door**
 
-The business asks:
+Users now need a global HTTP(S) service with more than one real application origin.
 
-> Can users enter Microsoft's network closer to where they are, while BlueHarbor maintains multiple healthy application origins?
+This is the business event that finally activates the Southeast Asia Virtual WAN capacity reserved during Gate 2:
 
-This creates the reason for Azure Front Door.
+```text
+bhi-vhub-sea   10.200.4.0/22
+```
 
-### Architecture introduced
+Standard Virtual WAN now has regional hubs:
+
+```text
+bhi-vwan
+  |
+  +-- bhi-vhub-aue   10.200.0.0/22
+  |
+  +-- bhi-vhub-sea   10.200.4.0/22
+```
+
+### Move Research to its regional hub
+
+`bhi-vnet-research-sea` is already connected to `bhi-vhub-aue` from Module 2 because AUE was the only deployed hub at the time.
+
+It cannot simply have two active Virtual WAN hub connections as if that created no ownership conflict.
+
+Perform the intentional Terraform migration:
+
+```text
+old
+bhi-vnet-research-sea -> bhi-vhub-aue
+
+new
+bhi-vnet-research-sea -> bhi-vhub-sea
+```
+
+The Research VNet and its Module 4 telemetry DR subnet/resources remain intact. Only the Virtual Hub connection ownership changes.
+
+The original Module 1 Core <-> Research global VNet peering remains unless a later security/routing requirement deliberately changes it.
+
+### Add the Southeast Asia Partner landing zone
+
+```text
+bhi-vnet-partner-sea   10.50.0.0/16
+  snet-appgw           10.50.1.0/24
+  snet-partner-app     10.50.2.0/24
+```
+
+Connect it to `bhi-vhub-sea` and provide explicit application-subnet egress through `nat-partner-sea`.
+
+Add the regional HTTP(S) delivery stack:
+
+```text
+appgw-partner-sea   Standard_v2
+  |
+Partner Hub SEA backends
+```
+
+No Europe region is introduced. Southeast Asia is the canonical secondary Azure region for BlueHarbor.
+
+### Front Door mental model
 
 ```text
 Global users
-    |
-    v
+     |
 Azure Front Door
-    |
-+---+-------------------+
-|                       |
-v                       v
-Australia origin      Europe origin
+     |
+     +-- Australia East origin
+     +-- Southeast Asia origin
 ```
 
-### Concepts to master
-
-- Front Door profile / endpoint concepts;
-- origin and origin group;
-- route;
-- health probing;
-- HTTP(S)-aware global delivery;
-- global edge versus regional application delivery;
-- hostname/path-based global routing concepts;
-- TLS at the global edge;
-- caching / acceleration concepts where the Microsoft unit introduces them.
-
-### Critical comparison
+Contrast:
 
 ```text
 Traffic Manager
-DNS-based selection; not in application data path
+ -> DNS answer changes
+ -> not in application data path
 
-Front Door
-HTTP(S) proxy/service in the application data path
-```
-
----
-
-## Chapter 06 — Exercise: Create a Front Door for a highly available web application
-
-BlueHarbor deploys a multi-origin Partner Hub and proves origin-failure behaviour.
-
-### Target architecture
-
-```text
-portal.blueharbor.example
-        |
-        v
 Azure Front Door
-        |
-   +----+----+
-   |         |
-   v         v
-Australia   Europe
-origin      origin
+ -> global HTTP(S) proxy/service
+ -> remains in application data path
 ```
-
-Each regional origin may itself use an Application Gateway and healthy backend pool as the architecture grows.
-
-### Practical flow
-
-```text
-build Front Door
--> configure origins/origin group
--> configure route
--> validate normal request flow
--> inspect health
--> fail one origin
--> observe routing/failover behaviour
--> compare with Traffic Manager DNS failover
--> troubleshoot a route/origin/host configuration error
--> Terraform where appropriate
--> evidence and teardown
-```
-
-### Core lesson
-
-Traffic Manager changes DNS answers. Front Door remains in the HTTP(S) application path. Their failover mechanics are therefore fundamentally different.
 
 ---
 
-## Chapter 07 — Summary: BlueHarbor application-delivery architecture review
+## Chapter 06 — Create Front Door with real regional origins
 
-By the end of Module 5, BlueHarbor can reason about four different traffic-distribution services from the business problem they solve.
+**Unit 06 — Exercise: Create a Front Door for a highly available web application**
+
+Do not point Front Door at hypothetical regional services.
+
+Both origins already exist:
+
+```text
+appgw-partner-aue
+appgw-partner-sea
+```
+
+Add:
+
+```text
+Azure Front Door Standard
+  |
+origin group
+  +-- AUE Application Gateway public origin
+  +-- SEA Application Gateway public origin
+  |
+routes / health probes
+```
+
+The public origin model is intentional in Module 5 because application delivery is being learned before application-origin hardening.
+
+Validation/failure work:
+
+- prove normal global HTTP(S) request flow;
+- inspect origin health;
+- make one regional origin unhealthy and observe Front Door routing behaviour;
+- compare this with Module 4 Traffic Manager failover;
+- introduce one route/origin/host-header error and diagnose it.
+
+### Security handoff deliberately left open
+
+Module 6 must ask whether someone can bypass Front Door and reach an Application Gateway origin directly, and whether WAF belongs at Front Door, Application Gateway or both.
+
+Do not pre-solve that security decision here.
+
+---
+
+## Chapter 07 — Application-delivery architecture review
+
+**Unit 07 — Summary**
+
+By the end of Module 5, the learner must distinguish:
 
 ```text
 Azure Load Balancer
--> regional Layer 4 TCP/UDP distribution
+-> regional Layer 4 TCP/UDP
 
 Traffic Manager
 -> global DNS-based endpoint selection
 
 Application Gateway
--> regional Layer 7 HTTP(S) routing
+-> regional Layer 7 HTTP(S)
 
 Azure Front Door
--> global Layer 7 HTTP(S) application delivery
+-> global Layer 7 HTTP(S) edge/proxy
 ```
 
-### Final architecture
+### Canonical Partner Hub end state
 
 ```text
                     Global users
                          |
                          v
-                  Azure Front Door
+                Azure Front Door Standard
                          |
               +----------+----------+
               |                     |
               v                     v
-       Australia region        Europe region
+        Australia East         Southeast Asia
               |                     |
-       Application Gateway     Application Gateway
+ appgw-partner-aue        appgw-partner-sea
+ Standard_v2              Standard_v2
               |                     |
-        +-----+-----+           +---+---+
-        |     |     |           |       |
-      web   api   orders       web     api
+              v                     v
+bhi-vnet-partner-aue     bhi-vnet-partner-sea
+10.40.0.0/16             10.50.0.0/16
+              |                     |
+              v                     v
+        bhi-vhub-aue          bhi-vhub-sea
 ```
 
-### Architecture-board questions
-
-The learner must be able to explain:
-
-- why Layer 4 load balancing is insufficient for hostname/path routing;
-- listener, rule, backend pool, backend setting and health probe relationships;
-- public versus private Application Gateway frontend design;
-- path-based versus multi-site routing;
-- TLS termination versus end-to-end TLS;
-- why a healthy network path can still produce an HTTP application failure;
-- Application Gateway versus Azure Front Door;
-- Traffic Manager versus Azure Front Door;
-- how regional and global Layer 7 services can coexist in one architecture.
-
-## Security boundary for this module
-
-Application Gateway and Front Door can participate in WAF-protected architectures, but detailed Web Application Firewall security policy belongs in Module 6. Module 5 introduces the delivery architecture without stealing the security module's learning objectives.
+The Module 4 TCP telemetry architecture remains deployed and unchanged.
 
 ## Carry-forward into Module 6
 
-BlueHarbor now has a sophisticated global network and application-delivery architecture. The Security team asks:
+BlueHarbor now has real Internet-facing network and web-delivery resources that Security can harden rather than hypothetical targets.
 
-> How do we defend these networks and applications against unwanted traffic, attacks and policy violations?
+Module 6 must determine:
 
-That starts Module 6 — Design and implement network security.
+- DDoS scope for actual public IP-backed resources;
+- NSG/ASG segmentation around actual workloads;
+- central Azure Firewall routing through the existing Virtual WAN architecture;
+- how securing Virtual WAN affects existing routes/connections;
+- WAF tier/policy placement for the actual Application Gateways and Front Door;
+- how to reduce or control direct origin bypass.

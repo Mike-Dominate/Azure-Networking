@@ -1,36 +1,46 @@
 # Unit 02 — Design Azure Application Gateway
 
-**BlueHarbor chapter:** Build the regional web entrance  
+**BlueHarbor chapter:** Create the Australia East Partner Hub landing zone and regional web entrance  
 **Status:** NOT STARTED
 
-## Business event
+## New application VNet
 
-BlueHarbor needs one controlled HTTP(S) entry point in Australia East for multiple Partner Hub services.
+Add deliberately:
 
-## Architecture
+```text
+bhi-vnet-partner-aue   10.40.0.0/16
+  snet-appgw           10.40.1.0/24
+  snet-partner-app     10.40.2.0/24
+```
+
+Do not place Partner Hub inside Manufacturing, Core or the Module 4 telemetry service.
+
+Connect `bhi-vnet-partner-aue` to the existing `bhi-vhub-aue` so it participates in the cumulative enterprise network.
+
+## Dedicated gateway subnet
+
+`snet-appgw` is dedicated to Application Gateway. The `/24` allocation deliberately leaves Application Gateway v2 scale/maintenance headroom.
+
+## Explicit application egress
+
+`snet-partner-app` receives a regional NAT-managed outbound path (`nat-partner-aue`) rather than relying on implicit/default outbound connectivity.
+
+## Regional architecture
 
 ```text
 Internet
    |
-HTTPS
+HTTP(S)
    |
-Application Gateway
+appgw-partner-aue   Standard_v2
    |
-+-- Engineering pool
-+-- Orders pool
-+-- Support pool
+   +-- Engineering pool
+   +-- Orders pool
+   +-- Support pool
+   |
+snet-partner-app
 ```
 
-## Concepts to master
+Design listeners, rules, pools, backend settings, probes and TLS from the application requirement.
 
-- frontend IP
-- listener
-- routing rule
-- backend pool
-- backend setting
-- health probe
-- TLS concepts
-- public versus private frontend
-- Application Gateway subnet placement
-
-The design starts from application requirements: who connects, what host/path they request, where TLS terminates and which backend should process the request.
+WAF is deliberately deferred to Module 6.

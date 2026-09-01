@@ -14,30 +14,26 @@ Each unit = previous deployed estate + next requirement.
 
 No routine destroy between units/modules. Persistent infrastructure is Terraform-managed; CLI/Portal/protocol tools validate and troubleshoot.
 
-## Story-design milestone
-
-Stories for Modules 1–8 are designed. Formal learning execution still begins at Module 1 Unit 01 after the architecture audit is complete.
-
 ## Architecture audit status
 
 ```text
 Gate 1  M1 -> M2   PASS
 Gate 2  M2 -> M3   PASS
 Gate 3  M3 -> M4   PASS
-Gate 4  M4 -> M5   NEXT
-Gate 5  M5 -> M6   PENDING
+Gate 4  M4 -> M5   PASS
+Gate 5  M5 -> M6   NEXT
 Gate 6  M6 -> M7   PENDING
 Gate 7  M7 -> M8   PENDING
 ```
 
-See [`ARCHITECTURE-DEPENDENCY-AUDIT.md`](ARCHITECTURE-DEPENDENCY-AUDIT.md) for the canonical decision record.
+See [`ARCHITECTURE-DEPENDENCY-AUDIT.md`](ARCHITECTURE-DEPENDENCY-AUDIT.md) for the canonical decisions.
 
-## Approved architecture through Module 3
+## Approved cumulative architecture through Module 4
 
 ```text
 M1
 Core / Manufacturing / Research VNets
-DNS / peering / routing
+DNS / peerings / routing
 NAT on snet-mfg-app
 
 M2
@@ -49,69 +45,60 @@ Brisbane + Perth + remote users
 M3
 ExpressRoute added to bhi-vhub-aue
 VPN retained as alternate path
+
+M4
+Device Telemetry Ingest TCP/9000
+AUE + SEA public Standard Load Balancers
+Traffic Manager Priority AUE -> SEA
 ```
 
-Hybrid DNS resolver endpoint subnets belong in `bhi-vnet-core-aue`:
-
-```text
-snet-dns-inbound    10.10.10.0/28
-snet-dns-outbound   10.10.10.16/28
-```
-
-Reserved:
-
-```text
-bhi-vhub-sea   10.200.4.0/22
-```
-
-## Approved Module 4 application-availability architecture
-
-New workload:
-
-```text
-BlueHarbor Device Telemetry Ingest
-TCP/9000
-```
+## Approved Module 5 Partner Hub architecture
 
 Australia East:
 
 ```text
-existing bhi-vnet-mfg-aue / snet-mfg-app
- -> telemetry backends
- -> public Standard lb-telemetry-aue
- -> reuse existing Module 1 NAT for backend outbound
+bhi-vnet-partner-aue   10.40.0.0/16
+  snet-appgw           10.40.1.0/24
+  snet-partner-app     10.40.2.0/24
+
+nat-partner-aue
+appgw-partner-aue Standard_v2
+Virtual WAN connection -> bhi-vhub-aue
 ```
 
-Southeast Asia DR:
+Southeast Asia activation:
 
 ```text
-existing bhi-vnet-research-sea
- -> add snet-telemetry-dr 10.30.3.0/24
- -> telemetry DR backends
- -> public Standard lb-telemetry-sea
+bhi-vhub-sea           10.200.4.0/22
+
+bhi-vnet-partner-sea   10.50.0.0/16
+  snet-appgw           10.50.1.0/24
+  snet-partner-app     10.50.2.0/24
+
+nat-partner-sea
+appgw-partner-sea Standard_v2
+Virtual WAN connection -> bhi-vhub-sea
 ```
 
-Global service selection:
+Research Virtual WAN connection changes from AUE hub to SEA hub; the Research VNet and Module 4 telemetry resources remain unchanged.
+
+Global HTTP(S):
 
 ```text
-Traffic Manager
-Priority 1 -> AUE
-Priority 2 -> SEA
-monitor TCP/9000
+Azure Front Door Standard
+ -> appgw-partner-aue
+ -> appgw-partner-sea
 ```
 
-Two failure layers:
+`portal.blueharbor.example` is a narrative hostname only. Live practicals use Azure-generated reachable endpoints unless a real learner-owned domain is later supplied.
 
-```text
-backend failure  -> handled by regional Load Balancer
-regional failure -> handled by Traffic Manager DNS selection
-```
+The Module 4 telemetry stack remains deployed and separate.
 
 ## Current programme phase
 
 - **Curriculum execution position:** Module 1 Unit 01 remains the first teaching/build unit.
 - **Story design:** COMPLETE.
-- **Architecture audit:** Gates 1–3 PASS; Gate 4 NEXT.
+- **Architecture audit:** Gates 1–4 PASS; Gate 5 NEXT.
 - **Terraform build:** NOT STARTED.
 - **Azure deployment:** NOT STARTED for the new BlueHarbor build.
 
@@ -122,7 +109,7 @@ Do not start implementation yet.
 Proceed with:
 
 ```text
-Gate 4 — Module 4 -> Module 5
+Gate 5 — Module 5 -> Module 6
 ```
 
-Audit only that transition, fix conflicts, obtain approval, then move to Gate 5.
+Audit only that transition, fix conflicts, obtain approval, then move to Gate 6.

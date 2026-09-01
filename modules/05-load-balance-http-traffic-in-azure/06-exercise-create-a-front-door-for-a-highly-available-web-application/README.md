@@ -1,31 +1,45 @@
 # Unit 06 — Exercise: Create a Front Door for a highly available web application
 
-**BlueHarbor chapter:** Prove global origin failover  
+**BlueHarbor chapter:** Add global HTTP(S) delivery over the two real Partner Hub origins  
 **Status:** NOT STARTED
 
-## Target architecture
+## Existing origins
 
 ```text
-portal.blueharbor.example
-        |
-Azure Front Door
-        |
-   +----+----+
-   |         |
-Australia   Europe
-origin      origin
+Australia East
+appgw-partner-aue Standard_v2
+
+Southeast Asia
+appgw-partner-sea Standard_v2
+```
+
+Do not create hypothetical or disposable origins for this exercise.
+
+## Terraform delta
+
+Add Azure Front Door Standard to the same state:
+
+```text
+Front Door Standard
+  |
+origin group
+  +-- AUE Application Gateway public origin
+  +-- SEA Application Gateway public origin
+  |
+routes / health probes
 ```
 
 ## Required practical behaviour
 
-- build the Microsoft exercise objective in the BlueHarbor story;
-- validate origins, origin group and routes;
+- validate origins/origin group/routes;
 - test normal HTTP(S) delivery;
-- deliberately fail one origin;
-- observe health and routing behaviour;
-- compare the result with Traffic Manager's DNS-based failover model;
-- introduce and troubleshoot one route/origin/host configuration error;
-- use Azure CLI/Terraform where appropriate;
-- capture evidence and tear down safely.
+- fail one regional origin;
+- observe origin health and Front Door routing behaviour;
+- compare this directly with Module 4 Traffic Manager DNS failover;
+- troubleshoot one route/origin/host configuration error.
 
-The key lesson is that Front Door remains in the web application path, whereas Traffic Manager changes DNS answers and then leaves the data path.
+## Deliberate security boundary
+
+Application Gateway origins are public in Module 5 so the delivery architecture is visible and testable. Gate 5/Module 6 must decide how to prevent or control direct origin bypass and where WAF enforcement belongs.
+
+No teardown follows; Front Door and both regional Partner Hub stacks remain deployed.

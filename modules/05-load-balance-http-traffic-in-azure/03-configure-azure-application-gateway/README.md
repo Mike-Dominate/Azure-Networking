@@ -3,31 +3,28 @@
 **BlueHarbor chapter:** Route Partner Hub requests intelligently  
 **Status:** NOT STARTED
 
-## Business requirements
+## Routing contract
 
 ```text
-/engineering/* -> Engineering backend
-/orders/*      -> Orders backend
-/support/*     -> Support backend
+/engineering/* -> Engineering backend/pool
+/orders/*      -> Orders backend/pool
+/support/*     -> Support backend/pool
 ```
 
-BlueHarbor may also use hostname-based routing such as:
-
-```text
-engineering.blueharbor.example
-orders.blueharbor.example
-support.blueharbor.example
-```
+Use the Australia East landing zone already designed in Unit 02.
 
 ## Concepts to master
 
-- path-based routing
-- multi-site / hostname routing
-- listeners
-- rules
-- backend pools/settings
-- custom health probes
-- TLS termination versus end-to-end TLS
-- host-header/backend-setting behaviour
+- listeners;
+- path-based request-routing rules;
+- multi-site/hostname routing where practical;
+- backend pools/settings;
+- custom health probes;
+- host-header behaviour;
+- TLS termination versus end-to-end TLS.
 
-A backend can have perfect IP connectivity and still fail because the HTTP configuration or health check is wrong.
+A backend can have valid IP connectivity and still fail because of HTTP host, TLS, backend-setting or health-path configuration.
+
+## Hostname/TLS guardrail
+
+`portal.blueharbor.example` is the narrative name, not a real domain we claim to control. The live practical uses Azure-generated endpoint names and suitable lab TLS material unless a real public domain is deliberately supplied later.

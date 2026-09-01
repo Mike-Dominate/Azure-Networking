@@ -1,25 +1,41 @@
 # Unit 04 — Exercise: Deploy Azure Application Gateway
 
-**BlueHarbor chapter:** Build and break the regional Partner Hub path  
+**BlueHarbor chapter:** Build and troubleshoot the Australia East Partner Hub  
 **Status:** NOT STARTED
 
-## Story-first practical
+Preserve the Microsoft exercise objective, but implement the persistent architecture through the existing `blueharbor/terraform/` root.
 
-Build this unit fresh when reached in sequence. The practical must fit the BlueHarbor architecture created by earlier modules.
-
-## Target behaviour
+## Expected cumulative Terraform delta
 
 ```text
-Client -> Application Gateway -> healthy regional backend
+existing Modules 1–4
++
+bhi-vnet-partner-aue 10.40.0.0/16
++
+snet-appgw       10.40.1.0/24
+snet-partner-app  10.40.2.0/24
++
+Virtual WAN VNet connection -> bhi-vhub-aue
++
+nat-partner-aue / explicit app-subnet egress
++
+Partner Hub backend compute/services
++
+appgw-partner-aue Standard_v2
 ```
 
-## Required validation/failure work
+## Validation/failure work
 
-- validate listener/rule/pool/probe relationships;
 - generate real HTTP(S) requests;
-- stop one backend and prove healthy backends continue serving traffic;
-- break the configured health path and inspect backend health;
-- introduce one HTTP-layer configuration error such as host-header/backend-setting mismatch;
-- diagnose the failure without blaming the network blindly;
-- reproduce with Azure CLI and Terraform where appropriate;
-- capture evidence and tear down safely.
+- prove path-based routing;
+- inspect listener/rule/pool/probe relationships;
+- make one backend unhealthy;
+- break the configured health path;
+- introduce a host-header/backend-setting error;
+- identify whether the failure is IP reachability or Layer 7 configuration.
+
+A successful apply is not proof of correct application delivery.
+
+## Carry-forward rule
+
+Do not tear the unit down. The Partner Hub AUE resources remain deployed and become the first real origin for Front Door later in the module.
