@@ -4,12 +4,11 @@
 
 **Microsoft Learn module:** Design and implement hybrid networking  
 **Status:** NOT STARTED  
-**Company:** BlueHarbor Industries (BHI)  
 **Terraform model:** extend the same cumulative `blueharbor/terraform/` state
 
 ## Starting point from Module 1
 
-Module 1 is already deployed and remains present:
+Module 1 is deployed and remains present:
 
 ```text
 Australia East
@@ -33,67 +32,43 @@ bhi-vnet-research-sea   10.30.0.0/16
 + selected NAT
 ```
 
-Nothing above is renamed or recreated for Module 2.
-
-BlueHarbor still operates:
+BlueHarbor also has:
 
 ```text
 Brisbane HQ / Data Centre        172.16.0.0/16
 Perth Manufacturing Site         172.17.0.0/16
-Remote engineers                 home / hotel / customer networks
+Remote engineers                 variable networks
 Reserved P2S client pool         172.31.240.0/24
 ```
 
 The business problem is:
 
-> The Azure estate works internally. Now connect BlueHarbor's physical locations and individual remote users into that same private network.
+> The Azure estate works internally. Connect BlueHarbor's sites and remote users into that same network, then evolve the design when individually managed connectivity stops scaling.
 
 ---
 
 ## Chapter 01 — Introduction: Azure is an island
 
-Brisbane/Perth have no hybrid route into the Terraform-managed Azure environment.
-
-```text
-Brisbane 172.16.0.0/16             BlueHarbor Azure 10.x
-       |                                  |
-       X ---------- no path ------------- X
-```
-
-Establish requirements for office/factory network connectivity, individual-device access and larger branch-scale connectivity.
+Brisbane and Perth have no hybrid route into Azure. Establish requirements for network-to-network, individual-device and branch-scale connectivity.
 
 ---
 
-## Chapter 02 — Design Azure VPN Gateway: add a dedicated connectivity edge
+## Chapter 02 — Design Azure VPN Gateway: build the first hybrid edge
 
-Management approves encrypted Internet-based hybrid connectivity.
-
-Instead of inserting the gateway into `bhi-vnet-core-aue`, add a dedicated connectivity VNet:
+Add a dedicated connectivity VNet:
 
 ```text
 bhi-vnet-connectivity-aue   10.100.0.0/16
-
-  snet-dns-inbound          10.100.10.0/28
-  snet-dns-outbound         10.100.10.16/28
   GatewaySubnet             10.100.255.0/26
 ```
 
-The DNS subnets are reserved for the hybrid DNS requirement later in this module. `GatewaySubnet` is reserved solely for the virtual network gateway service.
+The classic VPN Gateway belongs here rather than inside Core/Manufacturing/Research.
 
-Concepts:
-
-- VPN Gateway
-- `GatewaySubnet`
-- gateway SKU / availability
-- gateway public IP
-- route-based versus policy-based concepts
-- throughput / resiliency
-- address-space non-overlap
-- dedicated connectivity VNet versus workload VNets
+Teach gateway SKU/availability, public IP, route-based concepts, throughput, resiliency and non-overlap.
 
 ---
 
-## Chapter 03 — Exercise: create the virtual network gateway
+## Chapter 03 — Exercise: create the classic virtual network gateway
 
 Extend the same Terraform stack with:
 
@@ -102,11 +77,10 @@ bhi-vnet-connectivity-aue
 GatewaySubnet
 VPN Gateway public IP
 Azure VPN Gateway
+connectivity-VNet peerings
 ```
 
-Then create directional peerings between the connectivity VNet and the existing workload VNets.
-
-For classic VPN gateway transit, explicitly reason about settings such as:
+During this stage, explicitly configure and understand classic gateway transit:
 
 ```text
 connectivity side:
@@ -118,176 +92,171 @@ workload side:
   allow_forwarded_traffic where required
 ```
 
-Do not assume VNet peering is transitive.
-
-Validate that no Module 1 resource was unexpectedly destroyed/replaced by the Terraform plan.
+Do not assume peering is transitive. Stop if Terraform proposes unexpected replacement of Module 1 resources.
 
 ---
 
-## Chapter 04 — Site-to-Site VPN: Brisbane HQ joins the existing Azure estate
+## Chapter 04 — Site-to-Site VPN: Brisbane joins Azure
 
-Add Azure's representation of Brisbane and the VPN connection:
+Add:
 
 ```text
-Brisbane HQ 172.16.0.0/16
-       |
-on-premises VPN device/simulation
-       |
-   IPsec/IKE
-       |
-Azure VPN Gateway
-bhi-vnet-connectivity-aue
-       |
-explicit gateway transit
-       |
-Core / Manufacturing / Research
+Brisbane 172.16.0.0/16
+ -> remote VPN device/simulation
+ -> IPsec/IKE
+ -> classic Azure VPN Gateway
+ -> gateway transit
+ -> existing BlueHarbor workload VNets
 ```
 
-Persistent Terraform additions include the Local Network Gateway and Connection resource plus any required in-place peering changes.
-
-### Critical mental model
-
-The Local Network Gateway is Azure's representation of the remote VPN endpoint/prefixes. It is not the physical router.
+Persistent additions include the Local Network Gateway and VPN Connection.
 
 ### Hybrid DNS extension
 
-IP connectivity and name resolution are tested separately.
+IP reachability and DNS are tested separately.
 
-When Brisbane must resolve BlueHarbor private Azure names, extend the Module 1 DNS design rather than replace it.
+When Brisbane must resolve private BlueHarbor names, add resolver endpoint subnets to the **existing Core/Shared Services VNet**:
 
-The reserved resolver subnets allow Azure DNS Private Resolver endpoints/forwarding configuration to be added when required.
+```text
+bhi-vnet-core-aue
+  snet-dns-inbound    10.10.10.0/28
+  snet-dns-outbound   10.10.10.16/28
+```
 
-Validation questions:
+Then add Azure DNS Private Resolver/forwarding components only when the requirement is reached.
+
+Validation:
 
 ```text
 Can Brisbane reach the Azure private IP?
-Can Brisbane resolve the Azure private name?
-Can Azure resolve required on-premises names if that requirement is enabled?
+Can Brisbane resolve the private Azure name?
+Can Azure resolve required on-premises names when that requirement is enabled?
 ```
 
 ---
 
 ## Chapter 05 — Point-to-Site VPN: a remote engineer needs access
 
-An individual remote engineer needs private access without connecting an entire hotel/customer network.
-
-```text
-remote laptop
-     |
-client VPN
-     |
-Azure VPN Gateway
-     |
-existing BlueHarbor Azure estate
-```
-
-Use the reserved client address pool:
+Use the reserved client pool:
 
 ```text
 172.31.240.0/24
 ```
 
-Cover client protocol/authentication choices, route presentation and DNS behaviour while connected.
-
-Validate failure before connection and successful private access after connection.
+Teach client protocol/authentication, route presentation and DNS behaviour. Prove failure before the tunnel and successful access after it.
 
 ---
 
-## Chapter 06 — Azure Virtual WAN: branch scale creates a new architecture question
+## Chapter 06 — Virtual WAN: scale forces an architecture evolution
 
-BlueHarbor grows beyond a few direct relationships.
-
-Virtual WAN is introduced because branch/user connectivity is becoming an operational architecture problem, not because Module 2 starts over.
-
-Potential estate now includes:
-
-```text
-Brisbane HQ
-Perth factory
-future branches
-remote engineers
-Azure Australia
-Azure Southeast Asia
-```
+BlueHarbor now has Brisbane, more remote users and a Perth manufacturing site that must come online. The number of relationships is becoming an operational problem.
 
 Introduce:
 
-- Azure Virtual WAN
-- Virtual Hub
-- sites
-- VNet connections
-- hub routing
-- S2S/P2S integration
-- transitive connectivity concepts
+```text
+bhi-vwan
+bhi-vhub-aue   10.200.0.0/22
+```
 
-### Important audit guardrail
+Reserve for future regional expansion:
 
-Do not assume the existing workload VNets can simultaneously keep classic `use_remote_gateways` peering behaviour and be attached to Virtual WAN with no design change.
+```text
+bhi-vhub-sea   10.200.4.0/22
+```
 
-The exact coexistence/migration approach must be decided before implementation and is a primary Gate 2 audit item.
+The Southeast Asia hub is only a reserved address contract at this point; it is not deployed without a later business requirement.
+
+### Why `/22`
+
+The Australia East hub is deliberately sized now for later secured-hub/Azure Firewall requirements so Module 6 does not force an avoidable redesign.
+
+### Perth becomes real here
+
+Perth (`172.17.0.0/16`) is the first new branch proving why Virtual WAN exists. It must not magically appear at the start of Module 3.
 
 ---
 
-## Chapter 07 — Exercise: create a Virtual WAN
+## Chapter 07 — Exercise: create Virtual WAN and migrate production transit
 
-Add the approved Virtual WAN proof/evolution to the **same Terraform state**.
+Preserve Microsoft's Virtual WAN exercise objective, but implement the persistent BlueHarbor architecture through the same Terraform root.
 
-Do not destroy the classic VPN edge merely to make the exercise easier.
+The target end state is:
 
-Before connecting an existing workload VNet to a Virtual Hub, verify the gateway/remote-gateway constraints and deliberately document any Terraform in-place changes required to migrate that VNet's gateway ownership.
+```text
+Brisbane ----\
+              \
+Perth --------> bhi-vhub-aue ---- Core
+               |                 Manufacturing
+Remote users ->|                 Research
+```
 
-The exercise must therefore show architecture evolution, not a disconnected Virtual WAN sandbox.
+### Intentional Terraform migration
+
+The workload VNets must not simultaneously rely on the classic peered remote gateway and the Virtual WAN hub as if there were no ownership conflict.
+
+When their Virtual Hub VNet connections become active:
+
+```text
+classic workload-side use_remote_gateways
+  -> intentionally disabled/changed
+
+Virtual Hub VNet connections
+  -> added
+```
+
+Any associated peering changes are reviewed as intentional plan deltas.
+
+The existing direct Module 1 peerings remain unless another requirement explicitly removes them.
+
+### Classic edge remains
+
+Do **not** delete:
+
+```text
+bhi-vnet-connectivity-aue
+GatewaySubnet
+classic VPN Gateway
+classic S2S/P2S Azure objects
+```
+
+They remain in Terraform as the architecture BlueHarbor built first. After migration, however, Virtual WAN is the active production transit for the workload estate.
+
+Where practical, migrate approved remote-user connectivity into the Virtual WAN user-VPN model while preserving the earlier classic P2S objects as the learned first stage.
 
 ---
 
 ## Chapter 08 — NVA in a virtual hub
 
-BlueHarbor already uses partner SD-WAN/security technology at some locations.
+BlueHarbor may integrate approved partner SD-WAN/security technology with the existing `bhi-vhub-aue`. Do not create a separate hub just to demonstrate NVA concepts.
 
-Understand how a supported partner NVA can participate in the Virtual WAN design and how routing/security responsibility changes.
-
-Where licensing/provider dependencies prevent a real deployment, keep the architecture object relationships in the cumulative story and use rigorous route/failure analysis rather than inventing an unrelated lab.
+If licensing/provider dependencies prevent real deployment, retain rigorous route/control-plane/failure analysis in this same architecture.
 
 ---
 
-## Chapter 09 — Summary
+## Chapter 09 — Summary: Module 2 end state
 
-Explain:
-
-```text
-Brisbane server
- -> remote VPN device
- -> IPsec/IKE
- -> Azure VPN Gateway
- -> connectivity VNet
- -> gateway-transit relationship
- -> Module 1 workload VNet
-```
-
-and:
+Active production transit at the end of Module 2:
 
 ```text
-remote engineer
- -> client authentication
- -> P2S tunnel
- -> P2S client address
- -> Azure route / DNS path
- -> permitted workload
+bhi-vwan
+  |
+  +-- bhi-vhub-aue   10.200.0.0/22
+       |
+       +-- Brisbane S2S / branch path
+       +-- Perth S2S / branch path
+       +-- approved remote-user VPN path
+       +-- VNet connections
+            +-- bhi-vnet-core-aue
+            +-- bhi-vnet-mfg-aue
+            +-- bhi-vnet-research-sea
 ```
 
-and explain what problem Virtual WAN solves as BlueHarbor scales.
+Hybrid DNS is anchored in Core/Shared Services. The classic connectivity VNet and gateway remain deployed in the same Terraform state as the earlier hybrid stage.
 
-## Module 2 end-state question for the next audit
+## Carry-forward into Module 3
 
-Module 3 introduces ExpressRoute.
+The business question becomes:
 
-Before implementation begins, the Module 2 -> Module 3 audit must decide exactly how these coexist/evolve:
+> VPN and Virtual WAN now connect the company. Which mission-critical paths should use ExpressRoute as the preferred enterprise transport while VPN remains available as an alternate path?
 
-```text
-classic connectivity VNet + VPN Gateway
-Virtual WAN / Virtual Hub
-workload VNet gateway-transit settings
-ExpressRoute gateway/circuit design
-```
-
-The objective is one coherent Terraform dependency graph, not three independent connectivity demos.
+Module 3 must add ExpressRoute to the **existing Virtual WAN hub**, not create a second hub architecture.

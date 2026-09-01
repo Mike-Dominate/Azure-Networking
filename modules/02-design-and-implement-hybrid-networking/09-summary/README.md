@@ -3,42 +3,45 @@
 **BlueHarbor chapter:** Hybrid-network architecture review  
 **Status:** NOT STARTED
 
-## Architecture-board challenge
-
-Explain the complete hybrid path without relying on the Portal.
-
-### Scenario 1 — Site-to-Site
+## Explain the progression
 
 ```text
-Brisbane server
- -> on-prem VPN device
- -> IPsec/IKE tunnel
- -> Azure VPN Gateway
- -> Azure route
- -> private workload
+Module 1 Azure estate
+  -> classic connectivity VNet
+  -> classic VPN Gateway
+  -> Brisbane S2S
+  -> remote-user P2S
+  -> branch scale problem
+  -> Virtual WAN
+  -> Perth joins
+  -> workload transit migrates to bhi-vhub-aue
 ```
 
-Explain what the Local Network Gateway represents, where encryption begins/ends and why this is network-to-network connectivity.
+## Canonical end state
 
-### Scenario 2 — Point-to-Site
+Active transit:
 
 ```text
-Remote laptop
- -> authentication
- -> client VPN tunnel
- -> client VPN address
- -> Azure route
- -> permitted private workload
+bhi-vwan
+  |
+  +-- bhi-vhub-aue   10.200.0.0/22
+       +-- Brisbane
+       +-- Perth
+       +-- remote users
+       +-- Core / Manufacturing / Research VNet connections
 ```
 
-Explain authentication, client addressing, route/DNS behaviour and why only one device is connected.
+Still present in the same Terraform state:
 
-### Scenario 3 — Scale
+```text
+bhi-vnet-connectivity-aue
+GatewaySubnet
+classic VPN Gateway
+classic S2S/P2S Azure objects
+```
 
-Explain why BlueHarbor might move from individually managed branch/user connectivity to Virtual WAN, and where an NVA/SD-WAN integration can fit.
+Hybrid DNS is extended from `bhi-vnet-core-aue`, not tied to the legacy gateway VNet.
 
-## Module 2 exit condition
+## Handoff to Module 3
 
-The learner can design, trace and troubleshoot the gateway, tunnel, route and endpoint involved in each hybrid scenario.
-
-The next story question is whether mission-critical BlueHarbor connectivity requires a private enterprise circuit rather than Internet-based VPN as the primary path. That begins Module 3 — ExpressRoute.
+ExpressRoute must attach to the existing `bhi-vhub-aue`. The production design becomes ExpressRoute-preferred with VPN retained as an alternate path according to the routing design validated at implementation time.

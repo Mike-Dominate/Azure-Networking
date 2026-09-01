@@ -1,30 +1,44 @@
 # Unit 04 — Exercise: Configure an ExpressRoute gateway
 
-**BlueHarbor chapter:** Prepare Azure VNets for ExpressRoute  
+**BlueHarbor chapter:** Add ExpressRoute capability to the existing Virtual WAN hub  
 **Status:** NOT STARTED
 
-## Business event
+## Microsoft exercise baseline
 
-The ExpressRoute design is approved. BlueHarbor now prepares the Azure VNet side of the architecture.
+Understand the classic Microsoft model:
 
-## Architecture
+```text
+ExpressRoute circuit
+ -> ExpressRoute virtual network gateway
+ -> GatewaySubnet
+ -> VNet
+```
+
+That model remains important AZ-700 knowledge.
+
+## BlueHarbor persistent implementation
+
+Do not create a second transit VNet or a new `CoreServicesVnet` just to reproduce the exercise topology.
+
+Extend the cumulative architecture:
 
 ```text
 ExpressRoute circuit
         |
-ExpressRoute Gateway
+Virtual WAN ExpressRoute Gateway
         |
-BlueHarbor VNet(s)
+bhi-vhub-aue
+        |
+existing Core / Manufacturing / Research VNet connections
 ```
 
-## Critical distinction
+Terraform must add the hub ExpressRoute-gateway capability without rebuilding Module 1/2 resources.
 
-```text
-Circuit != Gateway
-```
+## Explain-back
 
-The circuit represents the private connectivity service. The ExpressRoute gateway connects Azure VNets into that connectivity architecture.
+Be able to compare:
 
-## BlueHarbor engineering extension
-
-After completing the Microsoft exercise, inspect and explain the `GatewaySubnet`, gateway SKU/type, VNet relationship and how this differs from the VPN gateway learned in Module 2.
+- classic VNet ExpressRoute Gateway;
+- Virtual WAN ExpressRoute Gateway;
+- ExpressRoute circuit;
+- the role of `GatewaySubnet` in the classic model versus the managed Virtual Hub gateway model used by BlueHarbor.

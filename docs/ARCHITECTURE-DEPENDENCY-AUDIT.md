@@ -1,33 +1,28 @@
 # BlueHarbor Architecture & Terraform Dependency Audit
 
-This is the running gate record for the full progressive project.
-
-The audit is intentionally performed one transition at a time before any new BlueHarbor Azure resources are deployed.
+This is the running gate record for the progressive BlueHarbor project. Audit one transition at a time before any BlueHarbor Azure deployment begins.
 
 ## Gate status
 
 | Gate | Transition | Status |
 |---:|---|---|
 | 1 | Module 1 -> Module 2 | **PASS — corrected and approved** |
-| 2 | Module 2 -> Module 3 | PENDING |
-| 3 | Module 3 -> Module 4 | PENDING |
+| 2 | Module 2 -> Module 3 | **PASS — corrected and approved** |
+| 3 | Module 3 -> Module 4 | **NEXT** |
 | 4 | Module 4 -> Module 5 | PENDING |
 | 5 | Module 5 -> Module 6 | PENDING |
 | 6 | Module 6 -> Module 7 | PENDING |
 | 7 | Module 7 -> Module 8 | PENDING |
 
-A gate passes only when story continuity, Azure architecture continuity and Terraform/state continuity all agree.
+A gate passes only when story continuity, Azure architecture continuity and Terraform/state continuity agree.
 
 ---
 
 # Gate 1 — Module 1 -> Module 2
 
-**Status:** PASS  
-**Decision:** Module 2 must start from the exact deployed Terraform state produced by Module 1.
+**Status:** PASS
 
-## Canonical Module 1 end-state contract
-
-### Australia East
+## Module 1 end-state contract
 
 ```text
 bhi-vnet-core-aue       10.10.0.0/16
@@ -37,180 +32,236 @@ bhi-vnet-core-aue       10.10.0.0/16
 bhi-vnet-mfg-aue        10.20.0.0/16
   snet-mfg-app          10.20.1.0/24
   snet-mfg-data         10.20.2.0/24
-```
 
-### Southeast Asia
-
-```text
 bhi-vnet-research-sea   10.30.0.0/16
   snet-research-app     10.30.1.0/24
   snet-research-data    10.30.2.0/24
 ```
 
-### Module 1 capabilities that remain deployed
+Carry forward DNS, direct peerings, routing, selected workload NAT and the same Terraform state.
 
-```text
-three canonical VNets/subnets
-private DNS architecture and VNet links
-Core <-> Manufacturing peering
-Core <-> Research global peering
-routing / UDR learning configuration
-selected workload NAT Gateway association(s)
-all Terraform code and the same state lineage
-```
-
-## Canonical Module 2 additions
-
-Module 2 does not place the classic VPN Gateway inside a workload VNet.
-
-It adds a dedicated connectivity VNet:
+## Classic Module 2 addition
 
 ```text
 bhi-vnet-connectivity-aue   10.100.0.0/16
-  snet-dns-inbound          10.100.10.0/28   reserved for hybrid DNS requirement
-  snet-dns-outbound         10.100.10.16/28  reserved for hybrid DNS requirement
   GatewaySubnet             10.100.255.0/26
+
+VPN Gateway
+Brisbane S2S
+classic P2S pool 172.31.240.0/24
+classic gateway-transit relationships during the early VPN stage
 ```
 
-Then add, in Microsoft Learn order as requirements appear:
+### Gate 2 revision to Gate 1 DNS reservation
 
-```text
-VPN Gateway public IP
-Azure VPN Gateway
-connectivity-VNet peerings
-Gateway Transit / Use Remote Gateways where required
-Brisbane Local Network Gateway
-Site-to-Site VPN connection
-Point-to-Site configuration
-P2S client pool 172.31.240.0/24
-hybrid DNS resolver/forwarding components when the hybrid DNS requirement appears
-Virtual WAN / Virtual Hub later in Module 2
-```
+The original Gate 1 draft placed future DNS Private Resolver endpoint subnets in the connectivity VNet. Gate 2 corrected this before deployment.
 
-## Corrections made by this audit
-
-### 1. Naming drift — FIXED
-
-Do not use `CoreServicesVnet`, `ManufacturingVnet` or `ResearchVnet` as alternate resource names.
-
-Canonical names remain:
+Canonical placement is now:
 
 ```text
 bhi-vnet-core-aue
-bhi-vnet-mfg-aue
-bhi-vnet-research-sea
+  snet-dns-inbound    10.10.10.0/28
+  snet-dns-outbound   10.10.10.16/28
 ```
 
-### 2. "Conceptual" Module 1 starting state — FIXED
+Reason: hybrid DNS belongs with Core/Shared Services and must not be coupled to the legacy classic VPN-gateway VNet that cannot become an ordinary Virtual WAN spoke.
 
-Module 2 no longer assumes Module 1 merely exists conceptually.
+## Guardrails retained from Gate 1
 
-The rule is:
+- canonical resource names only;
+- Module 2 starts from deployed Module 1 code/state/resources;
+- no blind NAT/NSG/UDR application to special-purpose subnets;
+- IP reachability and DNS resolution validated independently;
+- gateway transit explicitly configured rather than assumed;
+- no new Terraform root/state per module.
+
+---
+
+# Gate 2 — Module 2 -> Module 3
+
+**Status:** PASS
+
+## Problem resolved
+
+Module 2 teaches classic VPN Gateway first, then introduces Virtual WAN. Module 3 introduces ExpressRoute. Without an explicit transition, these could become three disconnected hub designs.
+
+Approved progression:
 
 ```text
-Module 1 code + state + deployed Azure resources
+classic VPN edge
+ -> learn S2S / P2S / gateway transit
+ -> scale problem appears
+ -> Virtual WAN becomes active production transit
+ -> ExpressRoute is added to that SAME Virtual WAN hub
+ -> ExpressRoute preferred for approved critical routes
+ -> VPN retained as alternate path
+```
+
+## Canonical Module 2 end state
+
+Module 1 resources remain deployed.
+
+Classic resources also remain in Terraform:
+
+```text
+bhi-vnet-connectivity-aue   10.100.0.0/16
+GatewaySubnet               10.100.255.0/26
+classic VPN Gateway
+classic S2S/P2S Azure objects
+```
+
+They represent the first hybrid stage but no longer own the workload VNets' production transit after Virtual WAN migration.
+
+### Active production transit
+
+```text
+bhi-vwan
+  |
+  +-- bhi-vhub-aue   10.200.0.0/22
+       |
+       +-- Brisbane 172.16.0.0/16
+       +-- Perth    172.17.0.0/16
+       +-- approved remote users
+       +-- VNet connections
+            +-- bhi-vnet-core-aue
+            +-- bhi-vnet-mfg-aue
+            +-- bhi-vnet-research-sea
+```
+
+Reserve for future use without deploying yet:
+
+```text
+bhi-vhub-sea   10.200.4.0/22
+```
+
+The `/22` hub contract is deliberately chosen early enough for later secured-hub/Azure Firewall requirements.
+
+## Intentional classic -> Virtual WAN migration
+
+Workload VNets cannot be treated as though classic `use_remote_gateways` and Virtual WAN gateway ownership coexist with no change.
+
+When Virtual Hub VNet connections are activated:
+
+```text
+classic workload-side remote-gateway dependency
+ -> intentionally disabled/changed
+
+Virtual Hub VNet connections
+ -> added
+```
+
+Terraform must show these as reviewed in-place/configuration changes. Direct Module 1 VNet peerings remain unless a later requirement explicitly changes them.
+
+## Perth continuity — FIXED
+
+Perth no longer appears magically at the start of Module 3.
+
+It becomes the first scale-out branch in Module 2 Unit 06/07 and participates in the Virtual WAN end state.
+
+## Hybrid DNS placement — FIXED
+
+DNS Private Resolver endpoint subnets are added to `bhi-vnet-core-aue`, not `bhi-vnet-connectivity-aue`.
+
+This lets hybrid DNS remain part of the shared-services architecture as connectivity evolves from VPN to Virtual WAN to ExpressRoute.
+
+## Module 3 ExpressRoute topology — FIXED
+
+Do not create another Core VNet ExpressRoute gateway as BlueHarbor's persistent architecture.
+
+Microsoft's classic VNet ExpressRoute gateway model is learned and compared, but BlueHarbor implements:
+
+```text
+ExpressRoute circuit
         |
-        + Module 2 Terraform delta
-        v
-same cumulative environment
+Virtual WAN ExpressRoute Gateway
+        |
+bhi-vhub-aue
+        |
+existing workload VNet connections
 ```
 
-### 3. Workload VNet gateway placement — FIXED
+No `CoreServicesVnet` alias and no second hub topology.
 
-The classic VPN Gateway goes into `bhi-vnet-connectivity-aue`, not `bhi-vnet-core-aue`.
+## VPN coexistence / resiliency contract
 
-This keeps Core/Manufacturing/Research as workload VNets and avoids unnecessarily coupling the first workload VNet to the classic gateway.
-
-### 4. Gateway transit — ADDED
-
-Site-to-Site reachability to the workload VNets is not assumed to be transitive merely because peering exists.
-
-The Module 2 design must explicitly reason about directional peering settings such as:
+Target production intent:
 
 ```text
-connectivity VNet side:
-  allow_gateway_transit = true
-  allow_forwarded_traffic = true where required
-
-workload VNet side:
-  use_remote_gateways = true when using the classic VPN edge
-  allow_forwarded_traffic = true where required
+ExpressRoute = preferred for approved critical routes
+VPN          = alternate / recovery path
 ```
 
-The exact Terraform properties will be validated against current AzureRM provider behaviour during implementation.
+The exact current Virtual WAN routing preference/propagation settings must be explicitly verified during implementation. Do not rely on an unstated default.
 
-### 5. NAT guardrail — ADDED
+## Global Reach continuity — FIXED
 
-NAT Gateway is attached only to explicitly selected workload subnets.
-
-Do not implement Terraform logic that blindly attaches NAT, NSGs or workload UDRs to every subnet. Special-purpose subnets such as `GatewaySubnet` and DNS Private Resolver endpoint subnets must be handled explicitly.
-
-### 6. Hybrid DNS continuity — ADDED
-
-Module 1 creates the Azure-internal DNS foundation.
-
-Module 2 extends it when on-premises/private clients need name resolution across the hybrid path. It does not create a second unrelated DNS design.
-
-Validation is split into two independent questions:
+Use established physical sites:
 
 ```text
-Can Brisbane reach the Azure private IP?
-Can Brisbane resolve the Azure private name correctly?
+Brisbane <-> ExpressRoute Global Reach concept <-> Perth
 ```
 
-### 7. P2S addressing — RESERVED
+Do not invent a Singapore physical office. Southeast Asia remains an Azure-region requirement unless a later business event explicitly creates a site there.
+
+## FastPath — internal Module 3 dependency, not Gate 2 blocker
+
+Unit 03 must record the chosen provider/ExpressRoute Direct and gateway design. Unit 09 must test that choice against current FastPath eligibility.
+
+If the cumulative design is not eligible, teach the supported architecture and explain the gap; do not create a separate ExpressRoute environment merely to claim FastPath.
+
+## Gate 2 resulting dependency chain
 
 ```text
-172.31.240.0/24
-```
+END MODULE 2
 
-is reserved for the Module 2 P2S client pool and must remain non-overlapping with:
-
-```text
-Brisbane 172.16.0.0/16
-Perth    172.17.0.0/16
-Azure    10.0.0.0/8 allocations used by BlueHarbor
-```
-
-## Gate 1 resulting dependency chain
-
-```text
-END MODULE 1
-
-bhi-vnet-core-aue
-bhi-vnet-mfg-aue
-bhi-vnet-research-sea
-subnets
-DNS
-peerings
-routes
-selected NAT
-same Terraform state
+Module 1 estate
++ classic VPN edge retained
++ bhi-vwan
++ bhi-vhub-aue 10.200.0.0/22
++ Brisbane / Perth / remote users
++ workload VNet connections
++ hybrid DNS in Core
         |
         +
         v
-MODULE 2
+MODULE 3
 
-bhi-vnet-connectivity-aue
-GatewaySubnet
-VPN Gateway
-hybrid peerings / gateway transit
-S2S
-P2S
-hybrid DNS
-later Virtual WAN
+ExpressRoute design
++ Virtual WAN ExpressRoute Gateway
++ ExpressRoute circuit/provider boundary
++ private peering / BGP
++ route preference / resiliency
++ Global Reach using Brisbane + Perth
++ FastPath eligibility analysis
 ```
 
-## Deliberately carried into Gate 2
+## Gate 2 verdict
 
-The next audit must resolve the **evolution from the classic VPN Gateway/transit model into Virtual WAN and then ExpressRoute**.
+```text
+Story transition                 PASS
+Perth continuity                 PASS
+Canonical naming                 PASS
+Classic VPN -> vWAN evolution    PASS
+Hybrid DNS placement             PASS
+Virtual Hub sizing               PASS
+ExpressRoute gateway topology    PASS
+VPN / ExpressRoute coexistence   PASS with explicit routing validation
+Global Reach site continuity     PASS
+FastPath                         TRACKED INSIDE MODULE 3
+```
 
-Specifically check:
+---
 
-- a VNet configured to use a remote gateway through peering cannot simply be assumed to use a Virtual WAN hub as another remote gateway simultaneously;
-- whether Virtual WAN is introduced alongside the classic VPN design, becomes a migration target, or is used for new branches first;
-- which workload VNets connect to the Virtual WAN hub and at what point;
-- how the Module 3 ExpressRoute design attaches without creating contradictory gateway ownership;
-- whether any peering flags need an intentional in-place change rather than an accidental redesign.
+# Gate 3 — Module 3 -> Module 4
 
-This is **not** an unresolved Gate 1 failure. It is the primary question for Gate 2 because it concerns the Module 2 end state and Module 3 starting state.
+**Status:** NEXT
+
+Audit next:
+
+- what exact application/service workload exists by the end of Module 3;
+- whether Module 4's Load Balancer backends already exist or appear magically;
+- where the regional Load Balancer lives and which VNet/subnet it reuses;
+- whether public/internal frontend choices fit the security and later Module 5 story;
+- how Traffic Manager endpoints map to real regional services;
+- whether Southeast Asia needs a real application deployment by this point;
+- what Terraform resources Module 4 adds without changing the transport architecture unnecessarily.

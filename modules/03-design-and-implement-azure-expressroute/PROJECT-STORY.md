@@ -4,470 +4,266 @@
 
 **Microsoft Learn module:** Design and implement Azure ExpressRoute  
 **Status:** NOT STARTED  
-**Company:** BlueHarbor Industries (BHI)
+**Terraform model:** extend the same cumulative `blueharbor/terraform/` state
 
 ## Starting point from Module 2
 
-BlueHarbor already has working hybrid connectivity:
+Virtual WAN is now the active BlueHarbor hybrid transit:
 
 ```text
-Brisbane HQ      -- Site-to-Site VPN --\
-Perth Site       -- Site-to-Site VPN ---+--> BlueHarbor Azure
-Remote Engineers -- Point-to-Site VPN --/
+Brisbane 172.16.0.0/16 ----\
+                            \
+Perth 172.17.0.0/16 --------> bhi-vhub-aue ---- Core
+                             |                 Manufacturing
+Remote users -------------->|                 Research
+                             |
+                         bhi-vwan
 ```
 
-The company can reach Azure. The new problem is no longer basic connectivity.
+Canonical hub:
 
-BlueHarbor now runs mission-critical engineering, manufacturing, ERP and shared-service workloads that require a more predictable enterprise connectivity model.
+```text
+bhi-vhub-aue   10.200.0.0/22
+```
 
-The Module 3 business question is:
+Reserved future hub:
 
-> Which workloads should move from Internet-based VPN as the primary path to private enterprise connectivity through Microsoft and a connectivity provider?
+```text
+bhi-vhub-sea   10.200.4.0/22
+```
 
-The Microsoft Learn unit order remains authoritative. Each unit below is the next chapter of this same project.
+The classic `bhi-vnet-connectivity-aue` VPN edge and its earlier Azure objects remain in Terraform as the first hybrid architecture stage.
+
+The Module 3 question is:
+
+> Which mission-critical paths should use private provider connectivity through ExpressRoute as the preferred path while VPN remains available as an alternate path?
 
 ---
 
-## Chapter 01 — Introduction: VPN works, so why change it?
+## Chapter 01 — VPN works, so why change it?
 
-BlueHarbor's VPN architecture from Module 2 remains valid, but several workloads have become business-critical.
-
-### Business requirement
-
-Review whether Internet-based VPN should remain the primary path for:
-
-- large engineering and PLM transfers;
-- manufacturing systems;
-- ERP workloads;
-- latency-sensitive services;
-- critical shared services.
-
-### Decision to understand
+Review critical ERP, engineering, manufacturing and shared-service requirements. Reinforce:
 
 ```text
-Site-to-Site VPN
-- encrypted over the public Internet
-- relatively simple and flexible
-- appropriate for many hybrid workloads
-
-ExpressRoute
-- private provider connectivity to Microsoft
-- enterprise bandwidth and resiliency options
-- BGP-based routing
-- higher cost and design complexity
+private connectivity != automatic end-to-end encryption
 ```
 
-A key mental model for the entire module:
-
-> Private connectivity and encryption are different properties. ExpressRoute is private connectivity, but privacy alone does not automatically mean end-to-end encryption.
+ExpressRoute is private provider connectivity; encryption is a separate design property.
 
 ---
 
-## Chapter 02 — Explore Azure ExpressRoute: Understand the private path
-
-Architecture asks what ExpressRoute actually consists of before BlueHarbor commits to it.
-
-### Architecture introduced
+## Chapter 02 — Explore ExpressRoute: understand the ownership path
 
 ```text
-BlueHarbor network
-       |
-Customer edge router
-       |
-Connectivity provider
-       |
-ExpressRoute peering location
-       |
-Microsoft network
-       |
-Azure
+BlueHarbor edge
+  -> connectivity provider / ExpressRoute Direct boundary
+  -> ExpressRoute peering location
+  -> Microsoft network
+  -> BlueHarbor Virtual WAN architecture
 ```
 
-### Concepts to master
-
-- ExpressRoute circuit
-- connectivity provider
-- peering location
-- Microsoft Enterprise Edge / Microsoft network edge concepts
-- private enterprise connectivity
-- circuit versus physical connection
-- provider versus Microsoft versus customer responsibilities
-
-### Engineering question
-
-For every component in the path, be able to explain who owns it, what it does and what failure of that component would mean.
+Explain circuit, provider, peering location and customer/Microsoft/provider responsibilities before provisioning anything.
 
 ---
 
-## Chapter 03 — Design an ExpressRoute deployment: Decide what BlueHarbor is actually buying
+## Chapter 03 — Design the ExpressRoute deployment
 
-Procurement asks for an implementable design instead of the instruction 'buy ExpressRoute'.
+Design for the environment that already exists rather than inventing another hub.
 
-### Business requirement
+Decide:
 
-Design private connectivity for BlueHarbor's critical workloads between its physical estate and Azure Australia, while considering future Southeast Asia requirements.
+- provider/connectivity model;
+- peering location;
+- bandwidth;
+- SKU/tier;
+- `bhi-vhub-aue` ExpressRoute gateway sizing/design;
+- private peering/BGP;
+- redundancy/failure domains;
+- VPN alternate-path strategy;
+- whether ExpressRoute Direct is justified/available;
+- whether the chosen model can support the FastPath objective in Unit 09.
 
-### Design decisions
-
-- connectivity model
-- connectivity provider
-- peering location
-- bandwidth
-- SKU / tier
-- gateway architecture
-- regional and global reach requirements
-- redundancy
-- disaster recovery
-- ExpressRoute Direct concepts where appropriate
-- VPN coexistence / backup strategy
-
-### Engineering scenario
+Primary requirement:
 
 ```text
-Brisbane HQ
-   |
-critical ERP / engineering / manufacturing traffic
-   v
-Australia East Azure
-
-Singapore research office
-   |
-future private-connectivity requirement
-   v
-Southeast Asia Azure
+Brisbane / Perth critical traffic
+        -> ExpressRoute
+        -> bhi-vhub-aue
+        -> existing Azure workload VNets
 ```
 
-The learner should be able to justify the design from requirements rather than from memorised defaults.
+Southeast Asia remains an Azure region, not a newly invented physical office.
 
 ---
 
-## Chapter 04 — Exercise: Configure an ExpressRoute gateway
+## Chapter 04 — Exercise: configure an ExpressRoute gateway
 
-The circuit design is approved. BlueHarbor now prepares its Azure VNets to participate in ExpressRoute connectivity.
+Microsoft's exercise teaches the classic model:
 
-### Architecture introduced
+```text
+ExpressRoute circuit
+  -> VNet ExpressRoute Gateway
+  -> VNet
+```
+
+BlueHarbor must understand and compare that model, but its persistent implementation extends the existing Virtual WAN architecture:
 
 ```text
 ExpressRoute circuit
         |
-ExpressRoute Gateway
+Virtual WAN ExpressRoute Gateway
         |
-CoreServicesVnet
+bhi-vhub-aue
         |
-        +-- Manufacturing
-        +-- Research
+Core / Manufacturing / Research
 ```
 
-### Critical distinction
+Do not create `CoreServicesVnet`, another `GatewaySubnet`, or a second transit VNet solely to mimic the exercise topology.
 
-```text
-ExpressRoute circuit
-!=
-ExpressRoute gateway
-```
-
-The circuit represents the private connectivity service toward Microsoft's edge. The gateway connects a VNet to that ExpressRoute connectivity architecture.
-
-### BlueHarbor engineering extension
-
-After the Microsoft exercise, inspect and explain:
-
-- the `GatewaySubnet`;
-- gateway type and SKU;
-- VNet-to-circuit relationship;
-- gateway role in control/data-plane behaviour;
-- how this differs from the VPN gateway work in Module 2.
+A successful deployment must be followed by inspection of gateway scale/SKU concepts, hub relationship and routing implications.
 
 ---
 
-## Chapter 05 — Exercise: Provision an ExpressRoute circuit
+## Chapter 05 — Provision an ExpressRoute circuit
 
-BlueHarbor now orders the logical Azure circuit that the connectivity provider will provision against.
-
-### Provisioning flow
+Create the logical Azure circuit where practical and understand the service-key/provider handoff:
 
 ```text
-BlueHarbor creates ExpressRoute circuit
-        |
-        v
-Azure provides service key
-        |
-        v
-Connectivity provider receives key
-        |
-        v
-Provider provisions connectivity
-        |
-        v
-Circuit progresses through provisioning state
+Terraform creates circuit
+ -> Azure service key / circuit identity
+ -> provider provisioning boundary
+ -> circuit provisioning state
 ```
 
-### Concepts to master
-
-- service provider
-- peering location
-- bandwidth
-- SKU / tier
-- billing model
-- service key
-- provider provisioning state
-- Azure circuit state
-
-### Mental model
-
-The service key is the identifier the provider uses to associate its provisioning work with the correct Azure ExpressRoute circuit.
-
-### Practicality rule
-
-Do not incur carrier-level costs just to claim completion. Use safe Azure-side configuration and serious provider/BGP simulation where a real provider handoff is impractical.
+Do not pretend the external carrier portion exists when it does not.
 
 ---
 
-## Chapter 06 — Configure peering: The private path needs routes
+## Chapter 06 — Configure peering: routes make the private path useful
 
-The circuit exists, but BlueHarbor and Microsoft still need a routing relationship so each side knows which prefixes are reachable.
+Private peering/BGP must ultimately make BlueHarbor prefixes reachable through the existing hub architecture.
 
-### Routing story
+On-premises examples:
 
 ```text
-BlueHarbor advertises
-172.16.0.0/16
-172.17.0.0/16
-
-Azure side provides reachability for
-10.10.0.0/16
-10.20.0.0/16
-10.30.0.0/16
+172.16.0.0/16  Brisbane
+172.17.0.0/16  Perth
 ```
 
-### Concepts to master
+Azure workload prefixes include:
 
-- BGP
-- ASN
-- neighbor / peer
-- BGP session
-- prefix advertisement
-- learned route
-- Azure private peering
-- Microsoft peering
-- route advertisements
+```text
+10.10.0.0/16   Core
+10.20.0.0/16   Manufacturing
+10.30.0.0/16   Research
+```
 
-### Core mental model
+Mental model:
 
-> The private transport path is the road; BGP exchanges the maps that tell each side which destinations are reachable through that road.
+```text
+transport path = road
+BGP advertisements = maps describing reachable destinations
+```
 
-Azure private peering should be anchored first as the path between BlueHarbor private networks and Azure private addresses.
+Trace learned routes through the Virtual WAN ExpressRoute gateway and hub router rather than through a fictional Core VNet gateway.
 
 ---
 
-## Chapter 07 — Design an ExpressRoute circuit for resiliency
+## Chapter 07 — Resiliency: ExpressRoute preferred, VPN retained
 
-Management asks a production question:
+BlueHarbor does not discard the VPN architecture simply because ExpressRoute exists.
 
-> What happens if a fibre, router, provider path or peering location fails?
-
-### Business requirement
-
-Loss of one component must not unnecessarily isolate critical BlueHarbor production workloads.
-
-### Resiliency progression
+Target production intent:
 
 ```text
-single path
-   -> dual physical paths
-   -> redundant BGP sessions
-   -> provider diversity
-   -> peering-location diversity
-   -> circuit diversity
-   -> regional disaster-recovery strategy
+ExpressRoute = preferred path for approved critical routes
+VPN          = alternate / recovery path
 ```
 
-### Concepts to master
+The exact routing preference and failover configuration must be verified against current Azure Virtual WAN/ExpressRoute behaviour during implementation; do not rely on an unstated default.
 
-- ExpressRoute built-in redundancy concepts
-- dual BGP sessions
-- active/active path reasoning
-- multiple circuits
-- provider diversity
-- peering-location diversity
-- disaster recovery
-- Bidirectional Forwarding Detection (BFD) concepts
-- encryption-over-ExpressRoute design considerations
-- VPN as an alternate path where appropriate
-
-The learner must learn to identify shared failure domains instead of assuming that two lines on a diagram equal resilience.
+Teach dual paths/BGP sessions, circuit/provider/location diversity, BFD concepts, disaster recovery and encryption-over-ExpressRoute decisions.
 
 ---
 
-## Chapter 08 — ExpressRoute Global Reach: Connect BlueHarbor sites through Microsoft's backbone
+## Chapter 08 — Global Reach: reuse Brisbane and Perth
 
-BlueHarbor now has multiple physical locations connected through compatible ExpressRoute circuits and asks whether those sites can communicate privately through Microsoft's network.
+Do not invent a Singapore office.
 
-### Architecture
-
-```text
-Brisbane on-premises
-        |
-   ExpressRoute
-        |
-Microsoft backbone
-        |
-   ExpressRoute
-        |
-Singapore on-premises
-```
-
-### Business requirement
-
-Provide private site-to-site connectivity between supported BlueHarbor on-premises locations without making Azure workloads the destination of every flow.
-
-### Mental model
+Use the physical sites already established in Module 2:
 
 ```text
-Normal ExpressRoute
-on-premises -> Microsoft/Azure
-
-Global Reach
-on-premises -> Microsoft backbone -> other on-premises
+Brisbane
+  |
+ExpressRoute circuit / provider path A
+  |
+Microsoft backbone / Global Reach concept
+  |
+ExpressRoute circuit / provider path B
+  |
+Perth Manufacturing
 ```
 
-The learner should be able to distinguish Global Reach from VNet peering, VPN and ordinary ExpressRoute VNet connectivity.
+Where actual carrier circuits are unavailable, treat the provider-dependent portion as architecture/configuration/failure analysis while preserving the same BlueHarbor sites.
 
 ---
 
-## Chapter 09 — ExpressRoute FastPath: Shorten selected data paths
+## Chapter 09 — FastPath: eligibility must match the chosen circuit model
 
-A latency-sensitive BlueHarbor manufacturing or engineering workload requires a more direct data path.
+Do not claim FastPath merely because the unit exists.
 
-### Normal mental model
+Unit 03 must record the actual provider/Direct and gateway design. Unit 09 then determines whether that combination supports the required FastPath behaviour.
 
-```text
-On-premises
-   |
-ExpressRoute
-   |
-ExpressRoute Gateway
-   |
-Azure workload
-```
-
-### FastPath mental model
+Mental distinction:
 
 ```text
-Control / route architecture
-still includes the ExpressRoute gateway
-
-Supported data path
-On-premises
-   |
-ExpressRoute
-   +----------> Azure workload
-       FastPath
+control-plane architecture still requires the ExpressRoute gateway
+supported FastPath traffic can use a more direct data path
 ```
 
-### Concepts to master
-
-- FastPath purpose
-- control-plane versus data-plane reasoning
-- supported traffic/path behaviour
-- why 'FastPath is faster' is an incomplete explanation
-
-The learner should be able to explain what changes in the data path and what architectural role the gateway still retains.
+If the chosen cumulative lab model is not eligible, teach the exact supported design and explain why BlueHarbor's current lab path cannot activate it rather than creating a disconnected environment.
 
 ---
 
-## Chapter 10 — Troubleshoot ExpressRoute connection issues: Production incident
+## Chapter 10 — Troubleshoot the complete enterprise path
 
-At 09:15 on Monday, BlueHarbor Manufacturing reports that an Azure ERP service is unreachable from Brisbane.
-
-The learner must troubleshoot the path methodically rather than restart components randomly.
-
-### Troubleshooting chain
+Troubleshooting chain:
 
 ```text
-Application / destination
-        |
-Azure NIC / VNet route
-        |
-ExpressRoute Gateway
-        |
-BGP learned route
-        |
-ExpressRoute peering
-        |
-Circuit state
-        |
-Provider path
-        |
-BlueHarbor edge router
+application / destination
+ -> VNet route
+ -> Virtual Hub VNet connection / hub routing
+ -> Virtual WAN ExpressRoute Gateway
+ -> learned BGP route
+ -> private peering
+ -> circuit state
+ -> provider path
+ -> BlueHarbor edge
 ```
 
-### Deliberate failure candidates
-
-- BGP session down
-- incorrect ASN
-- incorrect peer addressing
-- expected prefix not advertised
-- route filtering problem
-- provider provisioning problem
-- gateway not connected as expected
-- route preference issue
-- asymmetric routing
-- single-path/provider failure
-
-### Troubleshooting principle
-
-```text
-circuit
- -> peering
- -> BGP
- -> learned routes
- -> gateway / VNet
- -> workload
-```
-
-BGP depth for this module should be practical rather than certification-detour depth: ASN, neighbor, session, prefix, advertisement, learned route and preferred path.
+Also compare the VPN alternate path when diagnosing preference/failover or asymmetric-routing issues.
 
 ---
 
-## Chapter 11 — Summary and resources: BlueHarbor Architecture Review Board
+## Chapter 11 — Architecture Review Board
 
-The learner presents the complete enterprise-connectivity design and answers questions without relying on the Portal.
+Explain without relying on the Portal:
 
-### Explain-back questions
-
-- Why ExpressRoute instead of relying only on Site-to-Site VPN?
-- What useful role can VPN still retain?
-- What is an ExpressRoute circuit?
-- What is an ExpressRoute gateway?
-- What is ExpressRoute peering?
-- What routes does BGP exchange?
-- What happens when a provider path or circuit fails?
-- Why and when would BlueHarbor use Global Reach?
-- Why and when would BlueHarbor use FastPath?
-- Does private ExpressRoute connectivity automatically mean encrypted traffic?
-- Where would encryption be introduced when required?
-- How would you troubleshoot an outage from provider edge to Azure workload?
-
-## Definition of done for Module 3
-
-The learner can design, explain and troubleshoot:
-
-- the ExpressRoute end-to-end ownership model;
-- connectivity model, SKU/tier and peering-location choices;
+- why ExpressRoute was added to Virtual WAN rather than creating a second hub;
 - circuit versus gateway;
-- provider provisioning and service key flow;
-- Azure private and Microsoft peering concepts;
-- BGP route exchange;
-- redundancy and disaster recovery;
-- Global Reach;
-- FastPath;
-- common ExpressRoute failure scenarios.
+- classic VNet ExpressRoute gateway versus Virtual WAN ExpressRoute gateway;
+- BGP/private peering;
+- why VPN remains useful;
+- route preference/failover;
+- Brisbane/Perth Global Reach reasoning;
+- FastPath eligibility;
+- privacy versus encryption;
+- the end-to-end troubleshooting sequence.
 
 ## Carry-forward into Module 4
 
-BlueHarbor now has mature network connectivity, but application availability introduces the next question:
+At the end of Module 3, BlueHarbor has mature transport to the existing Azure estate. The next problem is service availability:
 
-> How should client traffic be distributed across healthy service endpoints when one backend, region or endpoint becomes unavailable?
+> The network path can be healthy while an application backend is unhealthy. How should traffic be distributed across healthy service endpoints?
 
-That leads into Module 4 — Load balance non-HTTP(S) traffic in Azure.
+That starts Module 4 without resetting any connectivity built so far.

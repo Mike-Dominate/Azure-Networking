@@ -2,29 +2,41 @@
 
 **Microsoft Learn:** https://learn.microsoft.com/en-us/training/modules/design-implement-azure-expressroute/
 
-**BlueHarbor project:** Upgrade BlueHarbor to enterprise private connectivity  
+**BlueHarbor project:** Add enterprise private connectivity to the existing Virtual WAN transit  
 **Status:** NOT STARTED
 
-Module 3 continues from Module 2. BlueHarbor already has VPN-based hybrid connectivity; the new requirement is to decide which mission-critical workloads need private enterprise connectivity with higher-bandwidth and resilience options.
-
-The module is taught as one progressive project:
+Module 3 does not build a new hub. It starts from the Module 2 production transit:
 
 ```text
-VPN connectivity already works
-        -> review enterprise requirements
-        -> understand ExpressRoute
-        -> design circuit/connectivity model
-        -> configure Azure ExpressRoute gateway
-        -> provision the logical circuit
-        -> establish BGP peering / route exchange
-        -> design resiliency and disaster recovery
-        -> connect sites with Global Reach
-        -> optimise selected paths with FastPath
-        -> break the path and troubleshoot systematically
-        -> architecture-board explain-back
+bhi-vwan
+  |
+  +-- bhi-vhub-aue   10.200.0.0/22
+       +-- Brisbane / Perth branch connectivity
+       +-- approved remote-user connectivity
+       +-- Core / Manufacturing / Research VNet connections
 ```
 
-Read [`PROJECT-STORY.md`](PROJECT-STORY.md) before starting the module.
+The classic VPN edge from early Module 2 is also still present in Terraform, but Virtual WAN owns the workload estate's active hybrid transit.
+
+The Module 3 business problem is:
+
+> Which mission-critical paths should use ExpressRoute as the preferred enterprise transport while VPN remains available as an alternate path?
+
+## Progressive Module 3 architecture
+
+```text
+existing Virtual WAN / VPN connectivity
+        -> understand ExpressRoute ownership and transport
+        -> design circuit/provider/BGP/resiliency
+        -> learn the classic ExpressRoute VNet-gateway model
+        -> implement BlueHarbor's ExpressRoute Gateway in bhi-vhub-aue
+        -> provision/connect the circuit where practical
+        -> configure private peering/BGP
+        -> make route preference/failover behaviour explicit
+        -> use Brisbane + Perth for Global Reach reasoning
+        -> evaluate FastPath eligibility against the chosen circuit model
+        -> troubleshoot the complete path
+```
 
 ## Microsoft Learn units
 
@@ -40,21 +52,10 @@ Read [`PROJECT-STORY.md`](PROJECT-STORY.md) before starting the module.
 10. Troubleshoot ExpressRoute connection issues
 11. Summary and resources
 
-## Starting architecture
+## Important implementation rule
 
-```text
-BlueHarbor hybrid connectivity from Module 2
-
-Brisbane HQ / Data Centre    172.16.0.0/16
-Perth Manufacturing         172.17.0.0/16
-Remote engineers            P2S VPN where needed
-
-Azure
-CoreServicesVnet            10.10.0.0/16
-ManufacturingVnet           10.20.0.0/16
-ResearchVnet                10.30.0.0/16
-```
+Microsoft's Unit 04 teaches the classic VNet ExpressRoute gateway model. BlueHarbor must understand that model, but its persistent Terraform implementation uses the **existing Virtual WAN hub ExpressRoute gateway** so the cumulative architecture does not fork into a second transit design.
 
 ## Practicality rule
 
-A personal Azure subscription cannot realistically reproduce every carrier/provider component of a production ExpressRoute deployment. Use real Azure-side configuration where safe, then use serious architecture, BGP, provider-handoff, routing and failure simulation for components that would otherwise require commercial connectivity or excessive cost.
+Provider/carrier dependencies may prevent a complete live ExpressRoute transport. Build all useful Azure-side objects through the cumulative Terraform stack and use rigorous provider/BGP/route/failure analysis where an external service-provider handoff is genuinely required.

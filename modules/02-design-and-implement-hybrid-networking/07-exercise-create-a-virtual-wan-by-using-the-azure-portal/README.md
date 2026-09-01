@@ -1,14 +1,40 @@
 # Unit 07 — Exercise: Create a Virtual WAN by using the Azure portal
 
-**BlueHarbor chapter:** Add the approved Virtual WAN evolution to the same estate  
+**BlueHarbor chapter:** Make Virtual WAN the active production transit  
 **Status:** NOT STARTED
 
-Preserve Microsoft's Virtual WAN exercise objective, but persistent BlueHarbor infrastructure is implemented through the cumulative Terraform stack.
+Preserve Microsoft's Virtual WAN exercise objective, but implement BlueHarbor's persistent architecture through the cumulative Terraform stack.
 
-## Rule
+## Build on what already exists
 
-Do not destroy/recreate the Module 1 estate or the classic Module 2 VPN edge merely to obtain a clean Virtual WAN exercise.
+Do not destroy the Module 1 VNets or the classic Module 2 VPN edge.
 
-Before connecting an existing workload VNet to the Virtual Hub, verify current Azure gateway/remote-gateway constraints and document the intentional Terraform change required.
+Add/configure:
 
-The exercise must end with one coherent state lineage and a clear explanation of which connectivity model currently owns which workload/site paths.
+```text
+bhi-vwan
+bhi-vhub-aue   10.200.0.0/22
+Brisbane branch/site connectivity
+Perth branch/site connectivity
+approved remote-user connectivity where practical
+VNet connections for Core / Manufacturing / Research
+```
+
+## Intentional migration
+
+Before a workload VNet is attached to `bhi-vhub-aue`, change any classic `use_remote_gateways` dependency that conflicts with Virtual WAN gateway ownership.
+
+Terraform must show this as an understood architecture delta, not accidental drift.
+
+The direct Module 1 peerings can remain; Virtual WAN becomes the active hybrid transit layer.
+
+## End-state rule
+
+At the end of this unit:
+
+```text
+Virtual WAN = active production transit
+classic VPN edge = still deployed / historical first-stage architecture
+```
+
+The state lineage remains continuous.

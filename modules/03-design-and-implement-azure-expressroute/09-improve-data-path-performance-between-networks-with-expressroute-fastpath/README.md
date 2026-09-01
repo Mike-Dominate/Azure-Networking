@@ -1,37 +1,28 @@
 # Unit 09 — Improve data path performance between networks with ExpressRoute FastPath
 
-**BlueHarbor chapter:** Shorten selected data paths  
+**BlueHarbor chapter:** Evaluate and use FastPath only if the cumulative ExpressRoute design is eligible  
 **Status:** NOT STARTED
 
-## Business event
+## Dependency
 
-A latency-sensitive manufacturing or engineering workload requires a more direct supported ExpressRoute data path.
+Unit 03 must already have recorded the chosen ExpressRoute connectivity model and gateway design.
 
-## Normal model
+Do not create another ExpressRoute architecture simply to demonstrate FastPath.
 
-```text
-On-premises
- -> ExpressRoute
- -> ExpressRoute Gateway
- -> Azure workload
-```
-
-## FastPath model
+## Mental model
 
 ```text
-Gateway remains important to the control/routing architecture
+control/routing architecture
+still includes the ExpressRoute gateway
 
-Supported data traffic
-On-premises
- -> ExpressRoute
- -> Azure workload
+supported FastPath data traffic
+can use a more direct supported path to the Azure workload
 ```
 
-## Concepts to master
+## Engineering rule
 
-- FastPath purpose
-- control plane versus data plane
-- supported traffic/path behaviour
-- gateway role after FastPath is enabled
+First verify whether BlueHarbor's actual provider/ExpressRoute Direct and Virtual WAN gateway combination supports the required FastPath behaviour.
 
-'FastPath is faster' is not a sufficient explanation. The learner must explain what changes in the data path.
+If it does, implement/validate it in the same architecture. If it does not, explain the supported reference design and the exact eligibility gap instead of falsely claiming activation.
+
+'FastPath is faster' is not a sufficient explanation; describe the control-plane and data-plane difference.

@@ -1,44 +1,34 @@
 # Unit 10 — Troubleshoot ExpressRoute connection issues
 
-**BlueHarbor chapter:** Production incident  
+**BlueHarbor chapter:** Diagnose the production enterprise path systematically  
 **Status:** NOT STARTED
-
-## Incident
-
-BlueHarbor Manufacturing reports that an Azure ERP workload is unreachable from Brisbane.
 
 ## Troubleshooting chain
 
 ```text
 application / destination
- -> Azure NIC / VNet route
- -> ExpressRoute Gateway
+ -> Azure workload route
+ -> Virtual Hub VNet connection / hub routing
+ -> Virtual WAN ExpressRoute Gateway
  -> BGP learned route
- -> ExpressRoute peering
+ -> ExpressRoute private peering
  -> circuit state
  -> provider path
  -> BlueHarbor edge
 ```
 
-## Deliberate failure candidates
+Compare the existing VPN path when investigating route preference, failover, asymmetry or unexpected path selection.
 
-- BGP session down
-- wrong ASN
-- wrong peer addressing
-- missing prefix advertisement
-- route filtering
-- provider provisioning issue
-- gateway/circuit relationship issue
-- route preference problem
-- asymmetric routing
-- provider/path failure
+## Failure candidates
 
-## Operating principle
+- BGP session down;
+- incorrect ASN/peering addressing;
+- expected prefix not advertised;
+- route filtering/propagation issue;
+- provider provisioning problem;
+- circuit/gateway connection issue;
+- hub routing preference issue;
+- asymmetric routing;
+- provider/circuit failure.
 
-Troubleshoot in layers:
-
-```text
-circuit -> peering -> BGP -> routes -> gateway/VNet -> workload
-```
-
-BGP depth remains Azure-practical: ASN, neighbor, session, prefix, advertisement, learned route and preferred path.
+Troubleshoot evidence-first rather than restarting components randomly.

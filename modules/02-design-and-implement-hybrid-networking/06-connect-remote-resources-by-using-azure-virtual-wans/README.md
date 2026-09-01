@@ -3,18 +3,38 @@
 **BlueHarbor chapter:** Scale beyond individually managed hybrid relationships  
 **Status:** NOT STARTED
 
-BlueHarbor now has classic VPN connectivity knowledge plus growing branch/remote-user requirements.
+## Starting state
 
-Virtual WAN is introduced as an evolution of the same enterprise architecture.
+BlueHarbor already understands and has Terraform-managed classic VPN connectivity through `bhi-vnet-connectivity-aue`.
 
-## Important dependency guardrail
+## Business event
 
-Do not assume a workload VNet that currently uses a remote VPN Gateway through peering can also be attached to a Virtual WAN hub with no change to gateway ownership/peering settings.
+Perth Manufacturing (`172.17.0.0/16`) now needs connectivity, remote-user demand is growing and future branches are expected. This is the first point where branch scale makes the classic relationship model operationally awkward.
 
-Before implementation, the architecture audit must decide whether Virtual WAN:
+## Architecture introduced
 
-- initially serves new branches/spokes alongside the classic VPN design;
-- becomes an intentional migration target for selected existing workload VNets; or
-- uses another staged coexistence pattern supported by current Azure constraints.
+```text
+bhi-vwan
+  |
+  +-- bhi-vhub-aue   10.200.0.0/22
+```
 
-Any required peering/gateway change must be represented as an understood Terraform delta, not hidden by building a disconnected demo environment.
+Reserve for future use:
+
+```text
+bhi-vhub-sea   10.200.4.0/22
+```
+
+## Critical progression
+
+Perth becomes a real branch in the story here; it must not appear magically in Module 3.
+
+Virtual WAN is an evolution of the same estate, not a disconnected exercise.
+
+## Migration guardrail
+
+A workload VNet that currently uses the classic remote VPN gateway through peering must not simply be assumed to use the Virtual WAN hub simultaneously with no configuration change.
+
+Unit 07 will intentionally migrate gateway ownership by changing the appropriate classic remote-gateway peering settings and adding Virtual Hub VNet connections.
+
+The existing classic VPN resources remain in Terraform as the earlier stage.

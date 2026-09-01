@@ -1,20 +1,18 @@
 # Unit 08 — Connect geographically dispersed networks with ExpressRoute global reach
 
-**BlueHarbor chapter:** Connect BlueHarbor sites through Microsoft's backbone  
+**BlueHarbor chapter:** Connect the existing Brisbane and Perth sites through Microsoft's backbone  
 **Status:** NOT STARTED
 
-## Business event
+## Story continuity
 
-Multiple BlueHarbor physical sites now connect through compatible ExpressRoute circuits and need private site-to-site communication.
-
-## Architecture
+Do not invent a Singapore office. Reuse the two physical locations already established in Module 2:
 
 ```text
-Brisbane on-premises
- -> ExpressRoute
- -> Microsoft backbone
- -> ExpressRoute
- -> Singapore on-premises
+Brisbane HQ
+ -> ExpressRoute circuit/provider path A
+ -> Microsoft backbone / Global Reach
+ -> ExpressRoute circuit/provider path B
+ -> Perth Manufacturing
 ```
 
 ## Mental model
@@ -27,4 +25,4 @@ Global Reach
 on-premises -> Microsoft backbone -> another on-premises site
 ```
 
-The learner must distinguish Global Reach from VNet peering, Site-to-Site VPN and ordinary VNet-to-ExpressRoute connectivity.
+If real carrier circuits are unavailable, preserve this same architecture in serious circuit/BGP/routing/failure analysis rather than creating a disconnected demo topology.
