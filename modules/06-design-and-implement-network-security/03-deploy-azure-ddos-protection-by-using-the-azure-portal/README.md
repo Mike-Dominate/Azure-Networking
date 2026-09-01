@@ -1,30 +1,28 @@
 # Unit 03 — Deploy Azure DDoS Protection by using the Azure portal
 
-**BlueHarbor chapter:** Protect public network availability  
+**BlueHarbor chapter:** Protect the public-IP attack surface that actually exists  
 **Status:** NOT STARTED
 
-## Business event
+Create one BlueHarbor DDoS Network Protection plan and associate it with eligible VNets containing public-IP-backed services.
 
-The BlueHarbor Partner Hub and public IP services create an Internet attack surface. Security now considers network-layer denial-of-service resilience.
-
-## Layer distinction
+Primary candidates already exist:
 
 ```text
-DDoS Protection
-= network/infrastructure availability protection
-
-WAF
-= HTTP(S) application-request protection
+bhi-vnet-mfg-aue        -> public telemetry Load Balancer
+bhi-vnet-research-sea   -> public telemetry Load Balancer
+bhi-vnet-partner-aue    -> public Application Gateway
+bhi-vnet-partner-sea    -> public Application Gateway
 ```
 
-## Concepts to master
+Evaluate the classic connectivity VNet/public gateway against the current DDoS service eligibility when the unit is implemented; do not assume unsupported coverage.
 
-- DDoS attack/mitigation purpose
-- protected public-service context
-- VNet/public IP relationship at the level required by the current Azure service model
-- monitoring/telemetry expectations
-- what DDoS Protection does not replace
+Azure Front Door is not attached to this VNet plan. Treat Front Door's platform DDoS model separately while protecting eligible origin VNets.
 
-## Cost rule
+Do not attach the VNet DDoS plan to Virtual WAN secured hubs.
 
-Verify current pricing and deployment behaviour before the practical. Do not leave a billable protection configuration running only to preserve lab state.
+```text
+DDoS Protection = network/infrastructure availability
+WAF             = HTTP(S) application-request protection
+```
+
+The plan is part of the cumulative Terraform state; no routine teardown follows.

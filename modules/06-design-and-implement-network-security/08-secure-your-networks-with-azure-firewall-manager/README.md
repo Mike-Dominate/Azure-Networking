@@ -1,28 +1,27 @@
 # Unit 08 — Secure your networks with Azure Firewall Manager
 
-**BlueHarbor chapter:** Centralise firewall governance  
+**BlueHarbor chapter:** Centralise the policy before securing the second region  
 **Status:** NOT STARTED
 
-## Business event
+AUE now has a real Azure Firewall enforcement point. SEA still needs the same security architecture without becoming an independent snowflake.
 
-BlueHarbor now has multiple regions, firewall policies and Virtual WAN connectivity. Security does not want independent snowflake firewall configurations.
-
-## Mental model
+Mental model:
 
 ```text
 Azure Firewall
-= enforcement / packet-processing service
+= packet-processing enforcement
 
-Azure Firewall Manager
-= central management and policy orchestration
+Firewall Manager / Firewall Policy
+= management-plane governance and central policy
 ```
 
-## Concepts to master
+Approved policy model:
 
-- Firewall Policy
-- central rule governance
-- policy hierarchy/inheritance concepts where applicable
-- hub and VNet management models
-- management plane versus packet-processing plane
+```text
+fwpol-bhi-global
+        |
+        +-- azfw-bhi-aue
+        +-- azfw-bhi-sea when Unit 09 adds SEA enforcement
+```
 
-The learner should be able to explain what Firewall Manager manages and what component actually processes the traffic.
+Learn policy hierarchy/inheritance and secured-hub management concepts while preserving one cumulative security architecture.

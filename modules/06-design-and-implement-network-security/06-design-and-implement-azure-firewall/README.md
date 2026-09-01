@@ -1,35 +1,41 @@
 # Unit 06 — Design and implement Azure Firewall
 
-**BlueHarbor chapter:** Introduce central traffic inspection and policy  
+**BlueHarbor chapter:** Design central enforcement inside the existing Virtual WAN  
 **Status:** NOT STARTED
 
-## Business event
+Do not create a second hub/firewall architecture.
 
-BlueHarbor has outgrown purely distributed subnet rules. Security requires central inspection and controlled outbound access for selected network flows.
-
-## Architecture
+Existing hubs:
 
 ```text
-workload subnet
- -> route table / UDR
- -> Azure Firewall
- -> policy decision
- -> approved destination
+bhi-vhub-aue   10.200.0.0/22
+bhi-vhub-sea   10.200.4.0/22
 ```
 
-## Concepts to master
+Target:
 
-- Azure Firewall role
-- deployment/subnet architecture
-- SKU and design considerations
-- network rules
-- application rules
-- NAT-rule concepts
-- firewall policy/rule intent
-- central egress inspection
-- DNS/FQDN dependencies where relevant
-- routing dependency
+```text
+fwpol-bhi-global
+  |
+  +-- azfw-bhi-aue
+  +-- azfw-bhi-sea
+```
 
-## Core lesson
+Learn Microsoft's classic Azure Firewall deployment model where required, but BlueHarbor's persistent implementation uses the existing Virtual WAN secured-hub architecture.
 
-A firewall cannot inspect packets that do not traverse it. Routing and firewall policy are distinct parts of the same enforcement design.
+## Critical routing distinction
+
+```text
+private/internal backend traffic
+ -> candidate for secured-hub/firewall enforcement
+
+public Application Gateway subnet
+ -> requires supported direct public return-path design
+
+public telemetry Load Balancer backend subnet
+ -> requires symmetric public/NAT return-path design
+```
+
+A blanket `0.0.0.0/0 -> Firewall` across every subnet is forbidden.
+
+A firewall only enforces packets that traverse it; a correct rule on the wrong path provides no enforcement.

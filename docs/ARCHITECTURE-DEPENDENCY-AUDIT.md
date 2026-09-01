@@ -10,8 +10,8 @@ This is the running gate record for the progressive BlueHarbor project. Audit on
 | 2 | Module 2 -> Module 3 | **PASS — corrected and approved** |
 | 3 | Module 3 -> Module 4 | **PASS — corrected and approved** |
 | 4 | Module 4 -> Module 5 | **PASS — corrected and approved** |
-| 5 | Module 5 -> Module 6 | **NEXT** |
-| 6 | Module 6 -> Module 7 | PENDING |
+| 5 | Module 5 -> Module 6 | **PASS — corrected and approved** |
+| 6 | Module 6 -> Module 7 | **NEXT** |
 | 7 | Module 7 -> Module 8 | PENDING |
 
 A gate passes only when story continuity, Azure architecture continuity and Terraform/state continuity agree.
@@ -22,37 +22,17 @@ A gate passes only when story continuity, Azure architecture continuity and Terr
 
 **Status:** PASS
 
-Canonical Module 1 network:
+Canonical network contracts:
 
 ```text
 bhi-vnet-core-aue       10.10.0.0/16
-  snet-management       10.10.1.0/24
-  snet-shared-services  10.10.2.0/24
-
 bhi-vnet-mfg-aue        10.20.0.0/16
-  snet-mfg-app          10.20.1.0/24
-  snet-mfg-data         10.20.2.0/24
-
 bhi-vnet-research-sea   10.30.0.0/16
-  snet-research-app     10.30.1.0/24
-  snet-research-data    10.30.2.0/24
 ```
 
-Module 1 carries DNS, direct peerings, routing and explicit NAT-managed outbound connectivity on `snet-mfg-app`.
+Module 1 establishes DNS, direct peerings, routing and `nat-mfg-aue` on `snet-mfg-app`.
 
-Classic Module 2 edge:
-
-```text
-bhi-vnet-connectivity-aue   10.100.0.0/16
-  GatewaySubnet             10.100.255.0/26
-```
-
-Hybrid DNS resolver endpoint subnets are anchored in Core:
-
-```text
-snet-dns-inbound    10.10.10.0/28
-snet-dns-outbound   10.10.10.16/28
-```
+Module 2 adds a classic VPN edge, then evolves production transit into `bhi-vwan` / `bhi-vhub-aue` while hybrid DNS is anchored in Core.
 
 ---
 
@@ -63,29 +43,24 @@ snet-dns-outbound   10.10.10.16/28
 Approved progression:
 
 ```text
-classic VPN edge
- -> S2S / P2S / gateway-transit learning
- -> Virtual WAN becomes active production transit
- -> ExpressRoute is added to that SAME Virtual WAN hub
+classic VPN learning
+ -> Virtual WAN production transit
+ -> ExpressRoute added to same AUE hub
  -> ExpressRoute preferred for approved critical routes
  -> VPN retained as alternate path
 ```
 
-Active AUE hub:
+AUE hub:
 
 ```text
 bhi-vhub-aue   10.200.0.0/22
 ```
 
-Initially connected to Core, Manufacturing and Research plus Brisbane/Perth/remote connectivity.
-
-Reserved during Gate 2:
+SEA hub CIDR reserved:
 
 ```text
-bhi-vhub-sea   10.200.4.0/22
+10.200.4.0/22
 ```
-
-Module 3 adds ExpressRoute to `bhi-vhub-aue`, not another Core VNet gateway topology. Global Reach reuses Brisbane + Perth. FastPath eligibility remains tied to the actual Module 3 circuit/gateway model.
 
 ---
 
@@ -93,46 +68,31 @@ Module 3 adds ExpressRoute to `bhi-vhub-aue`, not another Core VNet gateway topo
 
 **Status:** PASS
 
-Module 4 explicitly introduces:
+Module 4 introduces Device Telemetry Ingest on TCP/9000.
+
+AUE:
 
 ```text
-BlueHarbor Device Telemetry Ingest
-TCP/9000
-```
-
-Australia East reuses:
-
-```text
-bhi-vnet-mfg-aue / snet-mfg-app
+snet-mfg-app
  -> telemetry backends
- -> public Standard lb-telemetry-aue
- -> existing Module 1 NAT outbound
+ -> lb-telemetry-aue
+ -> nat-mfg-aue
 ```
 
-Southeast Asia reuses `bhi-vnet-research-sea` and adds:
+SEA:
 
 ```text
-snet-telemetry-dr   10.30.3.0/24
- -> telemetry DR backends
- -> public Standard lb-telemetry-sea
+snet-telemetry-dr 10.30.3.0/24
+ -> telemetry backends
+ -> lb-telemetry-sea
+ -> nat-telemetry-sea
 ```
 
-Traffic Manager is added only after both regional endpoints exist:
+### Gate 5 correction to Gate 3
 
-```text
-Priority 1 -> AUE
-Priority 2 -> SEA
-monitor TCP/9000
-```
+`nat-telemetry-sea` is now explicit. The original Gate 3 design omitted SEA backend outbound/return-path ownership. This is corrected before deployment.
 
-Availability distinction:
-
-```text
-backend failure  -> regional Load Balancer
-regional failure -> Traffic Manager DNS selection
-```
-
-Transport architecture remains unchanged.
+Traffic Manager provides Priority DNS failover AUE -> SEA.
 
 ---
 
@@ -140,177 +100,227 @@ Transport architecture remains unchanged.
 
 **Status:** PASS
 
-## Problem resolved
+Partner Hub is a separate HTTP(S) application.
 
-Module 5 correctly introduces Partner Hub as a different HTTP(S) application, but the original story created an unexplained app VNet, used a Europe origin inconsistent with BlueHarbor's canonical regions, pointed Front Door at vague origins, and still contained disposable-lab/teardown language.
-
-Approved correction: Partner Hub gets explicit regional application landing zones that join the existing Virtual WAN estate, and Front Door is created only after two real regional Application Gateway origins exist.
-
-## Partner Hub remains distinct from telemetry
+AUE:
 
 ```text
-Module 4
-Device Telemetry Ingest -> TCP/9000 -> Load Balancer / Traffic Manager
-
-Module 5
-Partner Hub -> HTTP(S) -> Application Gateway / Front Door
+bhi-vnet-partner-aue 10.40.0.0/16
+  snet-appgw       10.40.1.0/24
+  snet-partner-app 10.40.2.0/24
+  nat-partner-aue
+  appgw-partner-aue Standard_v2
+  connection -> bhi-vhub-aue
 ```
 
-No telemetry resource is relabelled as Partner Hub infrastructure.
-
-## Australia East Partner landing zone
-
-Add in Module 5:
+SEA:
 
 ```text
-bhi-vnet-partner-aue   10.40.0.0/16
-  snet-appgw           10.40.1.0/24
-  snet-partner-app     10.40.2.0/24
+bhi-vhub-sea 10.200.4.0/22
+
+bhi-vnet-partner-sea 10.50.0.0/16
+  snet-appgw       10.50.1.0/24
+  snet-partner-app 10.50.2.0/24
+  nat-partner-sea
+  appgw-partner-sea Standard_v2
+  connection -> bhi-vhub-sea
 ```
 
-Connect `bhi-vnet-partner-aue` to the existing `bhi-vhub-aue`.
+Research Virtual WAN connection moves from AUE to SEA hub; the Research VNet itself remains intact.
 
-Add explicit app-subnet egress through `nat-partner-aue` and deploy:
-
-```text
-Partner Hub AUE backends
-appgw-partner-aue   Standard_v2
-```
-
-The Application Gateway subnet is dedicated and intentionally `/24` for v2 growth/maintenance headroom.
-
-## Activate the reserved SEA hub
-
-Module 5 Unit 05 provides the first requirement to deploy:
-
-```text
-bhi-vhub-sea   10.200.4.0/22
-```
-
-The Virtual WAN then has regional AUE and SEA hubs.
-
-## Research VNet hub ownership — INTENTIONAL CHANGE
-
-Research cannot be treated as connected to both Virtual WAN hubs simultaneously with no ownership change.
-
-Terraform deliberately changes the Virtual Hub connection:
-
-```text
-old: bhi-vnet-research-sea -> bhi-vhub-aue
-new: bhi-vnet-research-sea -> bhi-vhub-sea
-```
-
-The Research VNet, subnets and Module 4 telemetry DR resources remain intact. The original Core <-> Research global VNet peering remains until a later routing/security requirement explicitly changes it.
-
-## Southeast Asia Partner landing zone
-
-Add:
-
-```text
-bhi-vnet-partner-sea   10.50.0.0/16
-  snet-appgw           10.50.1.0/24
-  snet-partner-app     10.50.2.0/24
-```
-
-Connect it to `bhi-vhub-sea`, add `nat-partner-sea`, Partner Hub SEA backends and:
-
-```text
-appgw-partner-sea   Standard_v2
-```
-
-Europe is removed from the BlueHarbor origin design. Southeast Asia is the canonical secondary Azure region.
-
-## Front Door origins — REAL RESOURCES
-
-Azure Front Door is added only after both Application Gateways exist:
+Global web:
 
 ```text
 Front Door Standard
-  |
-  +-- appgw-partner-aue public origin
-  +-- appgw-partner-sea public origin
-```
-
-Front Door remains in the HTTP(S) data path; Traffic Manager remains DNS-based and separate.
-
-## Explicit outbound design
-
-Partner application subnets use deliberate regional NAT-managed egress. The architecture does not rely on implicit/default outbound behaviour.
-
-Module 6 may later reroute selected outbound traffic through Azure Firewall as an intentional security evolution.
-
-## Security progression — PRESERVED
-
-Module 5 starts with:
-
-```text
-Application Gateway Standard_v2
-Front Door Standard
-```
-
-Module 6 must decide and implement the justified WAF tier/policy/origin-hardening design against these real resources. Security is not pre-solved in Module 5.
-
-## Hostname/TLS guardrail
-
-`portal.blueharbor.example` is narrative documentation, not a domain BlueHarbor's lab claims to own.
-
-Use Azure-generated reachable hostnames/endpoints in the practical unless the learner later provides a real public domain they control.
-
-## Terraform lifecycle — FIXED
-
-Remove the old "build fresh", "Terraform where appropriate" and "safe teardown" model.
-
-Module 5 is:
-
-```text
-existing Modules 1–4 state
-+
-AUE Partner landing zone / Application Gateway
-+
-SEA Virtual Hub activation
-+
-Research hub-connection migration
-+
-SEA Partner landing zone / Application Gateway
-+
-Front Door
-=
-same Terraform state lineage
-```
-
-No routine teardown follows.
-
-## Gate 4 verdict
-
-```text
-Partner Hub distinct from telemetry     PASS
-AUE app placement                       PASS
-Application Gateway subnet              PASS
-Virtual WAN integration                 PASS
-SEA origin / canonical region           PASS
-SEA hub reservation use                 PASS
-Research hub ownership                  PASS — intentional connection migration
-Front Door origins                      PASS
-Explicit backend egress                 PASS
-Terraform continuity                    PASS
-Security/WAF handoff                     PASS
-Narrative hostname/TLS guardrail        PASS
+ -> appgw-partner-aue
+ -> appgw-partner-sea
 ```
 
 ---
 
 # Gate 5 — Module 5 -> Module 6
 
+**Status:** PASS
+
+## Problem resolved
+
+The original Module 6 mixed standalone firewall/UDR language with a later secured-Virtual-WAN exercise, contained cost-driven teardown logic, left DDoS/NSG targets vague, and did not account for public Load Balancer/Application Gateway return-path symmetry.
+
+Approved correction: security hardens the exact cumulative estate and makes the existing Virtual WAN the central enforcement architecture.
+
+## Terraform lifecycle — FIXED
+
+No routine security-resource teardown.
+
+```text
+existing Modules 1–5 state
++
+security controls / intentional route changes / tier changes
+=
+same state lineage
+```
+
+A resource may be retired only because an approved architecture replaces its function.
+
+## DDoS scope — FIXED
+
+Create one BlueHarbor DDoS Network Protection plan and associate it with eligible VNets that contain public-IP-backed services, especially:
+
+```text
+bhi-vnet-mfg-aue
+bhi-vnet-research-sea
+bhi-vnet-partner-aue
+bhi-vnet-partner-sea
+```
+
+Evaluate other public-gateway VNets against current service eligibility at implementation time.
+
+Front Door is not associated with this VNet DDoS plan. Do not attach the plan to Virtual WAN secured hubs.
+
+## NSG/ASG target — FIXED
+
+Module 6 Unit 05 adds a real controlled data target in the existing Manufacturing data subnet:
+
+```text
+snet-mfg-app  10.20.1.0/24 -> asg-mfg-app
+snet-mfg-data 10.20.2.0/24 -> vm-mfg-data-01 / asg-mfg-data
+```
+
+The existing Module 4 functional NSG is evolved. Partner application subnets are also segmented around intended Application Gateway/backend flows.
+
+## Firewall topology — FIXED
+
+Do not build a separate hub/spoke firewall VNet.
+
+Use:
+
+```text
+fwpol-bhi-global
+  |
+  +-- azfw-bhi-aue -> bhi-vhub-aue
+  +-- azfw-bhi-sea -> bhi-vhub-sea
+```
+
+Unit 07 secures AUE first and proves policy. Unit 08 centralises policy/governance. Unit 09 adds SEA enforcement and the production routing-intent model.
+
+## Routing Intent — ADDED
+
+Configure the current supported secured-Virtual-WAN routing model for approved Internet and Private traffic requirements.
+
+Before apply:
+
+```text
+capture routes
+ -> terraform plan
+ -> inspect intended changes
+ -> apply
+ -> validate effective routes / representative flows
+```
+
+Unexpected route mutation means STOP.
+
+## Public-ingress symmetry — CRITICAL FIX
+
+Do not force every subnet through the firewall.
+
+Preserve the current supported explicit Internet-return design for:
+
+```text
+AUE/SEA snet-appgw
+AUE snet-mfg-app + nat-mfg-aue
+SEA snet-telemetry-dr + nat-telemetry-sea
+```
+
+The exact UDR/service requirements are verified against current Azure documentation during implementation.
+
+## Partner NAT evolution — APPROVED REPLACEMENT
+
+Module 5 Partner app subnets begin with NAT-managed egress.
+
+After secured-hub firewall egress is proven:
+
+```text
+retire nat-partner-aue / nat-partner-sea associations/resources
+snet-partner-app -> secured Virtual WAN -> Azure Firewall -> approved Internet
+```
+
+This is an architectural replacement, not cleanup.
+
+## Direct peering bypass — FIXED
+
+Once centrally inspected Private routing is active and validated, retire:
+
+```text
+Core <-> Manufacturing direct peering
+Core <-> Research global peering
+```
+
+These peerings were correct earlier but would bypass the new inspected-transit policy. VNets/workloads remain intact.
+
+## WAF/tier progression — FIXED
+
+```text
+Front Door Standard
+ -> Premium
+ -> edge WAF policy
+
+appgw-partner-aue Standard_v2
+ -> WAF_v2 + regional policy
+
+appgw-partner-sea Standard_v2
+ -> WAF_v2 + regional policy
+```
+
+Terraform plan must prove whether each provider change is in-place or requires controlled migration/replacement.
+
+## Front Door origin bypass — FIXED
+
+Regional Application Gateway origins remain public, but direct arbitrary Internet access is restricted using the current supported combination of:
+
+```text
+AzureFrontDoor.Backend source restriction
++
+BlueHarbor X-Azure-FDID validation
+```
+
+while preserving required Application Gateway infrastructure traffic.
+
+## Gate 5 verdict
+
+```text
+Story transition                     PASS
+Terraform lifecycle                  PASS
+DDoS target scope                    PASS with current-eligibility verification
+NSG/ASG concrete target              PASS
+Existing functional NSG evolution    PASS
+Azure Firewall topology              PASS — existing Virtual WAN
+AUE/SEA firewall progression         PASS
+Routing Intent                       PASS
+Public App Gateway symmetry          PASS with explicit exception
+Public Load Balancer symmetry        PASS with explicit NAT/Internet exception
+SEA telemetry outbound               PASS — nat-telemetry-sea added
+Partner NAT evolution                PASS — intentional replacement
+Direct peering bypass                PASS — retire after secured path verified
+Front Door managed-WAF tier          PASS — Premium progression
+Regional Application Gateway WAF     PASS — WAF_v2 progression
+Origin bypass restriction            PASS
+Existing applications                PASS — preserved
+```
+
+---
+
+# Gate 6 — Module 6 -> Module 7
+
 **Status:** NEXT
 
 Audit next:
 
-- which existing public IP-backed VNets/services DDoS Protection should actually apply to;
-- how NSG/ASG segmentation extends the real Manufacturing and Partner application subnets without conflicting with existing functional NSGs;
-- whether central Azure Firewall belongs in the already-sized `bhi-vhub-aue`, both regional hubs, or another topology;
-- how securing Virtual WAN changes route propagation/intent and whether old direct peerings bypass inspection;
-- how Module 1 NAT and Module 5 Partner NAT paths evolve when selected egress is routed through Firewall;
-- Application Gateway Standard_v2 -> WAF_v2 implications;
-- Front Door Standard -> security-capable tier/policy design where required;
-- how direct Application Gateway origin access is restricted so Front Door cannot simply be bypassed;
-- how all security changes remain cumulative without deleting the Module 4 telemetry or Module 5 Partner Hub delivery stacks.
+- which exact PaaS services Partner Hub and Manufacturing will consume;
+- where service endpoints are used versus where private endpoints are used;
+- whether private endpoints belong in Partner/Manufacturing/Core and which dedicated subnets/CIDRs are required;
+- how private DNS zones link into the existing Core DNS Private Resolver/hybrid-DNS design;
+- how Brisbane/Perth/ExpressRoute/VPN clients reach private endpoints through the now-secured Virtual WAN;
+- whether service endpoint policies are practical against the chosen Storage service;
+- whether Private Link Service reuses the real Module 4 Standard Load Balancer and what producer/consumer topology is justified;
+- whether App Service VNet Integration is needed at all or remains a comparison concept;
+- how Module 7 private access interacts with Azure Firewall routing, NSGs and the removed direct peerings.

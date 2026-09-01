@@ -2,28 +2,84 @@
 
 **Microsoft Learn:** https://learn.microsoft.com/en-us/training/modules/design-implement-network-security-monitoring/
 
-**BlueHarbor project:** Harden the BlueHarbor enterprise network  
+**BlueHarbor project:** Harden the exact enterprise network and applications built in Modules 1–5  
 **Status:** NOT STARTED
 
-Module 6 continues directly from the global application-delivery architecture built in Module 5. BlueHarbor can connect users, sites and applications successfully; the new requirement is to prove that access is appropriately restricted and that the public and private environment is defensible.
+Module 6 is a cumulative security evolution. It does not create a parallel security lab and it does not routinely tear down billable resources at unit boundaries.
 
-The module is taught as one progressive security-hardening project:
+## Starting security surface
+
+BlueHarbor already has:
 
 ```text
-working network and applications
-        -> security posture review
-        -> Defender for Cloud recommendations
-        -> DDoS resilience for public services
-        -> NSG / ASG segmentation
-        -> central Azure Firewall inspection
-        -> route traffic through firewall and prove policy
-        -> centralise governance with Firewall Manager
-        -> secure the existing Virtual WAN hub
-        -> protect the Partner Hub with WAF
-        -> layered security architecture review
+public telemetry services
+ -> AUE and SEA Standard public Load Balancers
+
+public Partner Hub
+ -> Front Door Standard
+ -> AUE and SEA Application Gateway Standard_v2 origins
+
+enterprise transit
+ -> Standard Virtual WAN
+ -> bhi-vhub-aue 10.200.0.0/22
+ -> bhi-vhub-sea 10.200.4.0/22
+ -> VPN / ExpressRoute / VNet connections
+
+explicit outbound
+ -> nat-mfg-aue
+ -> nat-telemetry-sea
+ -> nat-partner-aue
+ -> nat-partner-sea
 ```
 
-Read [`PROJECT-STORY.md`](PROJECT-STORY.md) before starting the module.
+The security requirement is:
+
+> Prove that only the right traffic can flow, that public network services have the correct availability protection, that private traffic can be centrally inspected without breaking public return paths, and that Partner Hub cannot bypass its intended HTTP(S) security boundaries.
+
+## Progressive security architecture
+
+```text
+posture review
+ -> DDoS protection for eligible public-IP VNets
+ -> real NSG/ASG segmentation
+ -> design Azure Firewall inside existing Virtual WAN
+ -> secure AUE hub first and prove policy
+ -> centralise policy with Firewall Manager
+ -> secure both regional hubs + routing intent
+ -> retire direct peerings that bypass inspected private transit
+ -> replace Partner app NAT egress with firewall-controlled egress
+ -> preserve explicit public-ingress return-path exceptions
+ -> upgrade Front Door / Application Gateways for WAF
+ -> restrict direct Front Door-origin bypass
+```
+
+## Target secured-hub model
+
+```text
+                    fwpol-bhi-global
+                          |
+               +----------+----------+
+               |                     |
+               v                     v
+         azfw-bhi-aue           azfw-bhi-sea
+               |                     |
+         bhi-vhub-aue           bhi-vhub-sea
+```
+
+By the end of the module, approved Internet and private traffic use secured Virtual WAN routing where appropriate, while public Application Gateway and public Load Balancer paths retain deliberate symmetry exceptions.
+
+## Public-path guardrail
+
+Do **not** blindly force every subnet through `0.0.0.0/0 -> Azure Firewall`.
+
+Explicit public-service subnets keep the direct return path required by their ingress model, including:
+
+```text
+AUE / SEA Application Gateway subnets
+AUE / SEA telemetry public Load Balancer backend subnets
+```
+
+The exact supported route-table/service requirements are verified against current Azure documentation during implementation.
 
 ## Microsoft Learn units
 
@@ -39,10 +95,4 @@ Read [`PROJECT-STORY.md`](PROJECT-STORY.md) before starting the module.
 10. Implement a Web Application Firewall
 11. Summary and resources
 
-## Story rule
-
-Security controls are added only when a visible BlueHarbor requirement makes them necessary. The module does not reset the environment or create disconnected security labs.
-
-## Cost rule
-
-DDoS Protection, Azure Firewall and related enterprise security services can be materially billable. Before practical deployment, verify current Azure pricing/service behaviour, plan evidence capture, and tear down promptly when persistence is not required.
+Persistent infrastructure changes are Terraform-managed in the same `blueharbor/terraform/` root. CLI, Portal and diagnostic tools validate the resulting security behaviour.

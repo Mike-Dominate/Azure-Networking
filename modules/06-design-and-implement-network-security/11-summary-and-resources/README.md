@@ -3,56 +3,43 @@
 **BlueHarbor chapter:** Layered security architecture review  
 **Status:** NOT STARTED
 
-## Final mental model
+## Final model
 
 ```text
 Defender for Cloud
--> posture / recommendations
+-> posture / recommendations / attack-path visibility
 
-DDoS Protection
--> public network availability
+DDoS Network Protection
+-> eligible public-IP resources through protected VNets
 
 NSG / ASG
--> distributed segmentation
+-> distributed workload segmentation
 
-Azure Firewall
+Azure Firewall in secured Virtual WAN hubs
 -> central routed enforcement
 
-Firewall Manager
--> central firewall governance
+Firewall Manager / Firewall Policy
+-> central governance
 
-WAF
--> HTTP(S) request protection
+Front Door Premium + WAF
+-> global HTTP(S) protection
+
+Application Gateway WAF_v2
+-> regional HTTP(S) origin protection
 ```
 
-## Explain-back incidents
+## Route-aware explain-back
 
-### Manufacturing cannot reach an approved external API
+Be able to explain why:
 
-Investigate the correct chain:
+- a firewall cannot inspect traffic that bypasses it;
+- public Application Gateway and public Load Balancer paths require deliberate symmetric return paths;
+- Partner app NAT egress is retired when firewall-controlled egress becomes authoritative;
+- telemetry NAT remains because of its public Load Balancer service path;
+- direct VNet peerings are retired when they would bypass centrally inspected private transit;
+- WAF, DDoS Protection, NSGs and Azure Firewall solve different security problems;
+- origin restrictions are needed even when Front Door has WAF.
 
-```text
-DNS -> NSG -> effective route -> Azure Firewall -> matching rule -> destination/return path
-```
+## Handoff to Module 7
 
-### Partner Hub returns WAF 403
-
-Investigate:
-
-```text
-Front Door / Application Gateway
- -> WAF policy
- -> matching rule
- -> Detection / Prevention mode
- -> origin/backend
-```
-
-### Public service receives a volumetric network attack
-
-Identify the attack layer before selecting a control; do not automatically treat every Internet attack as a WAF problem.
-
-## Module exit condition
-
-The learner can explain why each BlueHarbor security control exists, where it sits in the path, what it protects and how to troubleshoot it.
-
-The next security question is why PaaS services that only need private application access should remain exposed through public endpoints. That leads into Module 7 — Design and implement private access to Azure Services.
+The network is now segmented, centrally inspected and web-hardened. Module 7 can introduce private PaaS access into this exact security/routing/DNS estate without creating a new VNet.

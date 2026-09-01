@@ -1,22 +1,17 @@
 # Unit 04 — Exercise: Configure DDoS Protection on a virtual network using the Azure portal
 
-**BlueHarbor chapter:** Apply DDoS protection to the Internet-facing design  
+**BlueHarbor chapter:** Prove DDoS scope against real public services  
 **Status:** NOT STARTED
 
-## Business event
+Preserve the Microsoft exercise objective, but apply the persistent BlueHarbor configuration to an existing eligible VNet/public service rather than a disposable security VNet.
 
-BlueHarbor applies the Microsoft exercise to the VNet/public-service design that has a legitimate Internet attack surface.
+Required validation:
 
-## Validation questions
+- identify the associated DDoS plan;
+- identify the protected VNet;
+- identify the eligible public-IP-backed resource in that VNet;
+- explain the network-layer attack class DDoS Protection addresses;
+- identify the telemetry that would later indicate attack/mitigation activity;
+- explain why Front Door/WAF and DDoS solve different problems.
 
-Do not stop at 'enabled'. Explain:
-
-- which VNet/public services are in scope;
-- which public IP-backed components create attack surface;
-- what DDoS Protection is intended to mitigate;
-- what telemetry could indicate an attack or mitigation event;
-- which threats belong to another control such as WAF.
-
-## Practicality rule
-
-Capture evidence while the service is live, then remove billable resources safely unless a directly following approved unit requires them.
+No routine teardown follows. Correct security state remains for later modules and monitoring.

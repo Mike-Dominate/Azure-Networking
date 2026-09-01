@@ -32,50 +32,57 @@ Modules 1–8: **DESIGNED**.
 | 2 | M2 -> M3 | **PASS** |
 | 3 | M3 -> M4 | **PASS** |
 | 4 | M4 -> M5 | **PASS** |
-| 5 | M5 -> M6 | **NEXT** |
-| 6 | M6 -> M7 | PENDING |
+| 5 | M5 -> M6 | **PASS** |
+| 6 | M6 -> M7 | **NEXT** |
 | 7 | M7 -> M8 | PENDING |
 
 Do not start the BlueHarbor Terraform deployment until all gates pass.
 
-## Approved cumulative architecture through Module 5
+## Approved cumulative architecture through Module 6
 
 ```text
 M1
 Core / Manufacturing / Research VNets
-DNS / peerings / routing
-NAT on snet-mfg-app
+DNS / routing / initial direct peerings
+nat-mfg-aue
   |
 M2
-classic VPN learning
--> bhi-vwan / bhi-vhub-aue 10.200.0.0/22
-Brisbane + Perth + remote users
+classic VPN learning -> Virtual WAN
+bhi-vhub-aue 10.200.0.0/22
   |
 M3
-ExpressRoute added to the same AUE Virtual WAN hub
-VPN retained as alternate path
+ExpressRoute added to AUE hub
   |
 M4
-Device Telemetry Ingest TCP/9000
-AUE + SEA public Standard Load Balancers
-Traffic Manager Priority failover
+Telemetry TCP/9000
+AUE public LB + nat-mfg-aue
+SEA public LB + nat-telemetry-sea
+Traffic Manager
   |
-M5 AUE
-bhi-vnet-partner-aue 10.40.0.0/16
-Application Gateway Standard_v2
+M5
+Partner AUE/SEA VNets
+Application Gateway Standard_v2 in both regions
+bhi-vhub-sea 10.200.4.0/22 activated
+Front Door Standard
   |
-M5 regional expansion
-activate bhi-vhub-sea 10.200.4.0/22
-move Research Virtual WAN connection to SEA hub
-bhi-vnet-partner-sea 10.50.0.0/16
-Application Gateway Standard_v2
+M6 distributed security
+DDoS Network Protection
+NSG / ASG segmentation
   |
-M5 global web
-Azure Front Door Standard
-AUE + SEA Application Gateway origins
+M6 central security
+azfw-bhi-aue + azfw-bhi-sea
+fwpol-bhi-global
+secured Virtual WAN routing intent
+retire direct peering bypasses
+replace Partner NAT egress with firewall egress
+  |
+M6 web security
+Front Door Premium + WAF
+Application Gateway WAF_v2 + regional WAF
+Front Door origin-bypass restrictions
 ```
 
-Module 4 telemetry remains deployed. Module 5 adds a separate HTTP(S) application architecture rather than replacing it.
+Public Application Gateway and telemetry Load Balancer paths retain deliberate direct-return/NAT exceptions so central firewall routing does not create asymmetric ingress failures.
 
 ## Official module sequence
 
@@ -86,16 +93,16 @@ Module 4 telemetry remains deployed. Module 5 adds a separate HTTP(S) applicatio
 | 3 | Design and implement Azure ExpressRoute | NOT STARTED | DESIGNED / AUDITED |
 | 4 | Load balance non-HTTP(S) traffic in Azure | NOT STARTED | DESIGNED / AUDITED |
 | 5 | Load balance HTTP(S) traffic in Azure | NOT STARTED | DESIGNED / AUDITED |
-| 6 | Design and implement network security | NOT STARTED | DESIGNED / GATE 5 NEXT |
-| 7 | Design and implement private access to Azure Services | NOT STARTED | DESIGNED |
+| 6 | Design and implement network security | NOT STARTED | DESIGNED / AUDITED |
+| 7 | Design and implement private access to Azure Services | NOT STARTED | DESIGNED / GATE 6 NEXT |
 | 8 | Design and implement network monitoring | NOT STARTED | DESIGNED |
 
 ## Current phase
 
 ```text
 STORY DESIGN        COMPLETE
-AUDIT GATES 1–4     PASS
-AUDIT GATE 5        NEXT
+AUDIT GATES 1–5     PASS
+AUDIT GATE 6        NEXT
 TERRAFORM BUILD     NOT STARTED
 ```
 

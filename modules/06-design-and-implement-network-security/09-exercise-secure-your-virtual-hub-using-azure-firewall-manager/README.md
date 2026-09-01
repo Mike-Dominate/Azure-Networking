@@ -1,37 +1,67 @@
 # Unit 09 — Exercise: Secure your Virtual Hub using Azure Firewall Manager
 
-**BlueHarbor chapter:** Turn the existing Virtual WAN hub into a security boundary  
+**BlueHarbor chapter:** Make both Virtual WAN hubs the inspected enterprise transit  
 **Status:** NOT STARTED
 
-## Progressive-story link
+Module 2/5 already built the actual Virtual WAN topology. Secure that topology rather than creating a new hub.
 
-Module 2 introduced Virtual WAN to solve scalable connectivity. Module 6 returns to the same hub because BlueHarbor now requires central security enforcement.
-
-## Architecture
+## Add SEA enforcement
 
 ```text
-branches / sites / remote users
-        |
-        v
-Virtual WAN Hub
-        |
-secured-hub design
-        |
-Azure Firewall
-        |
-central policy
-        |
-Core / Manufacturing / Research
+bhi-vhub-sea
+  +-- azfw-bhi-sea
+  +-- fwpol-bhi-global
 ```
 
-## Concepts to master
+## Routing intent / secured-hub progression
 
-- secured virtual hub
-- Azure Firewall in Virtual WAN
-- Firewall Manager policy
-- route/traffic-path reasoning
-- central inspection versus distributed NSG segmentation
+Configure the current supported Virtual WAN security-routing model for approved requirements, including Internet and Private traffic policies where appropriate.
 
-## Critical lesson
+Before enabling it:
 
-The secured hub only enforces policy for traffic that the topology actually sends through the intended firewall path.
+```text
+capture hub/VNet route state
+ -> terraform plan
+ -> inspect intended route-table changes
+ -> apply
+ -> verify effective routes
+ -> test representative flows
+```
+
+Unexpected route changes mean STOP and investigate.
+
+## Public-service exceptions
+
+Do not blindly inherit the firewall default into public-ingress subnets.
+
+Preserve a supported explicit public return path for:
+
+```text
+snet-appgw in AUE and SEA
+snet-mfg-app with nat-mfg-aue
+snet-telemetry-dr with nat-telemetry-sea
+```
+
+Exact UDR and service-specific requirements are verified against current Azure documentation during implementation.
+
+## Partner NAT replacement
+
+After firewall egress is proven for the private Partner backend subnets:
+
+```text
+retire nat-partner-aue / nat-partner-sea associations/resources
+snet-partner-app -> secured Virtual WAN -> Azure Firewall -> approved Internet
+```
+
+This is a deliberate architecture evolution, not end-of-lab cleanup.
+
+## Retire bypass peerings
+
+Once secured private transit is verified, remove the direct Module 1 peerings that would bypass central inspection:
+
+```text
+Core <-> Manufacturing
+Core <-> Research
+```
+
+The VNets and workloads remain; only the production transit path changes.

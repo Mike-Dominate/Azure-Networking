@@ -1,43 +1,53 @@
 # Unit 05 — Deploy Network Security Groups by using the Azure portal
 
-**BlueHarbor chapter:** Enforce segmentation close to workloads  
+**BlueHarbor chapter:** Turn minimal functional rules into deliberate segmentation  
 **Status:** NOT STARTED
 
-## Business event
+## Manufacturing target
 
-Manufacturing applications need selected access to data and shared services, while management and lateral traffic must be restricted.
-
-## Scenario
+Module 4 already created telemetry/application resources in:
 
 ```text
-Manufacturing application subnet  10.20.1.0/24
-Manufacturing data subnet         10.20.2.0/24
+snet-mfg-app   10.20.1.0/24
 ```
+
+Add a small internal controlled test data target in the already-existing:
+
+```text
+snet-mfg-data  10.20.2.0/24
+```
+
+Canonical identities:
+
+```text
+asg-mfg-app
+asg-mfg-data
+vm-mfg-data-01 / controlled test data service
+```
+
+Policy intent:
+
+```text
+asg-mfg-app -> asg-mfg-data on approved test-data port   ALLOW
+unnecessary lateral access                              DENY
+management                                               approved source only
+```
+
+The existing minimal telemetry NSG is evolved rather than discarded.
+
+## Partner target
+
+Harden `snet-partner-app` in both regions so backend access is limited to the intended Application Gateway/application flows and unnecessary lateral traffic is denied.
 
 ## Concepts to master
 
-- NSG scope and association
-- source / destination
-- protocol
-- source / destination ports
-- priority
-- allow / deny
-- default rules
-- stateful behaviour
-- subnet versus NIC association
-- Application Security Groups (ASGs)
+- NSG association/scope;
+- stateful behaviour;
+- priorities;
+- subnet vs NIC association;
+- ASGs;
+- effective rules;
+- IP Flow Verify / equivalent diagnostics;
+- VNet flow-log concepts at the current product level.
 
-## Deliberate failure
-
-Reason through conflicting rules:
-
-```text
-priority 200  deny broad Manufacturing -> Data
-priority 300  allow App -> required database port
-```
-
-Inspect rule priority and effective configuration rather than guessing why the flow is blocked.
-
-## Study-guide depth
-
-Attach relevant ASG, IP flow verification, VNet flow-log, Bastion/NSG and Virtual Network Manager security-control concepts here where they match the current AZ-700 objective.
+Deliberately introduce one priority conflict and prove the winning rule with evidence.

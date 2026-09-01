@@ -3,523 +3,386 @@
 ## Project — Harden the BlueHarbor enterprise network
 
 **Microsoft Learn module:** Design and implement network security  
-**Company:** BlueHarbor Industries (BHI)  
-**Status:** NOT STARTED
+**Status:** NOT STARTED  
+**Terraform model:** extend and intentionally harden the same cumulative `blueharbor/terraform/` state
 
 ## Starting point from Module 5
 
-BlueHarbor now has a mature Azure network and application-delivery platform:
+The network and applications work. Security now has real resources to protect:
 
 ```text
-Global users
-   |
-Azure Front Door
-   |
-regional Application Gateway / applications
+GLOBAL WEB
+Front Door Standard
+  -> appgw-partner-aue Standard_v2
+  -> appgw-partner-sea Standard_v2
 
-BlueHarbor sites and remote users
-   |
-VPN / ExpressRoute / Virtual WAN
-   |
-Azure VNets
-   |
-Core / Manufacturing / Research workloads
+PUBLIC NON-HTTP
+lb-telemetry-aue
+lb-telemetry-sea
+Traffic Manager
+
+TRANSIT
+bhi-vwan
+  -> bhi-vhub-aue 10.200.0.0/22
+  -> bhi-vhub-sea 10.200.4.0/22
+  -> VPN / ExpressRoute / VNet connections
+
+EXPLICIT OUTBOUND
+nat-mfg-aue
+nat-telemetry-sea
+nat-partner-aue
+nat-partner-sea
 ```
 
-The architecture works. The new business problem is security governance.
+The security team asks:
 
-The BlueHarbor security team asks:
-
-> You have proved that everything can communicate. Now prove that only the right things can communicate, that public services can withstand network attacks, and that web applications are protected at the correct layer.
-
-Module 6 therefore evolves the same environment from **connected** to **defensible**.
-
-The Microsoft Learn unit order remains authoritative. Security features are introduced only when a visible BlueHarbor requirement makes them necessary.
+> You have proved that everything can communicate. Now prove that only the right things communicate, that public services are protected at the correct layer, and that security routing cannot be bypassed accidentally.
 
 ---
 
-## Chapter 01 — Introduction: Connectivity is not security
+## Chapter 01 — Connectivity is not security
 
-The security team performs an architecture review and identifies a mixture of required and excessive reachability.
-
-```text
-Partner Hub Internet access             required
-Management access from everywhere       not required
-Manufacturing to selected shared apps   required
-Manufacturing to every internal target  not required
-Outbound Internet for updates           required
-Unrestricted outbound destinations      requires control
-```
-
-### Core mental model
+Review required versus excessive reachability.
 
 ```text
-Networking question:
-Can A reach B?
-
-Security question:
-Should A reach B?
-If yes, by which protocol, port, path and policy?
+Can A reach B?          networking
+Should A reach B?       security
+Through which path?     architecture
+Which control decides?  enforcement
 ```
-
-The unit establishes that availability and connectivity are not proof of appropriate security.
 
 ---
 
-## Chapter 02 — Get network security recommendations with Microsoft Defender for Cloud
+## Chapter 02 — Defender for Cloud: observe posture before changing enforcement
 
-Before changing controls, BlueHarbor wants evidence about current exposure and weaknesses.
+Use Defender for Cloud to understand recommendations, Secure Score, attack-path context and Cloud Security Explorer concepts required by the current study guide.
 
-### Business requirement
-
-Use Microsoft Defender for Cloud as a posture and recommendation layer to identify where remediation should begin.
-
-```text
-Azure environment
-      |
-      v
-Defender for Cloud
-      |
-      v
-posture / recommendations / attack-path context
-      |
-      v
-engineering remediation
-```
-
-### Concepts to master
-
-- security posture
-- recommendations
-- Secure Score concepts
-- attack-path analysis concepts
-- Cloud Security Explorer concepts where required by the current AZ-700 study guide
-- difference between assessment and traffic enforcement
-
-### Mental model
-
-Defender for Cloud is not the packet-processing firewall in this story. It helps BlueHarbor see and prioritise security weaknesses before enforcement changes are made.
+Defender for Cloud is a posture/recommendation layer, not the packet-processing firewall.
 
 ---
 
-## Chapter 03 — Deploy Azure DDoS Protection by using the Azure portal
+## Chapter 03 — DDoS Protection: protect actual Internet-facing VNet resources
 
-The public BlueHarbor Partner Hub and other public IP services create an Internet attack surface. Security now considers denial-of-service resilience.
+Create one Terraform-managed BlueHarbor DDoS Network Protection plan, for example:
 
-### Business requirement
+```text
+ddos-bhi-network
+```
 
-Protect eligible public network services from network-layer DDoS attacks that attempt to exhaust service capacity or availability.
+Associate it with the eligible BlueHarbor VNets that contain protected public-IP-backed services, including the Manufacturing, Research and Partner landing-zone VNets. Evaluate the classic connectivity VNet/public gateway against the current service eligibility when implementation is reached rather than assuming unsupported coverage.
 
-### Layer distinction
+Front Door is not attached to this VNet plan; its edge service has its own platform protection model. The origin VNets remain the relevant VNet DDoS scope.
+
+Do not attempt to attach the VNet DDoS plan to the Virtual WAN secured hubs themselves.
+
+Core distinction:
 
 ```text
 DDoS Protection
--> network/infrastructure availability problem
+ -> network/infrastructure availability
 
 WAF
--> HTTP(S) application-request problem
+ -> HTTP(S) request protection
 ```
-
-The learner must understand why these controls solve different security problems rather than treating them as interchangeable.
-
-### Cost rule
-
-DDoS Protection can be materially billable. Before any practical deployment, verify the current Azure pricing/service model and design a short-lived exercise. Do not leave expensive protection enabled merely to preserve lab state.
 
 ---
 
-## Chapter 04 — Exercise: Configure DDoS Protection on a virtual network using the Azure portal
+## Chapter 04 — Configure and verify DDoS scope
 
-BlueHarbor applies the Microsoft exercise to the appropriate Internet-facing VNet design.
+Preserve the Microsoft exercise objective, but apply the persistent configuration to the real BlueHarbor VNets/public services.
 
-### Architecture
+Validation includes:
 
-```text
-Internet
-   |
-hostile / abnormal network traffic
-   |
-Azure public edge
-   |
-DDoS protection capability
-   |
-BlueHarbor VNet / public service
-```
+- which VNet is associated with the plan;
+- which eligible public IP-backed service is protected through that VNet;
+- what a network-layer attack looks like conceptually;
+- which metrics/logs/alerts would later prove mitigation activity;
+- what DDoS Protection does not solve.
 
-### Engineering validation
-
-Do not stop at 'enabled'. Explain:
-
-- which VNet or public exposure is being protected;
-- which public IP-backed services create attack surface;
-- what DDoS protection is intended to mitigate;
-- which telemetry or monitoring evidence would help identify an attack;
-- what is outside the scope of DDoS Protection.
-
-### Practicality rule
-
-Use the Microsoft exercise as the baseline, capture evidence while the service is live, then remove billable resources safely unless the next approved chapter explicitly needs them.
+No routine teardown follows.
 
 ---
 
-## Chapter 05 — Deploy Network Security Groups by using the Azure portal
+## Chapter 05 — NSG/ASG segmentation against workloads that really exist
 
-BlueHarbor now needs workload-level segmentation.
+Module 4 already added a minimal functional telemetry NSG. Module 6 evolves it rather than replacing it.
 
-### Scenario
-
-```text
-Manufacturing application subnet   10.20.1.0/24
-Manufacturing data subnet          10.20.2.0/24
-```
-
-Security requirements include:
-
-- application servers may reach the required database service;
-- management access may originate only from approved management systems;
-- unnecessary lateral traffic must be denied;
-- rule intent must be understandable without memorising individual VM addresses.
-
-### Concepts to master
-
-- NSG association and scope
-- source and destination
-- protocol
-- source and destination ports
-- priorities
-- allow / deny
-- default rules
-- stateful behaviour
-- subnet versus NIC association
-- Application Security Groups (ASGs)
-
-### Deliberate failure
-
-Create or reason through conflicting intent:
+The Manufacturing data subnet now gets a small internal test data target so segmentation is concrete:
 
 ```text
-priority 200  Deny-Manufacturing-To-Data
-priority 300  Allow-App-To-Database
+bhi-vnet-mfg-aue
+
+snet-mfg-app  10.20.1.0/24
+  -> telemetry/application identities
+  -> asg-mfg-app
+
+snet-mfg-data 10.20.2.0/24
+  -> vm-mfg-data-01 / controlled test data service
+  -> asg-mfg-data
 ```
 
-The lower priority number is evaluated first. The learner must inspect effective rule ordering rather than guess.
+Policy intent:
 
-### Study-guide depth
+```text
+asg-mfg-app -> asg-mfg-data on approved test-data port   ALLOW
+unnecessary lateral access                              DENY
+management                                               approved source only
+```
 
-Attach relevant AZ-700 security depth here, including ASGs, IP flow verification, VNet flow-log concepts, Bastion-related NSG considerations and Virtual Network Manager security-control concepts where they match the current objective.
+Also harden Partner application subnets so backend access comes from the intended Application Gateway path and unnecessary lateral access is denied.
+
+Deliberately create one rule-priority conflict and prove the result using effective rules/IP flow diagnostics rather than guessing.
 
 ---
 
-## Chapter 06 — Design and implement Azure Firewall
+## Chapter 06 — Design Azure Firewall inside the existing Virtual WAN
 
-BlueHarbor's environment has grown beyond a collection of isolated subnet rules. Security now requires central inspection and controlled outbound access for selected traffic flows.
+Do not build a standalone parallel hub/firewall topology.
 
-### Business requirement
-
-Manufacturing and other private workloads need approved Internet and cross-network access, but not unrestricted reachability.
-
-### Architecture
+BlueHarbor already reserved and deployed `/22` Virtual WAN hubs specifically so the security chapter can evolve them:
 
 ```text
-Workload subnet
-      |
-      v
-Route table / UDR
-      |
-      v
-Azure Firewall
-      |
-security policy
-      |
-      v
-approved destination
+bhi-vhub-aue 10.200.0.0/22
+bhi-vhub-sea 10.200.4.0/22
 ```
 
-### Concepts to master
+Target:
 
-- Azure Firewall role
-- firewall subnet / deployment architecture
-- SKU/design considerations
-- network rules
-- application rules
-- NAT rule concepts
-- rule processing and policy intent
-- DNS/FQDN dependencies where relevant
-- routing dependency
-- central egress inspection
+```text
+fwpol-bhi-global
+  |
+  +-- azfw-bhi-aue in/for bhi-vhub-aue
+  +-- azfw-bhi-sea in/for bhi-vhub-sea
+```
 
-### Core lesson
+Learn the classic Azure Firewall VNet/subnet model from Microsoft's unit where required, but the persistent BlueHarbor implementation uses the existing Virtual WAN secured-hub architecture.
 
-A firewall cannot inspect a packet that does not traverse the firewall. Routing and firewall policy are therefore separate but dependent parts of the security design.
+### Critical routing design
+
+A firewall only enforces traffic that actually traverses it.
+
+But public ingress also needs a valid symmetric return path. Therefore the design separates:
+
+```text
+PRIVATE / INTERNAL BACKEND SUBNETS
+ -> secured-hub/firewall routing where approved
+
+PUBLIC APPLICATION GATEWAY SUBNETS
+ -> explicit supported Internet return-path exception
+
+PUBLIC TELEMETRY LB BACKEND SUBNETS
+ -> explicit Internet/NAT return-path exception
+```
+
+Do not blindly apply `0.0.0.0/0 -> Firewall` to every subnet.
 
 ---
 
-## Chapter 07 — Exercise: Deploy and configure Azure Firewall using the Azure portal
+## Chapter 07 — Deploy AUE firewall first and prove policy
 
-BlueHarbor now proves the central-inspection design with real traffic behaviour.
+Preserve the Microsoft Azure Firewall exercise objectives: rules, policy, route path, allowed flow, denied flow and troubleshooting.
 
-### Expected flow
-
-```text
-Manufacturing workload
-      |
-UDR: selected traffic / default route
-      |
-      v
-Azure Firewall
-      |
-      +-- allowed destination  -> success
-      |
-      +-- denied destination   -> blocked
-```
-
-### Required validation
-
-- inspect the effective route;
-- prove traffic reaches the intended firewall path;
-- prove an allowed flow;
-- prove a denied flow;
-- identify which firewall rule or rule collection explains the result;
-- validate independently rather than relying only on successful deployment state.
-
-### Deliberate failure 1 — wrong route
-
-Firewall policy is correct, but the route sends traffic elsewhere.
-
-Result:
+The persistent BlueHarbor delta secures the existing AUE hub first:
 
 ```text
-traffic never reaches Azure Firewall
+bhi-vhub-aue
+  +-- azfw-bhi-aue
+  +-- fwpol-bhi-global initial policy
 ```
 
-### Deliberate failure 2 — correct route, wrong rule
-
-Traffic reaches the firewall but is denied by policy.
-
-Troubleshooting sequence:
+Use a selected private workload path to prove:
 
 ```text
-route
- -> firewall path
- -> matching rule
- -> destination / return path
+route/path correct + allow rule -> success
+route/path correct + deny rule  -> blocked
+wrong route                     -> firewall never sees packet
 ```
 
-### Cost rule
+Public Application Gateway and telemetry subnets are excluded from any default-route change that would break their required public return path.
 
-Azure Firewall is a significant billable service. Plan the practical, capture evidence live and tear it down promptly unless a directly following unit requires the same deployment.
+No teardown follows; the AUE firewall remains for Units 08–11.
 
 ---
 
-## Chapter 08 — Secure your networks with Azure Firewall Manager
+## Chapter 08 — Firewall Manager: centralise one policy before the second region
 
-BlueHarbor now has multiple regions, firewall policies and Virtual WAN connectivity. Managing each firewall as an independent configuration no longer scales.
+BlueHarbor now has a real AUE enforcement point and a second Virtual WAN region waiting to be secured.
 
-### Business requirement
-
-Centralise security policy and firewall governance.
-
-### Mental model
+Use Firewall Manager / Firewall Policy as the management-plane layer:
 
 ```text
-Azure Firewall
-= enforcement / packet-processing service
-
-Azure Firewall Manager
-= central management and policy orchestration
-```
-
-### Architecture
-
-```text
-Firewall Manager / central policy
+fwpol-bhi-global
         |
-   +----+---------+---------+
-   |              |         |
-regional FW    secured hub  other managed firewall scope
+        +-- azfw-bhi-aue
+        +-- later azfw-bhi-sea
 ```
 
-### Concepts to master
+Distinguish:
 
-- Firewall Policy
-- central rule governance
-- inheritance / policy hierarchy concepts where applicable
-- hub and VNet security-management models
-- difference between management plane and packet-processing plane
+```text
+Azure Firewall
+= packet enforcement
+
+Firewall Manager / Firewall Policy
+= central management, policy and secured-hub governance
+```
 
 ---
 
-## Chapter 09 — Exercise: Secure your Virtual Hub using Azure Firewall Manager
+## Chapter 09 — Secure both Virtual WAN hubs and remove bypass paths
 
-The Virtual WAN architecture from Module 2 returns to the story.
-
-Originally, the Virtual Hub solved a connectivity problem. It now becomes a security enforcement point because BlueHarbor wants central control over branch, remote-user and Azure traffic.
-
-### Architecture evolution
+Extend the security architecture to Southeast Asia:
 
 ```text
-Brisbane / Perth / branches / remote users
-                |
-                v
-         Virtual WAN Hub
-                |
-         secured hub model
-                |
-         Azure Firewall
-                |
-         central policy
-                |
-      +---------+---------+
-      |         |         |
-     Core   Manufacturing Research
+bhi-vhub-sea
+  +-- azfw-bhi-sea
+  +-- fwpol-bhi-global
 ```
 
-### Concepts to master
+Then configure the current supported Virtual WAN routing-intent/secured-hub model for the approved security requirements, including Internet and private traffic policies where appropriate.
 
-- secured virtual hub
-- Azure Firewall in Virtual WAN
-- Firewall Manager policy
-- routing intent / traffic-path reasoning at the level required by the exercise and current service behaviour
-- central inspection versus distributed NSG segmentation
+### Route-state guardrail
 
-### Critical lesson
+Before enabling routing intent:
 
-Security enforcement is only effective if the route topology actually sends the intended traffic through the secured hub/firewall path.
+```text
+capture current hub/VNet route state
+ -> terraform plan
+ -> identify intended route-table changes
+ -> apply
+ -> verify effective routes and test flows
+```
+
+Unexpected route mutation means STOP and investigate.
+
+### Public-ingress exceptions
+
+Keep deliberate exceptions for public-service subnets:
+
+```text
+snet-appgw AUE/SEA
+ -> supported explicit Internet return path
+
+snet-mfg-app
+ -> Internet/NAT path through nat-mfg-aue for public telemetry service symmetry
+
+snet-telemetry-dr
+ -> Internet/NAT path through nat-telemetry-sea for public telemetry service symmetry
+```
+
+The exact UDR/service constraints are verified against current Azure documentation at implementation time.
+
+### Partner application NAT evolution
+
+The Partner backend subnets are private and can now use controlled firewall egress.
+
+Intentional evolution:
+
+```text
+BEFORE MODULE 6
+snet-partner-app -> nat-partner-aue / nat-partner-sea
+
+AFTER SECURED-HUB EGRESS
+snet-partner-app -> secured Virtual WAN -> Azure Firewall -> approved Internet
+```
+
+Retire the Partner app NAT associations/resources when the firewall path is proven. This is an architectural replacement, not end-of-lab teardown.
+
+### Retire direct peering bypasses
+
+Module 1 direct peerings were useful when the estate was small. Once the policy requires centrally inspected private transit, direct peerings can bypass the secured Virtual WAN path.
+
+Intentionally remove:
+
+```text
+Core <-> Manufacturing direct peering
+Core <-> Research global peering
+```
+
+only after the secured-hub route path is proven. Workload VNets remain intact; the production transit changes.
 
 ---
 
-## Chapter 10 — Implement a Web Application Firewall
+## Chapter 10 — WAF and Front Door origin hardening
 
-Network controls are now strong, but the public Partner Hub from Module 5 can still receive malicious HTTP(S) requests that are valid from an IP/port perspective.
+Module 5 deliberately created delivery before WAF.
 
-### Business requirement
-
-Protect web applications at Layer 7.
-
-### Layered model
+Upgrade/harden the actual Partner Hub stack:
 
 ```text
-Internet
-   |
-DDoS / network controls
-   |
-HTTP(S)
-   |
-WAF
-   |
-web application
+Front Door Standard
+        -> Front Door Premium
+        -> waf-partner-edge
+
+appgw-partner-aue Standard_v2
+        -> WAF_v2
+        -> regional WAF policy
+
+appgw-partner-sea Standard_v2
+        -> WAF_v2
+        -> regional WAF policy
 ```
 
-### Concepts to master
+Terraform plan must be inspected for in-place versus replacement behaviour with the current provider before applying any tier/SKU change.
 
-- WAF policy
-- managed rule sets
-- custom-rule concepts where applicable
-- policy association
-- Application Gateway WAF
-- Front Door WAF
-- Detection mode
-- Prevention mode
-- logging / rule-match reasoning
+### Detection to Prevention progression
 
-### Detection versus prevention
+Start with controlled Detection-mode validation where useful, inspect rule matches/false positives, then move the production intent to Prevention after the policy is understood.
+
+### Prevent direct Front Door bypass
+
+WAF alone does not stop a client from addressing a public Application Gateway origin directly.
+
+Harden each origin with two concepts:
+
+1. Restrict inbound HTTPS source to the supported Azure Front Door backend service-tag path while preserving required Application Gateway infrastructure traffic.
+2. Validate the unique `X-Azure-FDID` value for BlueHarbor's Front Door profile using the current supported Application Gateway/WAF mechanism.
+
+Conceptual path:
 
 ```text
-Detection mode
-rule match -> log / observe -> request generally continues according to policy behaviour
+allowed
+user -> Front Door Premium/WAF -> regional App Gateway WAF_v2 -> Partner backend
 
-Prevention mode
-rule match -> enforce block according to policy
+blocked
+user -------------------------> regional App Gateway public origin directly
 ```
 
-### BlueHarbor design question
-
-Do not place WAFs everywhere by habit. Decide whether the appropriate application-security boundary is at Front Door, Application Gateway, or a layered design justified by actual requirements.
-
-### Progressive-story link
-
-Module 5 created Front Door and Application Gateway for application delivery. Module 6 adds WAF because the business now needs application-layer protection.
+Exact service-tag/NSG infrastructure rules and header-validation implementation are verified against current Azure documentation at build time.
 
 ---
 
-## Chapter 11 — Summary and resources: BlueHarbor security architecture review
+## Chapter 11 — Security architecture review
 
-By the end of Module 6, BlueHarbor should have a layered security mental model rather than the belief that one firewall makes an environment secure.
+Final layered model:
 
 ```text
 Defender for Cloud
--> posture / recommendations / risk visibility
+ -> posture / recommendations
 
-DDoS Protection
--> public network availability protection
+DDoS Network Protection
+ -> eligible public-IP VNet resources
 
 NSG / ASG
--> distributed workload/subnet segmentation
+ -> distributed segmentation
 
-Azure Firewall
--> central routed network/application enforcement
+Azure Firewall in secured Virtual WAN hubs
+ -> central routed enforcement
 
-Firewall Manager
--> central firewall policy/governance
+Firewall Manager / Firewall Policy
+ -> central governance
 
-WAF
--> HTTP(S) request protection
+Front Door Premium + WAF
+ -> global HTTP(S) request protection
+
+Application Gateway WAF_v2
+ -> regional HTTP(S) protection / origin boundary
 ```
 
-### Architecture-board challenges
-
-The learner must be able to troubleshoot different incidents using the correct layer.
-
-#### Incident A — Manufacturing cannot reach an approved external API
-
-Investigate:
-
-```text
-DNS
- -> NSG
- -> effective route / UDR
- -> Azure Firewall path
- -> matching firewall rule
- -> destination / return path
-```
-
-#### Incident B — Partner Hub is reachable but returns WAF 403 responses
-
-Investigate:
-
-```text
-Front Door / Application Gateway
- -> WAF policy association
- -> matching WAF rule
- -> Detection vs Prevention
- -> origin/backend behaviour
-```
-
-#### Incident C — Public service receives a volumetric network attack
-
-Do not automatically answer 'WAF'. Identify the attack layer and choose the control that addresses network-layer availability.
-
-## Definition of done for Module 6
-
-The learner can explain why each control exists, where it sits in the packet/application path, and which failure or attack class it addresses.
-
-The learner can also explain how:
-
-```text
-route
-+ segmentation
-+ central firewall policy
-+ DDoS resilience
-+ application-layer WAF
-+ posture visibility
-```
-
-combine into defence in depth without assuming that any one feature is sufficient.
+The learner must explain why the route path matters, why public ingress needs symmetry exceptions, why Partner NAT egress is replaced but telemetry NAT remains, why direct peerings are retired, and why WAF does not replace DDoS/NSG/Azure Firewall.
 
 ## Carry-forward into Module 7
 
-BlueHarbor's application teams now consume more Azure PaaS services. Security asks the next question:
+BlueHarbor now has an inspected and hardened network. The next question is narrower:
 
-> If an application only needs private access to a managed Azure service, why should that service remain exposed through a public endpoint at all?
-
-That leads directly into Module 7 — Design and implement private access to Azure Services.
+> If Partner Hub or Manufacturing only needs a managed Azure service privately, why should that service remain exposed through a public endpoint at all?

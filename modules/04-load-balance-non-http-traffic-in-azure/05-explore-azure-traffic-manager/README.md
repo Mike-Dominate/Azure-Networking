@@ -5,7 +5,7 @@
 
 ## New requirement
 
-BlueHarbor now asks what happens if the whole Australia East telemetry service becomes unavailable.
+BlueHarbor asks what happens if the whole Australia East telemetry service becomes unavailable.
 
 Build the second regional service deliberately in the existing Southeast Asia VNet:
 
@@ -15,8 +15,11 @@ bhi-vnet-research-sea   10.30.0.0/16
   +-- snet-telemetry-dr   10.30.3.0/24
        +-- vm-telemetry-sea-01
        +-- vm-telemetry-sea-02
-       +-- public Standard Load Balancer service on TCP/9000
+       +-- nat-telemetry-sea
+       +-- public Standard Load Balancer on TCP/9000
 ```
+
+`nat-telemetry-sea` provides explicit backend-initiated outbound connectivity and a deliberate public-service return-path design.
 
 No regional endpoint may appear without being created in the story/Terraform first.
 

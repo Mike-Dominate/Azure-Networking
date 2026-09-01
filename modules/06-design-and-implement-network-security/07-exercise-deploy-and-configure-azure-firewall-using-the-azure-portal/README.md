@@ -1,42 +1,34 @@
 # Unit 07 — Exercise: Deploy and configure Azure Firewall using the Azure portal
 
-**BlueHarbor chapter:** Force real traffic through the firewall and prove policy  
+**BlueHarbor chapter:** Secure the AUE hub first and prove enforcement  
 **Status:** NOT STARTED
 
-## Expected flow
+Preserve the Microsoft exercise objectives—rules, route path, allow, deny and troubleshooting—but apply them to the cumulative AUE transit architecture.
+
+Add:
 
 ```text
-Manufacturing workload
- -> UDR / effective route
- -> Azure Firewall
- -> matching rule
- -> allowed or denied destination
+bhi-vhub-aue
+  +-- azfw-bhi-aue
+  +-- fwpol-bhi-global initial policy
 ```
 
-## Required proof
-
-- inspect the effective route;
-- prove the intended traffic traverses the firewall;
-- prove at least one allowed flow;
-- prove at least one denied flow;
-- identify the rule/policy that explains each result.
-
-## Deliberate failures
-
-### Wrong route
-
-Firewall policy is correct but the packet never reaches Azure Firewall.
-
-### Wrong rule
-
-Routing is correct but Azure Firewall denies the traffic.
-
-Troubleshoot in order:
+Use a selected private flow to prove:
 
 ```text
-route -> firewall path -> matching rule -> destination / return path
+correct path + allow rule -> success
+correct path + deny rule  -> blocked
+wrong path                -> firewall never sees packet
 ```
 
-## Cost rule
+Required evidence:
 
-Azure Firewall is materially billable. Plan the practical first, capture evidence live and tear it down promptly unless a following unit explicitly requires the same deployment.
+- effective route / hub path;
+- firewall policy/rule match;
+- successful allowed flow;
+- failed denied flow;
+- destination/return-path reasoning.
+
+Do not route public Application Gateway or telemetry Load Balancer subnets through a default firewall path that would break their ingress symmetry.
+
+No teardown follows; `azfw-bhi-aue` remains for Units 08–11.

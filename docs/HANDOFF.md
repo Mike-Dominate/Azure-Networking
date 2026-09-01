@@ -12,7 +12,7 @@ One Terraform state lineage.
 Each unit = previous deployed estate + next requirement.
 ```
 
-No routine destroy between units/modules. Persistent infrastructure is Terraform-managed; CLI/Portal/protocol tools validate and troubleshoot.
+No routine destroy between units/modules. Persistent infrastructure is Terraform-managed; CLI/Portal/protocol/diagnostic tools validate and troubleshoot.
 
 ## Architecture audit status
 
@@ -21,84 +21,106 @@ Gate 1  M1 -> M2   PASS
 Gate 2  M2 -> M3   PASS
 Gate 3  M3 -> M4   PASS
 Gate 4  M4 -> M5   PASS
-Gate 5  M5 -> M6   NEXT
-Gate 6  M6 -> M7   PENDING
+Gate 5  M5 -> M6   PASS
+Gate 6  M6 -> M7   NEXT
 Gate 7  M7 -> M8   PENDING
 ```
 
-See [`ARCHITECTURE-DEPENDENCY-AUDIT.md`](ARCHITECTURE-DEPENDENCY-AUDIT.md) for the canonical decisions.
+See [`ARCHITECTURE-DEPENDENCY-AUDIT.md`](ARCHITECTURE-DEPENDENCY-AUDIT.md).
 
-## Approved cumulative architecture through Module 4
+## Approved architecture through Module 5
 
 ```text
 M1
 Core / Manufacturing / Research VNets
-DNS / peerings / routing
-NAT on snet-mfg-app
+DNS / routing / initial direct peerings
+nat-mfg-aue
 
 M2
 classic VPN learning
 -> Virtual WAN production transit
 bhi-vhub-aue 10.200.0.0/22
-Brisbane + Perth + remote users
 
 M3
-ExpressRoute added to bhi-vhub-aue
-VPN retained as alternate path
+ExpressRoute added to AUE hub
 
 M4
-Device Telemetry Ingest TCP/9000
-AUE + SEA public Standard Load Balancers
-Traffic Manager Priority AUE -> SEA
+Telemetry TCP/9000
+AUE lb + nat-mfg-aue
+SEA lb + nat-telemetry-sea
+Traffic Manager
+
+M5
+Partner Hub
+AUE/SEA Partner VNets
+AUE/SEA Application Gateway Standard_v2
+activate bhi-vhub-sea 10.200.4.0/22
+Front Door Standard
 ```
 
-## Approved Module 5 Partner Hub architecture
+## Approved Module 6 security evolution
 
-Australia East:
+Distributed controls:
 
 ```text
-bhi-vnet-partner-aue   10.40.0.0/16
-  snet-appgw           10.40.1.0/24
-  snet-partner-app     10.40.2.0/24
-
-nat-partner-aue
-appgw-partner-aue Standard_v2
-Virtual WAN connection -> bhi-vhub-aue
+DDoS Network Protection plan
+NSG / ASG segmentation
+Manufacturing test data target
+Partner backend segmentation
 ```
 
-Southeast Asia activation:
+Central transit security:
 
 ```text
-bhi-vhub-sea           10.200.4.0/22
-
-bhi-vnet-partner-sea   10.50.0.0/16
-  snet-appgw           10.50.1.0/24
-  snet-partner-app     10.50.2.0/24
-
-nat-partner-sea
-appgw-partner-sea Standard_v2
-Virtual WAN connection -> bhi-vhub-sea
+fwpol-bhi-global
+  |
+  +-- azfw-bhi-aue -> bhi-vhub-aue
+  +-- azfw-bhi-sea -> bhi-vhub-sea
 ```
 
-Research Virtual WAN connection changes from AUE hub to SEA hub; the Research VNet and Module 4 telemetry resources remain unchanged.
+Production routing intent secures approved Internet/private transit.
 
-Global HTTP(S):
+Public-return-path exceptions remain for:
 
 ```text
-Azure Front Door Standard
- -> appgw-partner-aue
- -> appgw-partner-sea
+AUE/SEA Application Gateway subnets
+AUE telemetry subnet + nat-mfg-aue
+SEA telemetry subnet + nat-telemetry-sea
 ```
 
-`portal.blueharbor.example` is a narrative hostname only. Live practicals use Azure-generated reachable endpoints unless a real learner-owned domain is later supplied.
+Partner backend egress evolves from:
 
-The Module 4 telemetry stack remains deployed and separate.
+```text
+nat-partner-aue / nat-partner-sea
+```
+
+to:
+
+```text
+snet-partner-app -> secured Virtual WAN -> Azure Firewall -> approved Internet
+```
+
+The Partner NAT resources/associations are retired after the firewall path is proven.
+
+Direct Module 1 peerings are retired after secured private transit is proven because they would bypass central inspection.
+
+Partner Hub web security evolves to:
+
+```text
+Front Door Premium + edge WAF
+        |
+AUE / SEA Application Gateway WAF_v2
+        |
+Partner backends
+```
+
+Regional origins restrict direct arbitrary Internet bypass using the current supported Front Door backend-source restriction plus BlueHarbor `X-Azure-FDID` validation.
 
 ## Current programme phase
 
 - **Curriculum execution position:** Module 1 Unit 01 remains the first teaching/build unit.
 - **Story design:** COMPLETE.
-- **Architecture audit:** Gates 1–4 PASS; Gate 5 NEXT.
+- **Architecture audit:** Gates 1–5 PASS; Gate 6 NEXT.
 - **Terraform build:** NOT STARTED.
 - **Azure deployment:** NOT STARTED for the new BlueHarbor build.
 
@@ -109,7 +131,7 @@ Do not start implementation yet.
 Proceed with:
 
 ```text
-Gate 5 — Module 5 -> Module 6
+Gate 6 — Module 6 -> Module 7
 ```
 
-Audit only that transition, fix conflicts, obtain approval, then move to Gate 6.
+Audit only that transition, fix conflicts, obtain approval, then move to Gate 7.

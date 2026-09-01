@@ -1,44 +1,49 @@
 # Unit 10 — Implement a Web Application Firewall
 
-**BlueHarbor chapter:** Protect the Partner Hub at Layer 7  
+**BlueHarbor chapter:** Protect Partner Hub at the edge and regional origin boundaries  
 **Status:** NOT STARTED
 
-## Business event
+Module 5 created real public HTTP(S) delivery resources. Harden those exact resources.
 
-Network-layer controls are in place, but the Partner Hub can still receive malicious HTTP(S) requests that are valid from an IP/port perspective.
-
-## Layered model
+## Approved evolution
 
 ```text
-Internet
- -> DDoS / network controls
- -> HTTP(S)
- -> WAF
- -> web application
+Front Door Standard
+ -> Front Door Premium
+ -> waf-partner-edge
+
+appgw-partner-aue Standard_v2
+ -> WAF_v2
+ -> regional WAF policy
+
+appgw-partner-sea Standard_v2
+ -> WAF_v2
+ -> regional WAF policy
 ```
 
-## Concepts to master
+Inspect Terraform plan before applying SKU/tier changes; current provider behaviour determines whether each change is in-place or requires controlled replacement/migration.
 
-- WAF policy
-- managed rule sets
-- custom-rule concepts where applicable
-- policy association
-- Application Gateway WAF
-- Front Door WAF
-- Detection mode
-- Prevention mode
-- logging / rule-match reasoning
+## Detection -> Prevention
 
-## Detection versus prevention
+Use Detection mode where useful for initial rule observation/tuning, then move the production intent to Prevention once expected traffic is understood.
+
+## Front Door origin bypass protection
+
+WAF does not help if arbitrary Internet clients can bypass Front Door and directly use the public Application Gateway origins.
+
+Harden each origin using the current supported mechanisms:
+
+1. restrict HTTPS origin traffic to the Azure Front Door backend service-tag path while preserving required Application Gateway infrastructure traffic;
+2. validate BlueHarbor's unique `X-Azure-FDID` header/value at the regional origin/WAF layer.
+
+Mental model:
 
 ```text
-Detection
-rule match -> observe/log according to policy behaviour
+ALLOWED
+user -> Front Door Premium/WAF -> App Gateway WAF_v2 -> Partner backend
 
-Prevention
-rule match -> enforce/block according to policy
+BLOCKED
+user -------------------------> App Gateway public origin directly
 ```
 
-## Design rule
-
-Do not deploy WAF at every possible layer by habit. Decide whether Front Door, Application Gateway or a justified layered design is the correct application-security boundary.
+Exact service-tag, NSG and header-validation rules are verified against current Azure documentation during implementation.

@@ -8,8 +8,6 @@ Module 4 starts from the exact Module 1–3 Terraform code, state and deployed A
 
 ## New business workload
 
-BlueHarbor Manufacturing introduces its first explicit production non-HTTP service:
-
 ```text
 BlueHarbor Device Telemetry Ingest
 Protocol: TCP
@@ -28,6 +26,7 @@ existing Module 1–3 network
         -> add Public Standard Load Balancer on TCP/9000
         -> prove one backend failure does not equal service failure
         -> add a Southeast Asia DR instance in existing bhi-vnet-research-sea
+        -> add explicit SEA NAT-managed backend egress
         -> add second Public Standard Load Balancer
         -> add Traffic Manager only after both regional endpoints exist
         -> use Priority routing: AUE primary, SEA recovery
@@ -43,26 +42,25 @@ bhi-vnet-mfg-aue
        |
        +-- telemetry-aue backends
        |
-       +-- existing Module 1 NAT outbound path
+       +-- existing Module 1 nat-mfg-aue outbound path
 ```
-
-Module 4 adds the telemetry compute/NICs, a minimal functional NSG, Standard public IP and Standard public Load Balancer. The existing NAT association is reused for backend-initiated outbound connectivity.
 
 ## Southeast Asia DR placement
 
-Reuse the existing Research VNet and add one new subnet:
+Reuse the existing Research VNet and add:
 
 ```text
 bhi-vnet-research-sea   10.30.0.0/16
   |
   +-- snet-telemetry-dr  10.30.3.0/24
+       |
+       +-- telemetry-sea backends
+       +-- nat-telemetry-sea explicit outbound path
 ```
 
-This is an additive subnet change inside the existing VNet; no new regional VNet is created.
+The SEA telemetry subnet has deliberate NAT-managed backend-initiated outbound connectivity. This becomes important later when Module 6 introduces secured-hub routing: public Load Balancer backend subnets must not be blindly forced through an asymmetric firewall return path.
 
 ## Global availability
-
-Traffic Manager endpoints map to the **real regional public-IP / Load Balancer services** created earlier in the module:
 
 ```text
 Traffic Manager
