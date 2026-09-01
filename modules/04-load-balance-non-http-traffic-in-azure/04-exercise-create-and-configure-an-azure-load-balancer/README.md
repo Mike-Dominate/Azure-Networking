@@ -1,6 +1,28 @@
 # Unit 04 — Exercise: Create and configure an Azure load balancer
 
-**BlueHarbor chapter:** Prove the service survives backend failure  
+**BlueHarbor chapter:** Prove one backend failure does not equal service failure  
 **Status:** NOT STARTED
 
-Build the Microsoft exercise objective fresh in the BlueHarbor story. Validate real traffic and backend health, deliberately fail one backend or health path, troubleshoot the result and rebuild with Terraform where appropriate.
+Preserve the Microsoft exercise objective, but implement BlueHarbor's persistent service through the existing `blueharbor/terraform/` stack.
+
+Expected Terraform delta:
+
+```text
+existing snet-mfg-app
++ telemetry backend compute/NICs
++ minimal functional NSG
++ Standard public IP
++ Standard public Load Balancer
++ TCP/9000 backend pool/rule/probe
+```
+
+Do not build a fresh VNet or a separate Terraform root.
+
+## Deliberate failure
+
+```text
+backend 01  UNHEALTHY
+backend 02  HEALTHY
+```
+
+Validate that new service traffic continues through the healthy backend. Confirm backend-health evidence independently rather than accepting `terraform apply` as proof.

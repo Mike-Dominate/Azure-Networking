@@ -8,8 +8,8 @@ This is the running gate record for the progressive BlueHarbor project. Audit on
 |---:|---|---|
 | 1 | Module 1 -> Module 2 | **PASS — corrected and approved** |
 | 2 | Module 2 -> Module 3 | **PASS — corrected and approved** |
-| 3 | Module 3 -> Module 4 | **NEXT** |
-| 4 | Module 4 -> Module 5 | PENDING |
+| 3 | Module 3 -> Module 4 | **PASS — corrected and approved** |
+| 4 | Module 4 -> Module 5 | **NEXT** |
 | 5 | Module 5 -> Module 6 | PENDING |
 | 6 | Module 6 -> Module 7 | PENDING |
 | 7 | Module 7 -> Module 8 | PENDING |
@@ -22,7 +22,7 @@ A gate passes only when story continuity, Azure architecture continuity and Terr
 
 **Status:** PASS
 
-## Module 1 end-state contract
+## Canonical Module 1 network contract
 
 ```text
 bhi-vnet-core-aue       10.10.0.0/16
@@ -38,42 +38,35 @@ bhi-vnet-research-sea   10.30.0.0/16
   snet-research-data    10.30.2.0/24
 ```
 
-Carry forward DNS, direct peerings, routing, selected workload NAT and the same Terraform state.
+Module 1 also carries DNS, direct peerings, routing and selected workload NAT.
+
+### Gate 3 NAT clarification
+
+The selected NAT contract is now explicit:
+
+```text
+snet-mfg-app
+ -> nat-mfg-aue
+ -> explicit NAT public-IP resource
+```
+
+This remains deployed and is reused by the Module 4 AUE telemetry backends.
 
 ## Classic Module 2 addition
 
 ```text
 bhi-vnet-connectivity-aue   10.100.0.0/16
   GatewaySubnet             10.100.255.0/26
-
-VPN Gateway
-Brisbane S2S
-classic P2S pool 172.31.240.0/24
-classic gateway-transit relationships during the early VPN stage
 ```
 
-### Gate 2 revision to Gate 1 DNS reservation
+plus classic VPN/S2S/P2S learning resources.
 
-The original Gate 1 draft placed future DNS Private Resolver endpoint subnets in the connectivity VNet. Gate 2 corrected this before deployment.
-
-Canonical placement is now:
+Hybrid DNS resolver endpoint subnets belong in `bhi-vnet-core-aue`:
 
 ```text
-bhi-vnet-core-aue
-  snet-dns-inbound    10.10.10.0/28
-  snet-dns-outbound   10.10.10.16/28
+snet-dns-inbound    10.10.10.0/28
+snet-dns-outbound   10.10.10.16/28
 ```
-
-Reason: hybrid DNS belongs with Core/Shared Services and must not be coupled to the legacy classic VPN-gateway VNet that cannot become an ordinary Virtual WAN spoke.
-
-## Guardrails retained from Gate 1
-
-- canonical resource names only;
-- Module 2 starts from deployed Module 1 code/state/resources;
-- no blind NAT/NSG/UDR application to special-purpose subnets;
-- IP reachability and DNS resolution validated independently;
-- gateway transit explicitly configured rather than assumed;
-- no new Terraform root/state per module.
 
 ---
 
@@ -81,187 +74,232 @@ Reason: hybrid DNS belongs with Core/Shared Services and must not be coupled to 
 
 **Status:** PASS
 
-## Problem resolved
-
-Module 2 teaches classic VPN Gateway first, then introduces Virtual WAN. Module 3 introduces ExpressRoute. Without an explicit transition, these could become three disconnected hub designs.
-
 Approved progression:
 
 ```text
 classic VPN edge
- -> learn S2S / P2S / gateway transit
- -> scale problem appears
+ -> S2S / P2S / gateway-transit learning
  -> Virtual WAN becomes active production transit
  -> ExpressRoute is added to that SAME Virtual WAN hub
  -> ExpressRoute preferred for approved critical routes
  -> VPN retained as alternate path
 ```
 
-## Canonical Module 2 end state
-
-Module 1 resources remain deployed.
-
-Classic resources also remain in Terraform:
-
-```text
-bhi-vnet-connectivity-aue   10.100.0.0/16
-GatewaySubnet               10.100.255.0/26
-classic VPN Gateway
-classic S2S/P2S Azure objects
-```
-
-They represent the first hybrid stage but no longer own the workload VNets' production transit after Virtual WAN migration.
-
-### Active production transit
+Canonical active Module 2 transit:
 
 ```text
 bhi-vwan
   |
   +-- bhi-vhub-aue   10.200.0.0/22
-       |
        +-- Brisbane 172.16.0.0/16
        +-- Perth    172.17.0.0/16
        +-- approved remote users
-       +-- VNet connections
-            +-- bhi-vnet-core-aue
-            +-- bhi-vnet-mfg-aue
-            +-- bhi-vnet-research-sea
+       +-- Core / Manufacturing / Research VNet connections
 ```
 
-Reserve for future use without deploying yet:
+Reserved:
 
 ```text
 bhi-vhub-sea   10.200.4.0/22
 ```
 
-The `/22` hub contract is deliberately chosen early enough for later secured-hub/Azure Firewall requirements.
+Module 3 adds the Virtual WAN ExpressRoute gateway/circuit/private-peering/BGP design to `bhi-vhub-aue`; it does not create another Core VNet gateway topology.
 
-## Intentional classic -> Virtual WAN migration
-
-Workload VNets cannot be treated as though classic `use_remote_gateways` and Virtual WAN gateway ownership coexist with no change.
-
-When Virtual Hub VNet connections are activated:
-
-```text
-classic workload-side remote-gateway dependency
- -> intentionally disabled/changed
-
-Virtual Hub VNet connections
- -> added
-```
-
-Terraform must show these as reviewed in-place/configuration changes. Direct Module 1 VNet peerings remain unless a later requirement explicitly changes them.
-
-## Perth continuity — FIXED
-
-Perth no longer appears magically at the start of Module 3.
-
-It becomes the first scale-out branch in Module 2 Unit 06/07 and participates in the Virtual WAN end state.
-
-## Hybrid DNS placement — FIXED
-
-DNS Private Resolver endpoint subnets are added to `bhi-vnet-core-aue`, not `bhi-vnet-connectivity-aue`.
-
-This lets hybrid DNS remain part of the shared-services architecture as connectivity evolves from VPN to Virtual WAN to ExpressRoute.
-
-## Module 3 ExpressRoute topology — FIXED
-
-Do not create another Core VNet ExpressRoute gateway as BlueHarbor's persistent architecture.
-
-Microsoft's classic VNet ExpressRoute gateway model is learned and compared, but BlueHarbor implements:
-
-```text
-ExpressRoute circuit
-        |
-Virtual WAN ExpressRoute Gateway
-        |
-bhi-vhub-aue
-        |
-existing workload VNet connections
-```
-
-No `CoreServicesVnet` alias and no second hub topology.
-
-## VPN coexistence / resiliency contract
-
-Target production intent:
-
-```text
-ExpressRoute = preferred for approved critical routes
-VPN          = alternate / recovery path
-```
-
-The exact current Virtual WAN routing preference/propagation settings must be explicitly verified during implementation. Do not rely on an unstated default.
-
-## Global Reach continuity — FIXED
-
-Use established physical sites:
-
-```text
-Brisbane <-> ExpressRoute Global Reach concept <-> Perth
-```
-
-Do not invent a Singapore physical office. Southeast Asia remains an Azure-region requirement unless a later business event explicitly creates a site there.
-
-## FastPath — internal Module 3 dependency, not Gate 2 blocker
-
-Unit 03 must record the chosen provider/ExpressRoute Direct and gateway design. Unit 09 must test that choice against current FastPath eligibility.
-
-If the cumulative design is not eligible, teach the supported architecture and explain the gap; do not create a separate ExpressRoute environment merely to claim FastPath.
-
-## Gate 2 resulting dependency chain
-
-```text
-END MODULE 2
-
-Module 1 estate
-+ classic VPN edge retained
-+ bhi-vwan
-+ bhi-vhub-aue 10.200.0.0/22
-+ Brisbane / Perth / remote users
-+ workload VNet connections
-+ hybrid DNS in Core
-        |
-        +
-        v
-MODULE 3
-
-ExpressRoute design
-+ Virtual WAN ExpressRoute Gateway
-+ ExpressRoute circuit/provider boundary
-+ private peering / BGP
-+ route preference / resiliency
-+ Global Reach using Brisbane + Perth
-+ FastPath eligibility analysis
-```
-
-## Gate 2 verdict
-
-```text
-Story transition                 PASS
-Perth continuity                 PASS
-Canonical naming                 PASS
-Classic VPN -> vWAN evolution    PASS
-Hybrid DNS placement             PASS
-Virtual Hub sizing               PASS
-ExpressRoute gateway topology    PASS
-VPN / ExpressRoute coexistence   PASS with explicit routing validation
-Global Reach site continuity     PASS
-FastPath                         TRACKED INSIDE MODULE 3
-```
+Global Reach reuses Brisbane + Perth. FastPath eligibility remains an internal Module 3 design dependency tied to the actual circuit/gateway model.
 
 ---
 
 # Gate 3 — Module 3 -> Module 4
 
+**Status:** PASS
+
+## Problem resolved
+
+Module 4 previously referred to a telemetry backend that had never been created and later assumed multiple regional endpoints existed without introducing the second region's service.
+
+Approved correction: Module 4 explicitly introduces a new non-HTTP production workload and builds each regional endpoint in sequence on the existing BlueHarbor network.
+
+## New workload introduced in Module 4
+
+```text
+BlueHarbor Device Telemetry Ingest
+Protocol: TCP
+Service port: 9000
+```
+
+This workload did not exist in Module 3. It is the new Module 4 business event.
+
+## Australia East placement
+
+Reuse:
+
+```text
+bhi-vnet-mfg-aue
+  |
+  +-- snet-mfg-app   10.20.1.0/24
+```
+
+Add:
+
+```text
+vm-telemetry-aue-01
+vm-telemetry-aue-02
+backend NICs
+minimal functional NSG
+pip-telemetry-aue
+lb-telemetry-aue   Standard / public
+TCP/9000 rule
+TCP/9000 health probe
+```
+
+The existing Module 1 NAT association on `snet-mfg-app` remains the explicit backend-initiated outbound path. Module 4 does not add a second AUE outbound design merely because a public Load Balancer exists.
+
+## Public frontend decision — FIXED
+
+The telemetry producers include field/customer equipment outside BlueHarbor's private WAN, so the regional telemetry services are intentionally Internet facing.
+
+A public Standard Load Balancer also provides an appropriate real regional endpoint for later Traffic Manager monitoring/selection.
+
+## Minimal security boundary
+
+Module 4 adds only enough NSG policy to permit the required TCP/9000 service traffic and Azure Load Balancer health-probe traffic. Full segmentation/security architecture remains Module 6 scope.
+
+## Backend failure semantics — FIXED
+
+```text
+one backend unhealthy
+ -> regional Load Balancer removes it from new-flow eligibility
+ -> regional service can remain healthy
+```
+
+This is distinct from complete regional service failure.
+
+## Southeast Asia DR endpoint — ADDED DELIBERATELY
+
+Reuse:
+
+```text
+bhi-vnet-research-sea   10.30.0.0/16
+```
+
+Add in Module 4 Unit 05:
+
+```text
+snet-telemetry-dr       10.30.3.0/24
+vm-telemetry-sea-01
+vm-telemetry-sea-02
+minimal functional NSG
+pip-telemetry-sea
+lb-telemetry-sea   Standard / public
+TCP/9000 rule/probe
+```
+
+No second regional VNet is invented.
+
+## Traffic Manager endpoints — FIXED
+
+Traffic Manager is added only after both regional public telemetry services exist.
+
+Approved BlueHarbor policy:
+
+```text
+tm-telemetry-global
+  |
+  +-- Priority 1 -> Australia East public telemetry endpoint
+  +-- Priority 2 -> Southeast Asia public telemetry endpoint
+
+monitor -> TCP/9000
+```
+
+Regional public IPs use valid unique DNS labels as required by the selected endpoint model.
+
+## Health versus policy eligibility — EXPLICIT
+
+While AUE is healthy:
+
+```text
+AUE = healthy + selected
+SEA = healthy + enabled + not selected because lower priority
+```
+
+This gives a concrete distinction between endpoint health and routing-policy selection.
+
+## Two-level availability model
+
+```text
+BACKEND FAILURE
+one AUE backend fails
+ -> AUE Load Balancer keeps service available
+ -> Traffic Manager continues selecting AUE
+
+REGIONAL SERVICE FAILURE
+AUE regional service becomes unhealthy
+ -> Traffic Manager changes DNS selection to SEA
+ -> DNS TTL/resolver/client caching affects observed cutover
+```
+
+## Transport architecture — PRESERVED
+
+Module 4 does not redesign:
+
+```text
+VPN
+Virtual WAN
+bhi-vhub-aue
+ExpressRoute
+hybrid DNS
+Core connectivity
+```
+
+It is an application-availability delta on top of the existing transport.
+
+## Gate 3 resulting dependency chain
+
+```text
+END MODULE 3
+network / hybrid / ExpressRoute estate
+        |
+        +
+        v
+MODULE 4
+AUE telemetry service in existing Manufacturing subnet
+        +
+SEA telemetry DR service in existing Research VNet
+        +
+Traffic Manager Priority failover
+```
+
+## Gate 3 verdict
+
+```text
+Story transition                  PASS
+Application workload existence    PASS
+AUE backend placement             PASS
+Load Balancer frontend choice     PASS — public Standard
+Non-HTTP workload                 PASS — TCP/9000
+Terraform continuity              PASS
+Module 1 NAT reuse                PASS
+Regional second endpoint          PASS
+SEA address plan                  PASS — 10.30.3.0/24
+Traffic Manager targets           PASS
+Traffic Manager policy            PASS — Priority
+Traffic Manager health protocol   PASS — TCP/9000
+Failure hierarchy                 PASS
+Transport architecture            PASS — unchanged
+```
+
+---
+
+# Gate 4 — Module 4 -> Module 5
+
 **Status:** NEXT
 
 Audit next:
 
-- what exact application/service workload exists by the end of Module 3;
-- whether Module 4's Load Balancer backends already exist or appear magically;
-- where the regional Load Balancer lives and which VNet/subnet it reuses;
-- whether public/internal frontend choices fit the security and later Module 5 story;
-- how Traffic Manager endpoints map to real regional services;
-- whether Southeast Asia needs a real application deployment by this point;
-- what Terraform resources Module 4 adds without changing the transport architecture unnecessarily.
+- Partner Hub is a distinct HTTP(S) application, not a relabelled telemetry service;
+- where the Partner Hub application backends live in the existing address plan;
+- whether Application Gateway needs a dedicated subnet planned before deployment;
+- whether Australia East and Southeast Asia both need Partner Hub origins for Front Door;
+- how Front Door origins map to the actual Application Gateway/app resources;
+- whether TLS/DNS/public endpoint decisions are consistent with Module 6 WAF and Module 7 private-access requirements;
+- what Module 5 adds without disturbing the Module 4 telemetry service.

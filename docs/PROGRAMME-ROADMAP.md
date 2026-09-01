@@ -30,49 +30,49 @@ Modules 1–8: **DESIGNED**.
 |---:|---|---|
 | 1 | M1 -> M2 | **PASS** |
 | 2 | M2 -> M3 | **PASS** |
-| 3 | M3 -> M4 | **NEXT** |
-| 4 | M4 -> M5 | PENDING |
+| 3 | M3 -> M4 | **PASS** |
+| 4 | M4 -> M5 | **NEXT** |
 | 5 | M5 -> M6 | PENDING |
 | 6 | M6 -> M7 | PENDING |
 | 7 | M7 -> M8 | PENDING |
 
 Do not start the BlueHarbor Terraform deployment until all gates pass.
 
-## Approved architecture through Module 3
+## Approved cumulative architecture through Module 4
 
 ```text
 M1
-workload VNets / DNS / peering / routing / NAT
+Core / Manufacturing / Research VNets
+DNS / peerings / routing
+NAT on snet-mfg-app
   |
-M2 classic stage
-bhi-vnet-connectivity-aue + VPN Gateway
-  |
-M2 production stage
-bhi-vwan + bhi-vhub-aue 10.200.0.0/22
-Brisbane + Perth + remote users + workload VNet connections
+M2
+classic VPN learning
+-> bhi-vwan / bhi-vhub-aue 10.200.0.0/22
+Brisbane + Perth + remote users
   |
 M3
 ExpressRoute added to the same Virtual WAN hub
 VPN retained as alternate path
+  |
+M4
+Device Telemetry Ingest TCP/9000
+AUE public Standard Load Balancer in existing Manufacturing VNet
+SEA public Standard Load Balancer in existing Research VNet
+Traffic Manager Priority failover AUE -> SEA
 ```
 
-Reserved future regional hub:
-
-```text
-bhi-vhub-sea   10.200.4.0/22
-```
-
-Hybrid DNS is extended from the existing Core/Shared Services VNet.
+Module 4 is an application-availability addition; it does not replace the transport architecture.
 
 ## Official module sequence
 
 | Module | Microsoft Learn module | Execution status | Story status |
 |---:|---|---|---|
 | 1 | Introduction to Azure Virtual Networks | Unit 01 is first build point | DESIGNED |
-| 2 | Design and implement hybrid networking | NOT STARTED | DESIGNED / GATE 1-2 AUDITED |
-| 3 | Design and implement Azure ExpressRoute | NOT STARTED | DESIGNED / GATE 2 AUDITED |
-| 4 | Load balance non-HTTP(S) traffic in Azure | NOT STARTED | DESIGNED / GATE 3 NEXT |
-| 5 | Load balance HTTP(S) traffic in Azure | NOT STARTED | DESIGNED |
+| 2 | Design and implement hybrid networking | NOT STARTED | DESIGNED / AUDITED |
+| 3 | Design and implement Azure ExpressRoute | NOT STARTED | DESIGNED / AUDITED |
+| 4 | Load balance non-HTTP(S) traffic in Azure | NOT STARTED | DESIGNED / AUDITED |
+| 5 | Load balance HTTP(S) traffic in Azure | NOT STARTED | DESIGNED / GATE 4 NEXT |
 | 6 | Design and implement network security | NOT STARTED | DESIGNED |
 | 7 | Design and implement private access to Azure Services | NOT STARTED | DESIGNED |
 | 8 | Design and implement network monitoring | NOT STARTED | DESIGNED |
@@ -81,8 +81,8 @@ Hybrid DNS is extended from the existing Core/Shared Services VNet.
 
 ```text
 STORY DESIGN        COMPLETE
-AUDIT GATES 1–2     PASS
-AUDIT GATE 3        NEXT
+AUDIT GATES 1–3     PASS
+AUDIT GATE 4        NEXT
 TERRAFORM BUILD     NOT STARTED
 ```
 

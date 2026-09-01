@@ -2,24 +2,17 @@
 
 This is the authoritative continuation record.
 
-## Curriculum authority
+## Core rules
 
 ```text
-Microsoft Learn path = module/unit order and primary teaching scope
-BlueHarbor story = progressive business context
-AZ-700 study guide = completeness additions inside the matching unit
-Azure product docs = exact technical behaviour
+Microsoft Learn order is authoritative.
+One BlueHarbor story.
+One blueharbor/terraform/ root.
+One Terraform state lineage.
+Each unit = previous deployed estate + next requirement.
 ```
 
-## Terraform continuity rule
-
-One canonical root:
-
-```text
-blueharbor/terraform/
-```
-
-Every practical starts from the code, state and deployed resources produced previously. No routine destroy between units/modules. Persistent configuration changes are Terraform-managed; CLI/Portal/diagnostic tools validate and troubleshoot.
+No routine destroy between units/modules. Persistent infrastructure is Terraform-managed; CLI/Portal/protocol tools validate and troubleshoot.
 
 ## Story-design milestone
 
@@ -30,41 +23,32 @@ Stories for Modules 1–8 are designed. Formal learning execution still begins a
 ```text
 Gate 1  M1 -> M2   PASS
 Gate 2  M2 -> M3   PASS
-Gate 3  M3 -> M4   NEXT
-Gate 4  M4 -> M5   PENDING
+Gate 3  M3 -> M4   PASS
+Gate 4  M4 -> M5   NEXT
 Gate 5  M5 -> M6   PENDING
 Gate 6  M6 -> M7   PENDING
 Gate 7  M7 -> M8   PENDING
 ```
 
-See [`ARCHITECTURE-DEPENDENCY-AUDIT.md`](ARCHITECTURE-DEPENDENCY-AUDIT.md) for the canonical decisions.
+See [`ARCHITECTURE-DEPENDENCY-AUDIT.md`](ARCHITECTURE-DEPENDENCY-AUDIT.md) for the canonical decision record.
 
-## Key approved connectivity architecture
+## Approved architecture through Module 3
 
 ```text
-MODULE 1
-workload VNets / DNS / peering / routing / NAT
+M1
+Core / Manufacturing / Research VNets
+DNS / peering / routing
+NAT on snet-mfg-app
 
-EARLY MODULE 2
-bhi-vnet-connectivity-aue
-+ classic VPN Gateway
-+ Brisbane S2S
-+ classic P2S
+M2
+classic VPN learning
+-> Virtual WAN production transit
+bhi-vhub-aue 10.200.0.0/22
+Brisbane + Perth + remote users
 
-END MODULE 2
-bhi-vwan
-+ bhi-vhub-aue 10.200.0.0/22
-+ Brisbane
-+ Perth
-+ remote users
-+ Core / Manufacturing / Research VNet connections
-
-MODULE 3
-add ExpressRoute to bhi-vhub-aue
-+ Virtual WAN ExpressRoute Gateway
-+ circuit/provider boundary
-+ private peering/BGP
-+ ExpressRoute-preferred / VPN-alternate routing intent
+M3
+ExpressRoute added to bhi-vhub-aue
+VPN retained as alternate path
 ```
 
 Hybrid DNS resolver endpoint subnets belong in `bhi-vnet-core-aue`:
@@ -74,30 +58,71 @@ snet-dns-inbound    10.10.10.0/28
 snet-dns-outbound   10.10.10.16/28
 ```
 
-Reserve:
+Reserved:
 
 ```text
 bhi-vhub-sea   10.200.4.0/22
 ```
 
-Do not invent a Singapore physical office; Brisbane and Perth are the current physical sites.
+## Approved Module 4 application-availability architecture
+
+New workload:
+
+```text
+BlueHarbor Device Telemetry Ingest
+TCP/9000
+```
+
+Australia East:
+
+```text
+existing bhi-vnet-mfg-aue / snet-mfg-app
+ -> telemetry backends
+ -> public Standard lb-telemetry-aue
+ -> reuse existing Module 1 NAT for backend outbound
+```
+
+Southeast Asia DR:
+
+```text
+existing bhi-vnet-research-sea
+ -> add snet-telemetry-dr 10.30.3.0/24
+ -> telemetry DR backends
+ -> public Standard lb-telemetry-sea
+```
+
+Global service selection:
+
+```text
+Traffic Manager
+Priority 1 -> AUE
+Priority 2 -> SEA
+monitor TCP/9000
+```
+
+Two failure layers:
+
+```text
+backend failure  -> handled by regional Load Balancer
+regional failure -> handled by Traffic Manager DNS selection
+```
 
 ## Current programme phase
 
-- **Curriculum execution position:** Module 1 — Unit 01 remains the first teaching/build unit.
+- **Curriculum execution position:** Module 1 Unit 01 remains the first teaching/build unit.
 - **Story design:** COMPLETE.
-- **Architecture audit:** Gates 1–2 PASS; Gate 3 NEXT.
+- **Architecture audit:** Gates 1–3 PASS; Gate 4 NEXT.
 - **Terraform build:** NOT STARTED.
 - **Azure deployment:** NOT STARTED for the new BlueHarbor build.
 
 ## Immediate resume instruction
 
-Do **not** start Module 1 implementation yet.
+Do not start implementation yet.
 
 Proceed with:
 
 ```text
-Gate 3 — Module 3 -> Module 4
+Gate 4 — Module 4 -> Module 5
 ```
 
-Audit one transition only. Fix and approve it before moving to Gate 4.
+Audit only that transition, fix conflicts, obtain approval, then move to Gate 5.
