@@ -4,26 +4,55 @@
 
 **Status:** IN PROGRESS
 
-This directory follows the Microsoft Learn unit order exactly. Unit directories are created when they contain real tutorial/practical evidence; we do not create empty placeholder labs.
+## BlueHarbor Industries project
 
-## Microsoft Learn units
+Module 1 is taught as one continuous Azure migration project for **BlueHarbor Industries (BHI)** rather than as unrelated labs.
 
-1. Introduction
-2. Explore Azure Virtual Networks
-3. Configure public IP services
-4. Exercise: Design and implement a virtual network in Azure
-5. Design name resolution for your virtual network
-6. Exercise: Configure domain name servers settings in Azure
-7. Enable cross-virtual network connectivity with peering
-8. Exercise: Connect two Azure virtual networks using global virtual network peering
-9. Implement virtual network traffic routing
-10. Configure internet access with Azure Virtual NAT
-11. Summary
+BlueHarbor is an industrial technology manufacturer with three cloud workload groups:
 
-## Current position
+```text
+Shared Services
+Manufacturing
+Research
+```
 
-- Units 2–4: prior VNet/IP/public-IP practical evidence completed.
-- Unit 5: **CURRENT — Design name resolution for your virtual network.**
-- Unit 6: next.
+The network evolves as new business requirements appear. We do not reset the scenario between Microsoft Learn units.
 
-Current AZ-700 study-guide additions are added only inside the matching Microsoft Learn unit, not as a parallel lab sequence.
+See [`PROJECT-STORY.md`](PROJECT-STORY.md) for the complete progressive story and [`../../docs/PROJECT-NARRATIVE.md`](../../docs/PROJECT-NARRATIVE.md) for the programme-wide narrative.
+
+## Microsoft Learn units and project chapters
+
+| Unit | Microsoft Learn unit | BlueHarbor chapter | Status |
+|---:|---|---|---|
+| 01 | Introduction | You become the Azure Network Engineer and receive the migration brief | COMPLETE |
+| 02 | Explore Azure Virtual Networks | Design separate address spaces for shared services, manufacturing and research | COMPLETE |
+| 03 | Configure public IP services | Operations needs a controlled public test endpoint | COMPLETE |
+| 04 | Exercise: Design and implement a virtual network in Azure | Build the approved network foundation | COMPLETE |
+| 05 | Design name resolution for your virtual network | Teams can no longer manage changing IP addresses by memory | **CURRENT** |
+| 06 | Exercise: Configure domain name servers settings in Azure | Build and validate internal name resolution | NOT STARTED |
+| 07 | Enable cross-virtual network connectivity with peering | Manufacturing needs a service hosted in Shared Services | NOT STARTED |
+| 08 | Exercise: Connect two Azure virtual networks using global virtual network peering | Prove isolation, peer the networks and prove connectivity | NOT STARTED |
+| 09 | Implement virtual network traffic routing | Security requires deliberate traffic-path control | NOT STARTED |
+| 10 | Configure internet access with Azure Virtual NAT | Private workloads need outbound Internet without individual public IPs | NOT STARTED |
+| 11 | Summary | Architecture review, final validation and learner explain-back | NOT STARTED |
+
+## Learning pattern
+
+For each unit:
+
+```text
+Microsoft Learn objective
+-> BlueHarbor business problem
+-> everyday analogy
+-> architecture / packet / query flow
+-> understanding check
+-> Microsoft exercise where present
+-> Azure CLI implementation where practical
+-> independent validation
+-> deliberate failure / troubleshooting
+-> Terraform rebuild where appropriate
+-> evidence / rebuild notes
+-> carry architecture into next unit
+```
+
+Current position: **Unit 05 — Design name resolution for your virtual network**.
