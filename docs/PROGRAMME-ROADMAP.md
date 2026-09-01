@@ -2,13 +2,17 @@
 
 ## Purpose
 
-Build real Azure networking engineering capability by following Microsoft's official AZ-700 Microsoft Learn learning path in its published module order, then deepen each lesson with Azure CLI, Terraform, troubleshooting, validation and rebuild documentation.
+Build real Azure networking engineering capability by following Microsoft's official AZ-700 Microsoft Learn learning path in the same published module and unit order, then deepen each Microsoft unit with Azure CLI, Terraform, troubleshooting, validation and rebuild documentation.
 
 ## Curriculum authority
 
 Primary curriculum and sequence:
 
 `https://learn.microsoft.com/en-us/training/paths/design-implement-microsoft-azure-networking-solutions-az-700/`
+
+Exact unit map used by this repository:
+
+[`docs/MSLEARN-UNIT-MAP.md`](MSLEARN-UNIT-MAP.md)
 
 Coverage completeness check:
 
@@ -22,196 +26,133 @@ Rule:
 
 ```text
 Microsoft Learn path = programme structure and order
-AZ-700 study guide = make sure the matching module is complete
+Microsoft Learn module = major programme stage
+Microsoft Learn unit = atomic teaching/lab step
+Microsoft Learn exercise = practical baseline where one exists
+AZ-700 study guide = completeness additions inside the matching unit
 Azure product docs = exact implementation behaviour
 ```
 
+## Programme structure
+
+The repository no longer uses the historical numbered lab folders as the curriculum sequence.
+
+The authoritative pattern is:
+
+```text
+Microsoft Learn learning path
+  -> Module
+     -> Unit
+        -> Microsoft exercise where present
+           -> our deeper CLI / validation / troubleshooting / Terraform work
+```
+
+Historical lab folders are retained only because they contain completed evidence, Terraform, notes and rebuild documentation.
+
 ## Official Microsoft Learn module sequence
 
-| Module | Microsoft Learn module | Practical implementation in this repository | Status |
-|---:|---|---|---|
-| 1 | Introduction to Azure Virtual Networks | VNet/IP design, DNS/name resolution, peering, routing, NAT; study-guide extensions such as VNet Manager, Route Server and DNS Private Resolver stay inside this module | IN PROGRESS |
-| 2 | Design and implement hybrid networking | VPN Gateway, Site-to-Site VPN, Point-to-Site VPN, Azure Virtual WAN and Virtual WAN hubs | NOT STARTED |
-| 3 | Design and implement Azure ExpressRoute | ExpressRoute design, peering, Global Reach, FastPath, redundancy and BGP reasoning | NOT STARTED |
-| 4 | Load balance non-HTTP(S) traffic in Azure | Azure Load Balancer and Azure Traffic Manager | COMPLETE |
-| 5 | Load balance HTTP(S) traffic in Azure | Azure Application Gateway and Azure Front Door | NOT STARTED |
-| 6 | Design and implement network security | Defender for Cloud recommendations, DDoS Protection, NSGs, Azure Firewall, Firewall Manager and WAF | NOT STARTED |
-| 7 | Design and implement private access to Azure Services | Service endpoints, Private Link, private endpoints and private-endpoint DNS integration | NOT STARTED |
-| 8 | Design and implement network monitoring | Azure Monitor, Network Watcher, Connection Monitor, Traffic Analytics, VNet flow logs and diagnostic logging | NOT STARTED |
+| Module | Microsoft Learn module | Status |
+|---:|---|---|
+| 1 | Introduction to Azure Virtual Networks | IN PROGRESS |
+| 2 | Design and implement hybrid networking | NOT STARTED |
+| 3 | Design and implement Azure ExpressRoute | NOT STARTED |
+| 4 | Load balance non-HTTP(S) traffic in Azure | PREVIOUS PRACTICAL EVIDENCE EXISTS |
+| 5 | Load balance HTTP(S) traffic in Azure | NOT STARTED |
+| 6 | Design and implement network security | NOT STARTED |
+| 7 | Design and implement private access to Azure Services | NOT STARTED |
+| 8 | Design and implement network monitoring | NOT STARTED |
 
-## Module 1 — Introduction to Azure Virtual Networks
-
-Microsoft Learn core units:
+## Current Microsoft Learn position
 
 ```text
-Explore Azure Virtual Networks
-Configure public IP services
-Design and implement a virtual network
-Design name resolution for your virtual network
-Configure domain name server settings in Azure
-Enable cross-virtual network connectivity with peering
-Implement virtual network traffic routing
-Configure internet access with Azure Virtual NAT
+Module 1 — Introduction to Azure Virtual Networks
+
+Completed / evidenced:
+- Explore Azure Virtual Networks
+- Configure public IP services
+- Exercise: Design and implement a virtual network in Azure
+
+Current:
+- Design name resolution for your virtual network
+
+Next:
+- Exercise: Configure domain name servers settings in Azure
 ```
 
-Our practical mapping:
+Lab 03 contains the practical evidence for the earlier Module 1 VNet/IP/public-IP work.
+Lab 04 is the implementation workspace for the current name-resolution units.
 
-| Existing practical lab | Microsoft Learn Module 1 alignment | Status |
-|---|---|---|
-| Lab 03 — IP Addressing, VNets, Subnets & Public IP Architecture | VNets, addressing and public IP services | COMPLETE |
-| Lab 04 — Azure DNS, Private DNS & DNS Private Resolver | Name resolution and VNet DNS settings; DNS Private Resolver added only because the current AZ-700 study guide explicitly requires it | IN PROGRESS |
-| Lab 05 — VNet Peering, Gateway Transit & Virtual Network Manager | Cross-VNet connectivity; VNet Manager is a study-guide extension within this connectivity section | NOT STARTED |
-| Lab 06 — UDRs, Forced Tunnelling, NAT Gateway & NVA | Traffic routing and Azure NAT; forced tunnelling/service chaining are study-guide depth | NOT STARTED |
-| Lab 07 — Azure Route Server & Dynamic Routing | Study-guide extension to the Module 1 routing section | NOT STARTED |
+## Lab pattern from now on
 
-### Current Module 1 checkpoint
+Every lab/workspace must mirror Microsoft Learn rather than inventing a parallel topic list.
 
-Lab 03 is complete. Lab 04 is the current work item.
-
-Lab 04 must follow Microsoft's learning order:
-
-```text
-Microsoft Learn: Design name resolution for your virtual network
--> Microsoft Learn: Exercise / DNS server settings in Azure
--> AZ-700 study-guide additions that belong to name resolution
-   - public DNS zones
-   - private DNS zones
-   - private DNS zone VNet links
-   - Azure DNS Private Resolver
--> understanding check
--> practical lab design
--> manual Azure CLI deployment
--> validation and deliberate DNS failure
--> Terraform rebuild
--> evidence / teardown / explain-back
-```
-
-Do not expand Lab 04 into unrelated DNS or Private Link material. Private-endpoint DNS integration belongs primarily to Module 7.
-
-## Module 2 — Design and implement hybrid networking
-
-Practical mapping:
-
-```text
-Lab 09 — Site-to-Site VPN
-Lab 10 — Point-to-Site VPN
-Lab 12 — Azure Virtual WAN
-```
-
-The teaching order inside the module follows Microsoft Learn: VPN Gateway -> S2S -> P2S -> Virtual WAN / hubs.
-
-## Module 3 — Design and implement Azure ExpressRoute
-
-Practical mapping:
-
-```text
-Lab 11 — ExpressRoute Architecture & BGP
-```
-
-Full commercial circuit provisioning is not required if cost is unreasonable. Architecture, peering, BGP, resiliency, Global Reach, FastPath, route reasoning and troubleshooting must still be covered seriously.
-
-## Module 4 — Load balance non-HTTP(S) traffic in Azure
-
-Practical mapping:
-
-```text
-Lab 01 — Azure Load Balancer     COMPLETE
-Lab 02 — Azure Traffic Manager   COMPLETE
-```
-
-These labs were completed before the programme was realigned to the Microsoft Learn order. Their work is retained and counts as Module 4 complete.
-
-## Module 5 — Load balance HTTP(S) traffic in Azure
-
-Practical mapping:
-
-```text
-Lab 13 — Azure Application Gateway
-Lab 14 — Azure Front Door
-```
-
-## Module 6 — Design and implement network security
-
-Practical mapping will be reorganized around the Microsoft Learn units rather than the old folder numbering:
-
-```text
-Microsoft Defender for Cloud network recommendations
-Azure DDoS Protection
-Network Security Groups
-Azure Firewall
-Azure Firewall Manager
-Web Application Firewall
-```
-
-Existing placeholder material in Labs 08, 18, 19 and 20 may be reused only where it maps directly to these units. Their old numbering does not define the teaching sequence.
-
-## Module 7 — Design and implement private access to Azure Services
-
-Practical mapping:
-
-```text
-Lab 17 — Service Endpoints & Service Endpoint Policies
-Lab 16 — Private Endpoint, Private Link & Private DNS
-```
-
-Teaching order follows Microsoft Learn: service endpoints -> Private Link/private endpoint -> private endpoint DNS integration.
-
-## Module 8 — Design and implement network monitoring
-
-Practical mapping:
-
-```text
-Lab 08 — Network Watcher / Azure Monitor / flow visibility
-```
-
-Only the monitoring portion belongs here. DDoS and Defender content moves conceptually to Module 6.
-
-A final troubleshooting/capstone exercise can remain after Module 8 as programme synthesis, but it is not a ninth Microsoft Learn module.
-
-## Existing folders and numbering
-
-Historical lab folder numbers are retained to avoid destroying completed work and links. They are implementation artifacts, not the curriculum authority.
-
-From this point forward:
-
-```text
-Always state the Microsoft Learn module first.
-Then state the practical lab/folder being used to implement that module.
-```
-
-Example:
+Example for the current work:
 
 ```text
 Microsoft Learn Module 1 — Introduction to Azure Virtual Networks
-Current practical: Lab 04 — Name resolution / Azure DNS
+
+Unit 5 — Design name resolution for your virtual network
+  -> teach Microsoft unit
+  -> everyday analogy
+  -> visual query flow
+  -> understanding check
+
+Unit 6 — Exercise: Configure domain name servers settings in Azure
+  -> complete / reproduce exercise objective
+  -> Azure CLI equivalent
+  -> independent validation
+  -> deliberate failure / troubleshooting
+  -> Terraform rebuild
+  -> evidence / teardown
 ```
+
+If the current AZ-700 study guide requires additional depth such as Azure DNS Private Resolver, that depth is inserted under the matching Microsoft Learn name-resolution unit after the core Microsoft unit is understood. It does not become an independent curriculum branch.
+
+## Existing practical evidence mapping
+
+```text
+Lab 01 — Azure Load Balancer
+Lab 02 — Azure Traffic Manager
+    -> Microsoft Learn Module 4 evidence
+
+Lab 03 — IP addressing / VNets / public IPs
+    -> Microsoft Learn Module 1 Units 2-4 evidence
+
+Lab 04 — DNS / name resolution
+    -> Microsoft Learn Module 1 Units 5-6 workspace
+```
+
+When Module 4 is reached in Microsoft Learn order, review Units 1-7 in sequence and map Labs 01-02 against them. Reuse valid evidence and fill only genuine gaps rather than automatically repeating deployments.
 
 ## Required engineering learning loop
 
-For every practical implementation:
+For every Microsoft Learn unit:
 
 ```text
-Microsoft Learn tutorial / lesson
-  -> mental model with everyday analogy
-  -> visual architecture / traffic or query flow
-  -> understanding check
-  -> design our practical scenario
-  -> manual Azure CLI implementation
-  -> independent validation
-  -> deliberate failure / troubleshooting
-  -> Portal inspection where useful
-  -> Terraform rebuild
-  -> independent IaC validation
-  -> evidence and rebuild documentation
-  -> safe teardown
-  -> learner explain-back
+Microsoft Learn unit
+-> explain the Microsoft objective
+-> everyday analogy where useful
+-> architecture / packet / query flow
+-> understanding check
+-> Microsoft exercise where present
+-> Azure CLI implementation where practical
+-> independent validation
+-> deliberate failure / troubleshooting
+-> Portal inspection where useful
+-> Terraform rebuild where appropriate
+-> independent IaC validation
+-> evidence / rebuild documentation
+-> safe teardown
+-> learner explain-back
 ```
 
 ## Drift prevention
 
-Do not introduce a new standalone lab topic merely because it appears in Azure documentation or is useful in production.
+Before teaching or implementing anything:
 
-A topic enters the programme only when:
-
-1. it is a Microsoft Learn module/unit in the official AZ-700 path, or
-2. it is explicitly required by the current AZ-700 study guide and can be attached to the matching Learn module.
+1. identify the exact Microsoft Learn module;
+2. identify the exact Microsoft Learn unit;
+3. follow the Microsoft unit before adding depth;
+4. attach study-guide additions only to the matching unit;
+5. do not create standalone topics merely because they are useful Azure features;
+6. update `docs/MSLEARN-UNIT-MAP.md` if Microsoft changes the path.
