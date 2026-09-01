@@ -1,116 +1,110 @@
 # Programme Handoff — Azure Networking Engineering Labs
 
-This is the authoritative continuation record for the programme. Read it before starting new lab work.
+This is the authoritative continuation record for the programme.
+
+## Curriculum authority
+
+Primary programme sequence:
+
+`https://learn.microsoft.com/en-us/training/paths/design-implement-microsoft-azure-networking-solutions-az-700/`
+
+Coverage completeness check:
+
+`https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/az-700`
+
+Rule:
+
+```text
+Microsoft Learn path = sequence and teaching scope
+AZ-700 study guide = completeness additions inside the matching module
+Azure product docs = exact implementation behaviour
+```
 
 ## Current status
 
-- **Programme:** Azure Networking Engineering Labs
-- **Repository:** `Mike-Dominate/Azure-Networking`
-- **Coverage baseline:** Microsoft AZ-700 skills measured effective July 27, 2026
-- **Last completed lab:** Lab 03 — IP Addressing, VNets, Subnets & Public IP Architecture
-- **Current lab:** Lab 04 — Azure DNS, Private DNS & DNS Private Resolver
+- **Current Microsoft Learn module:** Module 1 — Introduction to Azure Virtual Networks
+- **Completed Module 1 practical:** Lab 03 — VNet/IP addressing/public IP foundation
+- **Current practical:** Lab 04 — Azure DNS / name resolution
 - **Lab 04 state:** IN PROGRESS
 - **Current phase:** Tutorial / mental model
 - **Deployment phase:** NOT STARTED
-- **Overall progress:** 3 / 22 labs complete; Lab 04 in progress
-- **Cadence:** Maximum of one lab per day
-- **Last updated:** 2026-09-01 (Australia/Brisbane)
+- **Azure resources:** NONE
+- **Module 4:** Load balance non-HTTP(S) traffic — COMPLETE from Labs 01 and 02
 
 ## Immediate resume instruction
 
-Do not repeat Lab 03. It is complete and fully torn down.
+Do not return to the old independent 22-lab sequence as the curriculum source.
 
-Lab 04 has formally started, but the deployment phase must not begin until the complete Lab 04 tutorial is finished.
-
-Use the original Lab 04 scope only:
+Resume Microsoft Learn Module 1 at:
 
 ```text
-1. Azure public DNS zones
-2. private DNS zones
-3. VNet links and auto-registration concepts
-4. custom DNS settings on VNets
-5. Azure DNS Private Resolver
-6. inbound and outbound endpoints
-7. forwarding rulesets
-8. hybrid/on-premises name resolution
-9. DNS troubleshooting and packet/query flow
+Design name resolution for your virtual network
 ```
 
-Supporting DNS fundamentals may be taught only where they directly support these nine topics; they are not additional Lab 04 scope items.
-
-## Lab 04 tutorial progress
-
-Already covered interactively with DNS queries:
-
-- recursive resolver versus authoritative DNS
-- public DNS hierarchy and delegation concepts
-- NS, CNAME, MX and SOA records
-- common DNS record types: A, AAAA, CNAME, MX, TXT, NS, SOA and PTR
-- Microsoft public DNS authority on Azure DNS
-- Microsoft-to-Akamai CNAME/authority handoff
-
-Resume the tutorial at the first official topic: **Azure public DNS zones**.
-
-## Programme method
+Finish Microsoft's name-resolution teaching first. Then add only the current AZ-700 study-guide name-resolution requirements that belong to the same section:
 
 ```text
-complete tutorial / mental model
--> visual architecture / traffic or query flow
+- design name resolution inside a VNet
+- configure DNS settings for a VNet
+- design public DNS zones
+- design private DNS zones
+- configure public and private DNS zones
+- link a private DNS zone to a VNet
+- design and implement Azure DNS Private Resolver
+```
+
+Supporting DNS fundamentals are allowed where needed to understand those objectives, but they must not become an independent expanded curriculum.
+
+## Module 1 progression
+
+```text
+Lab 03 — VNet/IP/public IP foundation                  COMPLETE
+Lab 04 — name resolution / Azure DNS                   IN PROGRESS
+Lab 05 — peering / cross-VNet connectivity             NOT STARTED
+Lab 06 — routing / NAT                                 NOT STARTED
+Lab 07 — Route Server study-guide routing extension    NOT STARTED
+```
+
+Historical lab numbers are retained only to preserve completed work and repository links. Microsoft Learn module order is authoritative.
+
+## Lab 04 workflow
+
+```text
+Microsoft Learn name-resolution lesson
+-> everyday mental model
+-> visual DNS/query flow
 -> understanding check
--> design the lab
--> manual Azure implementation
--> independent validation
--> failure/troubleshooting
+-> study-guide additions for name resolution
+-> design practical scenario
+-> manual Azure CLI implementation
+-> independent DNS validation
+-> deliberate failure / troubleshooting
 -> Portal inspection where useful
 -> Terraform rebuild
--> independent IaC validation
--> final no-change plan
--> Git/GitHub checkpoint
--> rebuild documentation
+-> evidence / rebuild documentation
 -> safe teardown
--> learner explain-back
+-> explain-back
 ```
 
-## Lab 04 engineering rule
+Do not create Azure resources until the tutorial and understanding check are complete.
 
-Provisioning state `Succeeded` does not prove DNS is functioning. Actual DNS queries must validate resolution behaviour, returned records and the intended query path.
-
-## Lab 03 completion checkpoint
-
-Lab 03 is COMPLETE.
+## Completed work retained
 
 ```text
-Manual Azure build and validation         COMPLETE
-Failure testing                           COMPLETE
-Terraform rebuild                         COMPLETE
-Final Terraform convergence               NO CHANGES
-terraform destroy                         16 destroyed
-post-destroy az group exists              false
-post-destroy terraform state list         empty
+Lab 01 — Azure Load Balancer      COMPLETE
+Lab 02 — Azure Traffic Manager    COMPLETE
 ```
 
-## Roadmap status
+These map directly to Microsoft Learn Module 4 — Load balance non-HTTP(S) traffic in Azure, so Module 4 is already complete.
 
-```text
-01  Azure Load Balancer                                      COMPLETE
-02  Azure Traffic Manager                                   COMPLETE
-03  IP Addressing, VNets, Subnets & Public IP Architecture  COMPLETE
-04  Azure DNS, Private DNS & DNS Private Resolver            IN PROGRESS
-05–22                                                       NOT STARTED
-```
+Lab 03 remains complete and maps to the VNet/IP/public-IP portion of Microsoft Learn Module 1.
 
-## Status consistency rule
+## Drift prevention rule
 
-When a lab status changes, keep these aligned:
+Before teaching any new topic:
 
-```text
-README.md
-docs/PROGRAMME-ROADMAP.md
-docs/HANDOFF.md
-labs/<lab>/README.md
-labs/<lab>/handoff/HANDOFF.md
-```
-
-## Teardown evidence rule
-
-Do not destroy a live lab before capturing useful documentation and evidence. After each destroy, independently verify Azure clean and Terraform state empty before claiming teardown is complete.
+1. identify the Microsoft Learn module and unit it belongs to;
+2. teach that unit's objective;
+3. check the current AZ-700 study guide for additions in the same objective area;
+4. do not introduce unrelated standalone topics;
+5. only then design our deeper practical implementation.
