@@ -10,40 +10,65 @@ This is the authoritative continuation record for the programme. Read it before 
 - **Last completed lab:** Lab 03 — IP Addressing, VNets, Subnets & Public IP Architecture
 - **Current lab:** Lab 04 — Azure DNS, Private DNS & DNS Private Resolver
 - **Lab 04 state:** IN PROGRESS
-- **Current phase:** DNS mental model and topology design
-- **Azure resources:** NONE CREATED YET
+- **Current phase:** Tutorial / mental model
+- **Deployment phase:** NOT STARTED
 - **Overall progress:** 3 / 22 labs complete; Lab 04 in progress
 - **Cadence:** Maximum of one lab per day
-- **Last updated:** 2026-08-31 (Australia/Brisbane)
+- **Last updated:** 2026-09-01 (Australia/Brisbane)
 
 ## Immediate resume instruction
 
 Do not repeat Lab 03. It is complete and fully torn down.
 
-Lab 04 has formally started. Do not create Azure resources until the DNS mental model and lab topology are understood.
+Lab 04 has formally started, but the deployment phase must not begin until the complete Lab 04 tutorial is finished.
 
-Resume sequence:
+Use the original Lab 04 scope only:
 
 ```text
-1. git pull --rebase
-2. verify git working tree clean
-3. teach what DNS does and does not do
-4. distinguish stub resolver, recursive resolver and authoritative DNS
-5. walk a public DNS query end-to-end
-6. explain Azure-provided DNS behaviour inside a VNet
-7. cover Azure DNS public zones and record types
-8. cover Azure Private DNS zones and VNet links
-9. explain auto-registration behaviour
-10. explain split-horizon/private-name-resolution patterns
-11. teach Azure DNS Private Resolver architecture
-12. distinguish inbound endpoint, outbound endpoint and DNS forwarding ruleset
-13. design the Lab 04 topology before deployment
-14. build manually with Azure CLI
-15. independently validate DNS resolution
-16. run failure/troubleshooting exercises
-17. Terraform rebuild
-18. documentation/evidence
-19. safe teardown and independent clean verification
+1. Azure public DNS zones
+2. private DNS zones
+3. VNet links and auto-registration concepts
+4. custom DNS settings on VNets
+5. Azure DNS Private Resolver
+6. inbound and outbound endpoints
+7. forwarding rulesets
+8. hybrid/on-premises name resolution
+9. DNS troubleshooting and packet/query flow
+```
+
+Supporting DNS fundamentals may be taught only where they directly support these nine topics; they are not additional Lab 04 scope items.
+
+## Lab 04 tutorial progress
+
+Already covered interactively with DNS queries:
+
+- recursive resolver versus authoritative DNS
+- public DNS hierarchy and delegation concepts
+- NS, CNAME, MX and SOA records
+- common DNS record types: A, AAAA, CNAME, MX, TXT, NS, SOA and PTR
+- Microsoft public DNS authority on Azure DNS
+- Microsoft-to-Akamai CNAME/authority handoff
+
+Resume the tutorial at the first official topic: **Azure public DNS zones**.
+
+## Programme method
+
+```text
+complete tutorial / mental model
+-> visual architecture / traffic or query flow
+-> understanding check
+-> design the lab
+-> manual Azure implementation
+-> independent validation
+-> failure/troubleshooting
+-> Portal inspection where useful
+-> Terraform rebuild
+-> independent IaC validation
+-> final no-change plan
+-> Git/GitHub checkpoint
+-> rebuild documentation
+-> safe teardown
+-> learner explain-back
 ```
 
 ## Lab 04 engineering rule
@@ -72,26 +97,6 @@ post-destroy terraform state list         empty
 03  IP Addressing, VNets, Subnets & Public IP Architecture  COMPLETE
 04  Azure DNS, Private DNS & DNS Private Resolver            IN PROGRESS
 05–22                                                       NOT STARTED
-```
-
-## Programme method
-
-```text
-Problem/use case
--> teach mental model
--> visual architecture / traffic flow
--> understanding check
--> manual Azure implementation
--> independent validation
--> failure/troubleshooting
--> Portal inspection where useful
--> Terraform rebuild
--> independent IaC validation
--> final no-change plan
--> Git/GitHub checkpoint
--> rebuild documentation
--> safe teardown
--> learner explain-back
 ```
 
 ## Status consistency rule
