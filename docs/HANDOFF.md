@@ -40,51 +40,99 @@ current unit
   same codebase + incremental Terraform change
 ```
 
-No routine `terraform destroy` between units/modules. Git commits are the historical checkpoints. The working tree always represents the latest complete BlueHarbor architecture.
+No routine `terraform destroy` between units/modules. Git commits are the historical checkpoints. Persistent Azure configuration changes are made through Terraform; Azure CLI/Portal/diagnostic tools are used for inspection, validation and troubleshooting.
 
-Persistent Azure configuration changes should be made through Terraform. Azure CLI/Portal are used for inspection, validation and troubleshooting rather than creating a second unmanaged version of the environment.
+## Story-design milestone
 
-## Current status
+The progressive BlueHarbor stories for **Modules 1–8 are now designed**.
 
-- **Current module:** Module 1 — Introduction to Azure Virtual Networks
-- **Current unit:** Unit 01 — Introduction
-- **Project:** BlueHarbor Industries cumulative Azure networking build
-- **Current phase:** Begin story / requirements and mental model
-- **Azure deployment:** NOT STARTED
-- **BlueHarbor Azure resources:** NONE required for Unit 01
-- **Terraform root:** `blueharbor/terraform/` blueprint exists; first actual resources are added at the first applicable practical
-- **Modules 2–8:** NOT STARTED
+The intended full arc is:
+
+```text
+M1 Build the Azure network foundation
+ -> M2 connect BlueHarbor sites/users
+ -> M3 mature enterprise private connectivity
+ -> M4 make services highly available
+ -> M5 deliver HTTP(S) applications intelligently
+ -> M6 secure the environment
+ -> M7 privatize managed-service access
+ -> M8 observe, operate and troubleshoot the complete estate
+```
+
+All modules must reuse the architecture produced before them. Nothing may "magically appear" in a later module without being introduced earlier or deliberately added as that module's incremental requirement.
+
+## Current programme phase
+
+- **Curriculum execution position:** Module 1 — Unit 01 remains the first teaching/build unit.
+- **Story design:** Modules 1–8 DESIGNED.
+- **Current planning task:** **Architecture & Terraform Dependency Audit — NOT STARTED / NEXT**.
+- **Azure deployment:** NOT STARTED for the new BlueHarbor build.
+- **BlueHarbor Azure resources:** NONE required yet.
+- **Terraform root:** `blueharbor/terraform/` blueprint exists; first real resources will establish the persistent state lineage after the audit.
 
 ## Immediate resume instruction
 
-Start Microsoft Learn Module 1 from the beginning:
+Do **not** start Module 1 implementation yet.
+
+Perform the complete:
 
 ```text
+Modules 1–8 Architecture & Terraform Dependency Audit
+```
+
+The audit must walk the chain in order:
+
+```text
+M1 -> M2 -> M3 -> M4 -> M5 -> M6 -> M7 -> M8
+```
+
+For every transition verify:
+
+1. what exists at the end of the previous module;
+2. which exact resources/configuration the next module reuses;
+3. what new business requirement appears;
+4. what Terraform resources/configuration are added;
+5. what existing resources must change;
+6. whether any change would force avoidable replacement/destruction;
+7. whether naming and regions remain consistent;
+8. whether subnet/address-space requirements were planned early enough;
+9. whether DNS/routing/security dependencies remain coherent;
+10. whether the resulting state naturally becomes the next module's starting point.
+
+## Audit targets
+
+Specifically look for:
+
+- inconsistent VNet/subnet/resource names across module stories;
+- overlapping or insufficient address spaces;
+- special-purpose subnets that appear too late to plan safely;
+- duplicate VNets/services recreated by later modules;
+- application networks that appear without an earlier origin;
+- Virtual WAN/hybrid components being rebuilt instead of extended;
+- ExpressRoute dependencies that cannot be realistically represented in the cumulative lab;
+- Load Balancer / Application Gateway / Front Door origin inconsistencies;
+- Module 6 controls attached to hypothetical rather than existing resources;
+- Module 7 private endpoints/DNS attached to invented networks;
+- Module 8 monitoring pointed at resources that were never created;
+- Terraform changes that would unnecessarily replace earlier resources.
+
+## After the audit passes
+
+Return to:
+
+```text
+Microsoft Learn Module 1
 Unit 01 — Introduction
 ```
 
-Then proceed strictly in Microsoft Learn order:
+Then teach/build strictly in order using the cumulative Terraform workflow.
 
-```text
-01 Introduction
-02 Explore Azure Virtual Networks
-03 Configure public IP services
-04 Exercise: Design and implement a virtual network in Azure
-05 Design name resolution for your virtual network
-06 Exercise: Configure domain name servers settings in Azure
-07 Enable cross-virtual network connectivity with peering
-08 Exercise: Connect two Azure virtual networks using global VNet peering
-09 Implement virtual network traffic routing
-10 Configure internet access with Azure Virtual NAT
-11 Summary
-```
-
-## Required teaching/build loop
+## Unit build loop after audit
 
 ```text
 Microsoft Learn unit
 -> BlueHarbor business event
--> teach full tutorial / mental model
+-> tutorial / mental model
 -> architecture / packet / query flow
 -> understanding check
 -> define delta from existing BlueHarbor estate
@@ -95,22 +143,6 @@ Microsoft Learn unit
 -> independent Azure/protocol validation
 -> deliberate failure / troubleshooting
 -> encode permanent fix in Terraform
--> revalidate
 -> evidence / Git checkpoint
 -> carry SAME Terraform state and Azure environment forward
 ```
-
-Do not deploy Azure resources before the relevant tutorial and understanding check are complete.
-
-## Drift prevention
-
-Before any new topic:
-
-1. identify the exact Microsoft Learn module and unit;
-2. state the BlueHarbor business problem for that unit;
-3. teach Microsoft's objective first;
-4. add study-guide depth only inside the matching unit;
-5. do not create a parallel topic/lab sequence;
-6. do not allow legacy evidence to dictate the project design;
-7. do not create a separate Terraform state/root for the new unit;
-8. confirm the new Terraform plan preserves prior BlueHarbor infrastructure unless a replacement is intentional.

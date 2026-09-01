@@ -15,10 +15,6 @@ AZ-700 study guide = completeness additions inside matching units
 Azure product docs = exact implementation behaviour
 ```
 
-## Story-first rule
-
-Legacy labs created before the BlueHarbor narrative are not completion credit for the progressive project. Rebuild any concept at its proper story point if reuse would alter naming, topology, assumptions or learning order.
-
 ## Cumulative Terraform rule
 
 All practical units contribute to one living implementation:
@@ -27,47 +23,78 @@ All practical units contribute to one living implementation:
 blueharbor/terraform/
 ```
 
-The next unit inherits:
+Each unit inherits all previous Terraform code, the same state lineage, the deployed Azure resources and architecture decisions, then adds the smallest coherent change required by the next BlueHarbor business event.
+
+Do not create disposable Terraform roots per lab. Do not routinely destroy infrastructure at unit/module boundaries. Git commits are the historical checkpoints.
+
+Before every apply, inspect `terraform plan` for unexpected destroy/replace actions.
+
+## Story-design status
+
+The complete BlueHarbor narrative across Microsoft Learn Modules 1–8 is now designed.
 
 ```text
-all previous Terraform code
-+ the same Terraform state lineage
-+ the deployed Azure resources
-+ all architecture decisions
+M1 network foundation
+ -> M2 hybrid connectivity
+ -> M3 enterprise private connectivity
+ -> M4 service availability
+ -> M5 HTTP(S) delivery
+ -> M6 security
+ -> M7 private PaaS access
+ -> M8 monitoring / operations
 ```
 
-It then adds the smallest coherent change needed for the new BlueHarbor requirement.
-
-Do not create separate disposable Terraform roots per lab. Do not routinely destroy infrastructure at unit/module boundaries. Git commits are the checkpoint/snapshot mechanism.
-
-Before every apply, `terraform plan` must be reviewed specifically for unexpected destroy/replace actions. Previous resources should remain unless the story intentionally changes or replaces them.
+The next programme activity is a full architecture and Terraform dependency audit before implementation begins.
 
 ## Official module sequence
 
-| Module | Microsoft Learn module | Status |
-|---:|---|---|
-| 1 | Introduction to Azure Virtual Networks | **IN PROGRESS — Unit 01 current** |
-| 2 | Design and implement hybrid networking | NOT STARTED |
-| 3 | Design and implement Azure ExpressRoute | NOT STARTED |
-| 4 | Load balance non-HTTP(S) traffic in Azure | NOT STARTED |
-| 5 | Load balance HTTP(S) traffic in Azure | NOT STARTED |
-| 6 | Design and implement network security | NOT STARTED |
-| 7 | Design and implement private access to Azure Services | NOT STARTED |
-| 8 | Design and implement network monitoring | NOT STARTED |
+| Module | Microsoft Learn module | Execution status | Story status |
+|---:|---|---|---|
+| 1 | Introduction to Azure Virtual Networks | Unit 01 is first build point | DESIGNED |
+| 2 | Design and implement hybrid networking | NOT STARTED | DESIGNED |
+| 3 | Design and implement Azure ExpressRoute | NOT STARTED | DESIGNED |
+| 4 | Load balance non-HTTP(S) traffic in Azure | NOT STARTED | DESIGNED |
+| 5 | Load balance HTTP(S) traffic in Azure | NOT STARTED | DESIGNED |
+| 6 | Design and implement network security | NOT STARTED | DESIGNED |
+| 7 | Design and implement private access to Azure Services | NOT STARTED | DESIGNED |
+| 8 | Design and implement network monitoring | NOT STARTED | DESIGNED |
 
-## Current position
+## Current phase
 
 ```text
-Module 1 — Introduction to Azure Virtual Networks
-Unit 01 — Introduction
-BlueHarbor project starts here
+STORY DESIGN        COMPLETE
+ARCHITECTURE AUDIT  NEXT
+TERRAFORM BUILD     NOT STARTED
 ```
 
-No pre-story practical is considered complete in the new project.
+Do not start the new BlueHarbor Azure deployment until the audit validates the full module chain.
 
-The canonical Terraform folder exists as a project blueprint, but no Azure resource is required for Unit 01. The first applicable practical will establish the persistent state lineage that subsequent units inherit.
+## Architecture & Terraform Dependency Audit
 
-## Required engineering loop
+Walk:
+
+```text
+M1 -> M2 -> M3 -> M4 -> M5 -> M6 -> M7 -> M8
+```
+
+For each transition record:
+
+```text
+previous end state
+-> reused resources
+-> new business requirement
+-> Terraform additions
+-> Terraform in-place changes
+-> intentional replacements if any
+-> validation dependencies
+-> resulting next state
+```
+
+Audit naming, regions, address spaces, special-purpose subnet requirements, DNS, route propagation, hybrid dependencies, load-balancing/application-delivery dependencies, security enforcement points, private-access dependencies and monitoring targets.
+
+A later module must not depend on a resource that was never introduced earlier.
+
+## Required engineering loop after the audit
 
 For each Microsoft Learn unit:
 
@@ -92,17 +119,4 @@ Microsoft Learn objective
 -> explain-back
 ```
 
-## Progression rule
-
-Do not skip ahead merely because a similar resource was built previously. Prior knowledge can make a chapter faster, but BlueHarbor's architecture must still evolve in sequence.
-
-More importantly, do not start a new deployment just because a new unit begins. The default assumption is:
-
-```text
-previous infrastructure remains
-previous Terraform remains
-previous state remains
-new unit adds the next requirement
-```
-
-See [`MSLEARN-UNIT-MAP.md`](MSLEARN-UNIT-MAP.md) for exact unit numbering, [`PROJECT-NARRATIVE.md`](PROJECT-NARRATIVE.md) for the programme story and [`../blueharbor/terraform/README.md`](../blueharbor/terraform/README.md) for the cumulative IaC rules.
+See [`MSLEARN-UNIT-MAP.md`](MSLEARN-UNIT-MAP.md), [`PROJECT-NARRATIVE.md`](PROJECT-NARRATIVE.md), [`HANDOFF.md`](HANDOFF.md) and [`../blueharbor/terraform/README.md`](../blueharbor/terraform/README.md).
