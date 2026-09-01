@@ -1,7 +1,10 @@
 # Lab 04 — Azure DNS, Private DNS & DNS Private Resolver
 
 ## Status
-`NOT STARTED`
+`IN PROGRESS`
+
+**Current phase:** Tutorial / mental model  
+**Deployment phase:** NOT STARTED
 
 ## Purpose
 Develop a complete Azure name-resolution mental model for public, private and hybrid networks.
