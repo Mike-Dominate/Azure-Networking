@@ -1,4 +1,4 @@
-name: Generate Lab 02 PDF manual
+name: Generate Module 4 Traffic Manager PDF manual
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
       - main
     paths:
       - '.github/workflows/generate-lab02-pdf.yml'
-      - 'labs/02-traffic-manager/documentation/Lab02-Traffic-Manager-Rebuild-Practice-Manual.md'
-      - 'labs/02-traffic-manager/visual-learning/*.png'
+      - 'modules/04-load-balance-non-http-traffic-in-azure/06-exercise-create-a-traffic-manager-profile-using-the-azure-portal/practical/documentation/Lab02-Traffic-Manager-Rebuild-Practice-Manual.md'
+      - 'modules/04-load-balance-non-http-traffic-in-azure/06-exercise-create-a-traffic-manager-profile-using-the-azure-portal/practical/visual-learning/*.png'
   workflow_dispatch:
 
 permissions:
@@ -28,7 +28,7 @@ jobs:
       - name: Build PDF
         shell: bash
         run: |
-          cd labs/02-traffic-manager/documentation
+          cd modules/04-load-balance-non-http-traffic-in-azure/06-exercise-create-a-traffic-manager-profile-using-the-azure-portal/practical/documentation
           cat > lab02-pdf.css <<'CSS'
           @page { size: A4; margin: 17mm 16mm 18mm 16mm; }
           body { font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.35; color: #202020; }
@@ -42,14 +42,8 @@ jobs:
           table { border-collapse: collapse; width: 100%; }
           th, td { border: 1px solid #d0d7de; padding: 5px; vertical-align: top; }
           CSS
-          pandoc Lab02-Traffic-Manager-Rebuild-Practice-Manual.md \
-            --standalone \
-            --css lab02-pdf.css \
-            --metadata title='Lab 02 - Azure Traffic Manager - Rebuild and Practice Manual' \
-            -o Lab02-Traffic-Manager-Rebuild-Practice-Manual.html
-          weasyprint \
-            Lab02-Traffic-Manager-Rebuild-Practice-Manual.html \
-            Lab02-Traffic-Manager-Rebuild-Practice-Manual.pdf
+          pandoc Lab02-Traffic-Manager-Rebuild-Practice-Manual.md --standalone --css lab02-pdf.css --metadata title='Azure Traffic Manager - Rebuild and Practice Manual' -o Lab02-Traffic-Manager-Rebuild-Practice-Manual.html
+          weasyprint Lab02-Traffic-Manager-Rebuild-Practice-Manual.html Lab02-Traffic-Manager-Rebuild-Practice-Manual.pdf
           rm -f Lab02-Traffic-Manager-Rebuild-Practice-Manual.html lab02-pdf.css
 
       - name: Commit PDF
@@ -57,10 +51,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add labs/02-traffic-manager/documentation/Lab02-Traffic-Manager-Rebuild-Practice-Manual.pdf
+          git add modules/04-load-balance-non-http-traffic-in-azure/06-exercise-create-a-traffic-manager-profile-using-the-azure-portal/practical/documentation/Lab02-Traffic-Manager-Rebuild-Practice-Manual.pdf
           if git diff --cached --quiet; then
             echo "No PDF changes to commit."
           else
-            git commit -m "Generate Lab 02 Traffic Manager PDF manual"
+            git commit -m "Generate Traffic Manager PDF manual"
             git push
           fi
