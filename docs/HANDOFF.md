@@ -18,14 +18,41 @@ Primary path:
 
 Do not reuse old pre-story practicals just because they exist. If legacy work would interrupt the BlueHarbor progression, rebuild the concept in sequence. Git history is reference only.
 
+## Terraform continuity rule — CRITICAL
+
+This programme uses **one cumulative Terraform implementation**, not one Terraform project per lab.
+
+Canonical root:
+
+```text
+blueharbor/terraform/
+```
+
+Every practical unit starts from the code, state and deployed resources produced by the previous practical unit.
+
+```text
+previous unit
+  code + state + Azure resources
+           |
+           + new BlueHarbor requirement
+           v
+current unit
+  same codebase + incremental Terraform change
+```
+
+No routine `terraform destroy` between units/modules. Git commits are the historical checkpoints. The working tree always represents the latest complete BlueHarbor architecture.
+
+Persistent Azure configuration changes should be made through Terraform. Azure CLI/Portal are used for inspection, validation and troubleshooting rather than creating a second unmanaged version of the environment.
+
 ## Current status
 
 - **Current module:** Module 1 — Introduction to Azure Virtual Networks
 - **Current unit:** Unit 01 — Introduction
-- **Project:** BlueHarbor Industries progressive Azure networking build
+- **Project:** BlueHarbor Industries cumulative Azure networking build
 - **Current phase:** Begin story / requirements and mental model
 - **Azure deployment:** NOT STARTED
 - **BlueHarbor Azure resources:** NONE required for Unit 01
+- **Terraform root:** `blueharbor/terraform/` blueprint exists; first actual resources are added at the first applicable practical
 - **Modules 2–8:** NOT STARTED
 
 ## Immediate resume instruction
@@ -60,14 +87,17 @@ Microsoft Learn unit
 -> teach full tutorial / mental model
 -> architecture / packet / query flow
 -> understanding check
--> Microsoft exercise where present
--> Azure CLI implementation where useful
--> independent validation
+-> define delta from existing BlueHarbor estate
+-> update SAME Terraform root
+-> terraform fmt / init / validate / plan
+-> inspect plan for unintended destruction/replacement
+-> terraform apply
+-> independent Azure/protocol validation
 -> deliberate failure / troubleshooting
--> Terraform where appropriate
--> evidence / rebuild notes
--> safe teardown where appropriate
--> carry architecture into next unit
+-> encode permanent fix in Terraform
+-> revalidate
+-> evidence / Git checkpoint
+-> carry SAME Terraform state and Azure environment forward
 ```
 
 Do not deploy Azure resources before the relevant tutorial and understanding check are complete.
@@ -81,4 +111,6 @@ Before any new topic:
 3. teach Microsoft's objective first;
 4. add study-guide depth only inside the matching unit;
 5. do not create a parallel topic/lab sequence;
-6. do not allow legacy evidence to dictate the project design.
+6. do not allow legacy evidence to dictate the project design;
+7. do not create a separate Terraform state/root for the new unit;
+8. confirm the new Terraform plan preserves prior BlueHarbor infrastructure unless a replacement is intentional.

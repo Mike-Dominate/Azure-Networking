@@ -10,20 +10,60 @@ A hands-on Azure networking programme that follows Microsoft's official AZ-700 M
 
 ## Programme principle
 
-The project is progressive. Each Microsoft Learn unit introduces the next BlueHarbor business requirement, and the architecture evolves from the previous unit.
+This is one cumulative project, not a collection of disposable labs.
+
+Every Microsoft Learn unit introduces the next BlueHarbor requirement. The **story, Azure environment, Terraform code and Terraform state all continue from the previous unit**.
 
 ```text
 Microsoft Learn unit
 -> BlueHarbor business problem
 -> mental model
--> design
--> implementation
--> validation
+-> design decision
+-> MODIFY THE EXISTING TERRAFORM STACK
+-> terraform plan: inspect the incremental change
+-> terraform apply
+-> independent validation
 -> deliberate failure / troubleshooting
--> Terraform where appropriate
--> evidence / rebuild notes
--> carry architecture forward
+-> repair through Terraform where infrastructure configuration changed
+-> evidence / Git checkpoint
+-> NEXT UNIT STARTS FROM THIS EXACT STATE
 ```
+
+### Cumulative Terraform rule
+
+There is one canonical living Terraform implementation for BlueHarbor:
+
+```text
+blueharbor/terraform/
+```
+
+We do **not** create an isolated Terraform root for each lab and we do **not** copy the previous lab into a new folder.
+
+Instead:
+
+```text
+Lab/Unit 1 Terraform
+        |
+        + new requirement
+        v
+Lab/Unit 2 Terraform
+        |
+        + new requirement
+        v
+Lab/Unit 3 Terraform
+        |
+        + new requirement
+        v
+...
+        v
+Module 8 = complete BlueHarbor environment
+```
+
+Git commits provide historical lab checkpoints. The working Terraform code represents the **current complete architecture**.
+
+No routine `terraform destroy` occurs between units or modules. A destroy/replacement is performed only when the BlueHarbor design itself requires removal/replacement, or when the user explicitly chooses to reset the complete project.
+
+Azure CLI, Portal and protocol tools may be used for inspection, validation and troubleshooting. Persistent Azure infrastructure configuration is managed through Terraform.
 
 ### Story continuity outranks legacy work
 
@@ -50,8 +90,9 @@ If old work would force the story around earlier assumptions, naming, topology o
 BlueHarbor Industries
 Microsoft Learn Module 1 — Introduction to Azure Virtual Networks
 Unit 01 — Introduction
-Phase — start the progressive story from the beginning
-Azure deployment — NONE
+Phase — start the cumulative project from the beginning
+Azure deployment — NONE required for Unit 01
+Terraform stack — blueprint created; first resources added when the story requires them
 ```
 
 ## Repository layout
@@ -59,6 +100,9 @@ Azure deployment — NONE
 ```text
 Azure-Networking/
 ├── README.md
+├── blueharbor/
+│   └── terraform/
+│       └── README.md      # rules for the one cumulative Terraform stack
 ├── docs/
 │   ├── HANDOFF.md
 │   ├── MSLEARN-UNIT-MAP.md
@@ -77,25 +121,30 @@ Azure-Networking/
     └── 08-design-and-implement-network-monitoring/
 ```
 
-Each module contains the Microsoft Learn unit numbering and a BlueHarbor `PROJECT-STORY.md` where designed.
+Each module contains Microsoft Learn unit numbering and a BlueHarbor `PROJECT-STORY.md` where designed. The module folders contain the teaching story; `blueharbor/terraform/` contains the actual cumulative infrastructure.
 
 ## Learning rule
 
-Complete the tutorial/mental model before building Azure resources. For exercises, follow the Microsoft objective first, then deepen it with Azure CLI, validation, failure analysis and Terraform where useful.
+Complete the tutorial and mental model before changing infrastructure. For exercises, preserve Microsoft's learning objective but implement the BlueHarbor version through the existing Terraform stack.
 
-## Definition of done
+A new unit should normally result in a **small understandable Terraform delta**, not an unrelated deployment.
 
-A substantial practical is complete only when applicable items are satisfied:
+## Definition of done for a practical unit
+
+A practical unit is complete only when applicable items are satisfied:
 
 - Microsoft Learn objective understood;
 - BlueHarbor business reason understood;
 - architecture / packet / query flow explainable;
-- manual Azure implementation completed where practical;
-- independent validation completed;
+- the existing Terraform stack was extended rather than replaced;
+- `terraform plan` showed only the intended project delta;
+- Terraform apply completed successfully;
+- previous BlueHarbor infrastructure still exists unless deliberate design change removed it;
+- independent Azure/protocol validation completed;
 - deliberate failure/troubleshooting completed;
-- Terraform rebuild completed where appropriate;
-- evidence and rebuild notes captured;
-- resources safely torn down when they do not need to remain deployed;
+- permanent fixes are represented in Terraform;
+- evidence and Git checkpoint captured;
+- resulting infrastructure and state become the starting point for the next unit;
 - learner can explain the design and trade-offs without the guide.
 
 ## Resume

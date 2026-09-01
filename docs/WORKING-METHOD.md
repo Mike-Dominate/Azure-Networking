@@ -1,6 +1,6 @@
 # Working Method
 
-This programme teaches Azure networking as one progressive BlueHarbor Industries engineering project.
+This programme teaches Azure networking as one progressive BlueHarbor Industries engineering project and one progressive Terraform-managed Azure environment.
 
 ## Governance
 
@@ -9,12 +9,43 @@ This programme teaches Azure networking as one progressive BlueHarbor Industries
 - Azure product documentation is the technical behaviour authority.
 - The BlueHarbor story provides the progressive business context.
 - Legacy labs are reference history only and do not override story continuity.
+- `blueharbor/terraform/` is the single canonical Terraform root for the project.
 
-## Story continuity
+## Story and infrastructure continuity
 
 Do not skip or reshape a chapter merely because a similar service was built previously. Prior knowledge may shorten teaching time, but the BlueHarbor architecture must evolve in Microsoft Learn order.
 
 A unit begins with the business problem that makes the next networking capability necessary.
+
+The infrastructure follows the same rule:
+
+```text
+Unit N starts with Unit N-1's
+  Terraform code
+  Terraform state
+  deployed Azure resources
+  architecture decisions
+
+Unit N adds only the new requirement.
+```
+
+Do not create isolated Terraform roots for individual units. Do not copy all previous Terraform files into a new lab folder. Git provides version history; the working Terraform root is the current complete environment.
+
+## Terraform-only infrastructure management
+
+Persistent Azure infrastructure is provisioned and changed through Terraform for this programme.
+
+Azure CLI, Azure Portal and network/protocol tools remain important, but their normal role is:
+
+- inspect deployed Azure state;
+- independently validate Terraform results;
+- inspect effective routes, IPs, health and diagnostics;
+- generate/read test traffic and protocol behaviour;
+- troubleshoot.
+
+Do not create a second unmanaged version of the architecture through ad-hoc Portal/CLI writes.
+
+If a troubleshooting exercise deliberately creates infrastructure drift, either perform the fault through Terraform or explicitly reconcile the drift back into Terraform before the unit is complete.
 
 ## Standard lifecycle
 
@@ -27,43 +58,84 @@ A unit begins with the business problem that makes the next networking capabilit
 5. Identify dependencies, failure points, security boundaries and trade-offs.
 6. Use an explain-back to confirm understanding.
 
-### Phase B — Direct Azure learning
+### Phase B — Define the incremental change
 
-1. Follow the Microsoft exercise objective where one exists.
-2. Deploy/configure directly with Azure CLI and/or Portal where educationally useful.
-3. Work one meaningful action at a time during interactive tutoring.
-4. Inspect major resources after creation.
-5. Generate real traffic/protocol activity where possible.
-6. Validate with Azure CLI and client/network tools.
-7. Deliberately test at least one safe failure or misconfiguration.
+1. Inspect the current BlueHarbor architecture and Terraform code.
+2. State what already exists from previous units.
+3. Define only the new resources/configuration required by this unit.
+4. Identify expected Terraform additions, changes and any intentional replacements.
+5. If an existing resource must change, explain why the new business requirement requires that change.
 
-### Phase C — Infrastructure as Code
+### Phase C — Extend the living Terraform stack
 
-1. Start Terraform from a known state.
-2. Rebuild the same architecture where useful.
-3. Keep resources explicit and understandable before introducing abstractions.
-4. Run `terraform fmt`, `init`, `validate`, `plan` and `apply`.
-5. Validate the deployed service independently; a successful apply is not proof of end-to-end function.
+1. Work in `blueharbor/terraform/`.
+2. Add or modify readable Terraform files without hiding the Azure relationships prematurely.
+3. Run:
 
-### Phase D — Operate and troubleshoot
+```text
+terraform fmt -recursive
+terraform init
+terraform validate
+terraform plan
+```
 
-1. Test normal behaviour.
-2. Test one or more failure scenarios.
-3. Inspect effective Azure state rather than guessing.
-4. Use appropriate tools such as DNS queries, effective routes, Network Watcher, flow logs and application tests.
-5. Record symptom, hypothesis, investigation, root cause, fix and verification.
+4. Read the plan as an architecture change report.
+5. Stop if the plan proposes unexpected destruction/replacement of previous BlueHarbor resources.
+6. Apply only after the delta is understood.
+7. Keep the same state lineage for the next unit.
 
-### Phase E — Document, hand off and clean up
+### Phase D — Validate, operate and troubleshoot
 
-1. Update the unit/module README when status changes.
+1. Inspect deployed resources independently using Azure CLI/Portal where useful.
+2. Test real traffic/control-plane behaviour.
+3. Test one or more relevant failure scenarios.
+4. Inspect effective Azure state rather than guessing.
+5. Use DNS queries, effective routes, Network Watcher, flow logs, HTTP tests and Azure Monitor where applicable.
+6. Record symptom, hypothesis, investigation, root cause, fix and verification.
+7. Ensure permanent infrastructure fixes are represented in Terraform.
+8. Re-run plan/apply and end with Terraform and Azure agreeing.
+
+### Phase E — Checkpoint and carry forward
+
+1. Update unit/module README when status changes.
 2. Capture useful commands and evidence.
 3. Record trade-offs and lessons.
-4. Update `docs/HANDOFF.md`, `docs/PROGRAMME-ROADMAP.md` and root `README.md`.
-5. Commit meaningful progression.
-6. Create rebuild notes/manuals for substantial practical work.
-7. Destroy resources that do not need to persist.
-8. Independently verify Azure cleanup and Terraform state cleanup.
-9. Carry the resulting architecture and decisions into the next unit.
+4. Update `docs/HANDOFF.md`, `docs/PROGRAMME-ROADMAP.md` and root `README.md` when programme status changes.
+5. Commit meaningful progression to Git/GitHub.
+6. Record the Terraform plan/apply delta for the unit.
+7. **Do not routinely destroy the environment.**
+8. Confirm the current Terraform state contains all expected BlueHarbor resources.
+9. Confirm Azure still contains the expected previous infrastructure plus the new unit's additions.
+10. Use this exact code/state/environment as the starting point for the next unit.
+
+## Destroy / replacement policy
+
+`terraform destroy` is not part of the normal unit lifecycle.
+
+Removal is appropriate only when:
+
+- the BlueHarbor design intentionally retires a component;
+- the new architecture replaces an earlier temporary design;
+- a deliberate troubleshooting exercise requires a controlled change and it is subsequently restored/reconciled;
+- the user explicitly chooses to reset the complete programme environment.
+
+Any planned destroy/replace action must be explained before apply.
+
+## State continuity
+
+The first applicable Terraform deployment establishes the project state lineage. The backend/storage choice must be documented and then carried consistently through the programme.
+
+Do not silently start a new state file for a later unit. Do not use state deletion as a way to make a plan look clean.
+
+Useful checks at unit boundaries include:
+
+```text
+terraform validate
+terraform plan
+terraform state list
+```
+
+plus independent Azure resource inspection.
 
 ## Status consistency
 
@@ -75,31 +147,54 @@ docs/PROGRAMME-ROADMAP.md
 docs/HANDOFF.md
 modules/<module>/README.md
 modules/<module>/<unit>/README.md
+blueharbor/terraform/README.md
 ```
 
 ## Git progression
 
-Prefer small commits tied to the Microsoft unit and BlueHarbor story, for example:
+Git commits are the lab checkpoints for the cumulative Terraform codebase.
+
+Examples:
 
 ```text
-Module 1 Unit 02: document BlueHarbor VNet design
-Module 1 Unit 04: add CLI VNet implementation
-Module 1 Unit 06: add DNS validation and failure test
+M1 U04: build BlueHarbor VNet foundation
+M1 U06: add internal DNS to existing network
+M1 U08: add global VNet peering
+M1 U10: add NAT to manufacturing subnet
+M2 U03: extend existing core with VPN gateway
 ```
 
-## Tooling
+There is no need to duplicate a complete Terraform tree just to preserve the earlier version; Git already preserves it.
 
-Primary workspace/tools:
+## Terraform file organisation
 
-- VS Code
-- Azure CLI
-- Terraform
-- Git/GitHub
-- Azure Portal where visual inspection adds value
-- protocol/network diagnostic tools
+The exact files should appear only when the corresponding story requirement is introduced. A likely evolution might look like:
 
-## Design-heavy or expensive services
+```text
+blueharbor/terraform/
+  versions.tf
+  providers.tf
+  variables.tf
+  locals.tf
+  network.tf
+  dns.tf
+  peering.tf
+  routing.tf
+  nat.tf
+  hybrid.tf
+  expressroute.tf
+  load-balancing.tf
+  application-delivery.tf
+  security.tf
+  private-access.tf
+  monitoring.tf
+  outputs.tf
+```
 
-Full provisioning is not required merely to claim a topic was covered. For services such as ExpressRoute or commercial NVA integrations, use rigorous architecture, route/BGP analysis, configuration objects, redundancy scenarios and troubleshooting where provider involvement or cost makes a full build unreasonable.
+Do not pre-create empty files simply to match this example. Prefer explicit readable resources first; introduce modules, `for_each`, locals and other abstraction only when they improve the project rather than hide what Azure is doing.
 
-The goal is accurate engineering understanding, not artificial spending.
+## Design-heavy or externally dependent services
+
+Terraform is the provisioning method, but some technologies such as ExpressRoute can require an external connectivity provider or other non-Azure dependencies. Provision all practical Azure-side components through the cumulative Terraform stack, then document/simulate the external boundary accurately where an external provider is genuinely required.
+
+The objective is still one continuous architecture; external dependencies do not justify resetting the Terraform environment.

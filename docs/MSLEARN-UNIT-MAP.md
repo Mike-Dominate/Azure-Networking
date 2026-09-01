@@ -13,9 +13,12 @@ Learning Path
 -> Unit
 -> Microsoft exercise where present
 -> BlueHarbor engineering extension
+-> incremental change to the SAME Terraform environment
 ```
 
 No parallel lab sequence and no legacy-practical completion credit. The BlueHarbor project is built in this order.
+
+The Terraform implementation is also sequential: every applicable unit modifies `blueharbor/terraform/` and inherits the same state/deployed environment from the previous unit.
 
 ## Module 1 — Introduction to Azure Virtual Networks
 
@@ -123,12 +126,15 @@ Module 8 depth also includes Connection Monitor, Traffic Analytics, VNet flow lo
 3. Explain mental model / analogy
 4. Trace architecture / packet / query flow
 5. Check understanding
-6. Complete Microsoft exercise where present
-7. Build/inspect with Azure CLI where useful
-8. Validate independently
-9. Break and troubleshoot one relevant component
-10. Rebuild with Terraform where appropriate
-11. Capture evidence and rebuild notes
-12. Tear down safely where appropriate
-13. Carry architecture forward
+6. Determine what must change in the CURRENT BlueHarbor architecture
+7. Modify the SAME Terraform root
+8. terraform fmt / init / validate
+9. terraform plan — verify intended incremental delta
+10. terraform apply
+11. Validate independently with Azure CLI / Portal / protocol tools
+12. Break and troubleshoot one relevant component
+13. Encode permanent infrastructure fixes in Terraform
+14. Re-plan / re-apply / re-validate
+15. Capture evidence and Git checkpoint
+16. Carry code + state + deployed Azure environment forward
 ```
