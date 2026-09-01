@@ -1,7 +1,0 @@
-# Copy this file to terraform.tfvars locally and adjust values if required.
-# terraform.tfvars is ignored by Git and must not contain secrets.
-
-location            = "australiaeast"
-resource_group_name = "rg-az700-lb-aue"
-admin_username      = "azureuser"
-ssh_public_key_path = "~/.ssh/id_rsa.pub"

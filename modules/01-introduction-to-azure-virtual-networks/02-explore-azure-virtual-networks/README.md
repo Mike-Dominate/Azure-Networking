@@ -1,11 +1,6 @@
 # Unit 02 — Explore Azure Virtual Networks
 
-## BlueHarbor chapter: Divide the cloud estate properly
+**BlueHarbor chapter:** Divide the cloud estate properly  
+**Status:** NOT STARTED
 
-BlueHarbor needs separate network boundaries for Shared Services, Manufacturing and Research with non-overlapping address spaces and room to grow.
-
-This unit supplies the mental model for VNets, subnets, CIDR planning and isolation before deployment.
-
-**Status:** COMPLETE — prior VNet foundation work covers this unit.
-
-Architecture carried forward: the three-VNet BlueHarbor address plan.
+Design non-overlapping VNet and subnet address spaces for Core/Shared Services, Manufacturing and Research, with deliberate room for growth. Build the addressing mental model before creating Azure resources.

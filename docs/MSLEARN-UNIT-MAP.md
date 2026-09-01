@@ -1,26 +1,21 @@
 # Microsoft Learn AZ-700 Unit Map
 
-This file is the authoritative teaching sequence for the repository.
+This file is the authoritative unit sequence for the repository.
 
 Primary source:
-
 `https://learn.microsoft.com/en-us/training/paths/design-implement-microsoft-azure-networking-solutions-az-700/`
 
 ## Rule
-
-The programme follows Microsoft Learn in this exact hierarchy:
 
 ```text
 Learning Path
 -> Module
 -> Unit
 -> Microsoft exercise where present
--> our deeper CLI / validation / troubleshooting / Terraform implementation
+-> BlueHarbor engineering extension
 ```
 
-Do not invent a parallel lab sequence. Historical numbered lab folders are retained as evidence and implementation assets only.
-
----
+No parallel lab sequence and no legacy-practical completion credit. The BlueHarbor project is built in this order.
 
 ## Module 1 — Introduction to Azure Virtual Networks
 
@@ -36,18 +31,9 @@ Do not invent a parallel lab sequence. Historical numbered lab folders are retai
 10. Configure internet access with Azure Virtual NAT
 11. Summary
 
-### Current position
+**Current position:** Unit 01 — Introduction.
 
-```text
-Units 2-4: prior practical evidence exists in Lab 03
-Unit 5: CURRENT
-Unit 6: NEXT
-Units 7-11: NOT STARTED in Microsoft Learn sequence
-```
-
-Study-guide additions are inserted only inside the matching unit. For name resolution, Azure DNS public/private zones and Azure DNS Private Resolver are covered as depth within Units 5-6, not as a separate independent curriculum.
-
----
+Study-guide additions such as Azure DNS Private Resolver are inserted inside the matching Microsoft Learn objective, not as separate units.
 
 ## Module 2 — Design and implement hybrid networking
 
@@ -60,8 +46,6 @@ Study-guide additions are inserted only inside the matching unit. For name resol
 7. Exercise: Create a Virtual WAN by using the Azure portal
 8. Create a network virtual appliance (NVA) in a virtual hub
 9. Summary
-
----
 
 ## Module 3 — Design and implement Azure ExpressRoute
 
@@ -77,8 +61,6 @@ Study-guide additions are inserted only inside the matching unit. For name resol
 10. Troubleshoot ExpressRoute connection issues
 11. Summary and resources
 
----
-
 ## Module 4 — Load balance non-HTTP(S) traffic in Azure
 
 1. Introduction
@@ -89,10 +71,6 @@ Study-guide additions are inserted only inside the matching unit. For name resol
 6. Exercise: Create a Traffic Manager profile using the Azure portal
 7. Summary
 
-Existing Labs 01 and 02 contain strong practical evidence for the Load Balancer and Traffic Manager units. When the programme reaches Module 4 in sequence, review the Microsoft Learn units in order, map the existing evidence, and fill any gaps rather than automatically redeploying everything.
-
----
-
 ## Module 5 — Load balance HTTP(S) traffic in Azure
 
 1. Introduction
@@ -102,8 +80,6 @@ Existing Labs 01 and 02 contain strong practical evidence for the Load Balancer 
 5. Design and configure Azure Front Door
 6. Exercise: Create a Front Door for a highly available web application
 7. Summary
-
----
 
 ## Module 6 — Design and implement network security
 
@@ -119,8 +95,6 @@ Existing Labs 01 and 02 contain strong practical evidence for the Load Balancer 
 10. Implement a Web Application Firewall
 11. Summary and resources
 
----
-
 ## Module 7 — Design and implement private access to Azure Services
 
 1. Introduction
@@ -131,8 +105,6 @@ Existing Labs 01 and 02 contain strong practical evidence for the Load Balancer 
 6. Exercise: Create an Azure private endpoint using Azure PowerShell
 7. Summary
 
----
-
 ## Module 8 — Design and implement network monitoring
 
 1. Introduction
@@ -141,26 +113,22 @@ Existing Labs 01 and 02 contain strong practical evidence for the Load Balancer 
 4. Monitor your networks using Azure Network Watcher
 5. Summary
 
-The module learning objectives also include Connection Monitor, Traffic Analytics, VNet flow logs and diagnostic logging. Cover those inside the Microsoft Learn monitoring units as required by the module objectives and current AZ-700 study guide.
+Module 8 depth also includes Connection Monitor, Traffic Analytics, VNet flow logs and diagnostic logging as required by the module objectives and current study guide.
 
----
-
-## Our extension pattern
-
-For every Microsoft Learn unit, use the same learning pattern:
+## Extension pattern
 
 ```text
-1. Read / teach the Microsoft Learn unit
-2. Explain with an everyday analogy where useful
-3. Draw the Azure architecture / packet / query flow
-4. Check understanding
-5. Complete the Microsoft exercise where one exists
-6. Rebuild the same objective manually with Azure CLI where practical
-7. Validate independently
-8. Break one relevant component and troubleshoot it
-9. Rebuild with Terraform where appropriate
-10. Capture evidence and rebuild notes
-11. Tear down safely
+1. Teach Microsoft Learn unit
+2. State BlueHarbor business problem
+3. Explain mental model / analogy
+4. Trace architecture / packet / query flow
+5. Check understanding
+6. Complete Microsoft exercise where present
+7. Build/inspect with Azure CLI where useful
+8. Validate independently
+9. Break and troubleshoot one relevant component
+10. Rebuild with Terraform where appropriate
+11. Capture evidence and rebuild notes
+12. Tear down safely where appropriate
+13. Carry architecture forward
 ```
-
-Extensions may deepen a Microsoft objective, but they may not change the order or create a separate curriculum.

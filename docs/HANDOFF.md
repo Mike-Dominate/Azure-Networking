@@ -1,110 +1,84 @@
-# Programme Handoff — Azure Networking Engineering Labs
+# Programme Handoff — BlueHarbor Azure Networking
 
-This is the authoritative continuation record for the programme.
+This is the authoritative continuation record.
 
 ## Curriculum authority
 
-Primary programme sequence:
+```text
+Microsoft Learn path = module/unit order and primary teaching scope
+BlueHarbor story = progressive business context
+AZ-700 study guide = completeness additions inside the matching unit
+Azure product docs = exact technical behaviour
+```
 
+Primary path:
 `https://learn.microsoft.com/en-us/training/paths/design-implement-microsoft-azure-networking-solutions-az-700/`
 
-Coverage completeness check:
+## Story continuity rule
 
-`https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/az-700`
-
-Rule:
-
-```text
-Microsoft Learn path = sequence and teaching scope
-AZ-700 study guide = completeness additions inside the matching module
-Azure product docs = exact implementation behaviour
-```
+Do not reuse old pre-story practicals just because they exist. If legacy work would interrupt the BlueHarbor progression, rebuild the concept in sequence. Git history is reference only.
 
 ## Current status
 
-- **Current Microsoft Learn module:** Module 1 — Introduction to Azure Virtual Networks
-- **Completed Module 1 practical:** Lab 03 — VNet/IP addressing/public IP foundation
-- **Current practical:** Lab 04 — Azure DNS / name resolution
-- **Lab 04 state:** IN PROGRESS
-- **Current phase:** Tutorial / mental model
-- **Deployment phase:** NOT STARTED
-- **Azure resources:** NONE
-- **Module 4:** Load balance non-HTTP(S) traffic — COMPLETE from Labs 01 and 02
+- **Current module:** Module 1 — Introduction to Azure Virtual Networks
+- **Current unit:** Unit 01 — Introduction
+- **Project:** BlueHarbor Industries progressive Azure networking build
+- **Current phase:** Begin story / requirements and mental model
+- **Azure deployment:** NOT STARTED
+- **BlueHarbor Azure resources:** NONE required for Unit 01
+- **Modules 2–8:** NOT STARTED
 
 ## Immediate resume instruction
 
-Do not return to the old independent 22-lab sequence as the curriculum source.
-
-Resume Microsoft Learn Module 1 at:
+Start Microsoft Learn Module 1 from the beginning:
 
 ```text
-Design name resolution for your virtual network
+Unit 01 — Introduction
 ```
 
-Finish Microsoft's name-resolution teaching first. Then add only the current AZ-700 study-guide name-resolution requirements that belong to the same section:
+Then proceed strictly in Microsoft Learn order:
 
 ```text
-- design name resolution inside a VNet
-- configure DNS settings for a VNet
-- design public DNS zones
-- design private DNS zones
-- configure public and private DNS zones
-- link a private DNS zone to a VNet
-- design and implement Azure DNS Private Resolver
+01 Introduction
+02 Explore Azure Virtual Networks
+03 Configure public IP services
+04 Exercise: Design and implement a virtual network in Azure
+05 Design name resolution for your virtual network
+06 Exercise: Configure domain name servers settings in Azure
+07 Enable cross-virtual network connectivity with peering
+08 Exercise: Connect two Azure virtual networks using global VNet peering
+09 Implement virtual network traffic routing
+10 Configure internet access with Azure Virtual NAT
+11 Summary
 ```
 
-Supporting DNS fundamentals are allowed where needed to understand those objectives, but they must not become an independent expanded curriculum.
-
-## Module 1 progression
+## Required teaching/build loop
 
 ```text
-Lab 03 — VNet/IP/public IP foundation                  COMPLETE
-Lab 04 — name resolution / Azure DNS                   IN PROGRESS
-Lab 05 — peering / cross-VNet connectivity             NOT STARTED
-Lab 06 — routing / NAT                                 NOT STARTED
-Lab 07 — Route Server study-guide routing extension    NOT STARTED
-```
-
-Historical lab numbers are retained only to preserve completed work and repository links. Microsoft Learn module order is authoritative.
-
-## Lab 04 workflow
-
-```text
-Microsoft Learn name-resolution lesson
--> everyday mental model
--> visual DNS/query flow
+Microsoft Learn unit
+-> BlueHarbor business event
+-> teach full tutorial / mental model
+-> architecture / packet / query flow
 -> understanding check
--> study-guide additions for name resolution
--> design practical scenario
--> manual Azure CLI implementation
--> independent DNS validation
+-> Microsoft exercise where present
+-> Azure CLI implementation where useful
+-> independent validation
 -> deliberate failure / troubleshooting
--> Portal inspection where useful
--> Terraform rebuild
--> evidence / rebuild documentation
--> safe teardown
--> explain-back
+-> Terraform where appropriate
+-> evidence / rebuild notes
+-> safe teardown where appropriate
+-> carry architecture into next unit
 ```
 
-Do not create Azure resources until the tutorial and understanding check are complete.
+Do not deploy Azure resources before the relevant tutorial and understanding check are complete.
 
-## Completed work retained
+## Drift prevention
 
-```text
-Lab 01 — Azure Load Balancer      COMPLETE
-Lab 02 — Azure Traffic Manager    COMPLETE
-```
+Before any new topic:
 
-These map directly to Microsoft Learn Module 4 — Load balance non-HTTP(S) traffic in Azure, so Module 4 is already complete.
-
-Lab 03 remains complete and maps to the VNet/IP/public-IP portion of Microsoft Learn Module 1.
-
-## Drift prevention rule
-
-Before teaching any new topic:
-
-1. identify the Microsoft Learn module and unit it belongs to;
-2. teach that unit's objective;
-3. check the current AZ-700 study guide for additions in the same objective area;
-4. do not introduce unrelated standalone topics;
-5. only then design our deeper practical implementation.
+1. identify the exact Microsoft Learn module and unit;
+2. state the BlueHarbor business problem for that unit;
+3. teach Microsoft's objective first;
+4. add study-guide depth only inside the matching unit;
+5. do not create a parallel topic/lab sequence;
+6. do not allow legacy evidence to dictate the project design.

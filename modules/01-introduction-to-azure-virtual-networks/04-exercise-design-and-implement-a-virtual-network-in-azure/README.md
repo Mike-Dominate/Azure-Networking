@@ -1,11 +1,8 @@
 # Unit 04 — Exercise: Design and implement a virtual network in Azure
 
-## BlueHarbor chapter: Build the approved network foundation
+**BlueHarbor chapter:** Build the approved network foundation  
+**Status:** NOT STARTED
 
-The address plan is approved. Implement the VNet/subnet foundation and validate what Azure actually created.
+Complete the Microsoft exercise objective using the BlueHarbor architecture created in the preceding chapters, then deepen it with CLI validation and Terraform where appropriate.
 
-**Status:** COMPLETE.
-
-Prior engineering evidence is preserved in `practical/`.
-
-Validation principle: provisioning state `Succeeded` does not replace checking the resulting address spaces, subnets and network behaviour.
+This unit will be rebuilt fresh in story sequence; pre-story VNet lab evidence is not reused as completion credit.

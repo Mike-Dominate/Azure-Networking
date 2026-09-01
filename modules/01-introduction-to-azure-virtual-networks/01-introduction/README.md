@@ -1,11 +1,8 @@
 # Unit 01 — Introduction
 
-## BlueHarbor chapter: The migration brief
+**BlueHarbor chapter:** Receive the Azure migration brief  
+**Status:** CURRENT
 
-BlueHarbor Industries appoints you as the Azure Network Engineer for its cloud migration.
+BlueHarbor has no completed Azure network yet. Your role is to understand the business divisions, the intended progressive architecture and what an Azure Network Engineer must be able to explain before deployment begins.
 
-Your goal for Module 1 is to build and understand the Azure network foundation for Shared Services, Manufacturing and Research. Every later unit changes the same evolving architecture.
-
-**Status:** COMPLETE / orientation.
-
-Next: design the network boundaries and address spaces in Unit 02.
+No Azure resources are required for this orientation unit.

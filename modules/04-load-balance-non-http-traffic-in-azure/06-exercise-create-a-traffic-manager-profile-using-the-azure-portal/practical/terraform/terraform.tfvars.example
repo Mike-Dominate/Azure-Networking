@@ -1,8 +1,0 @@
-# Copy this file to terraform.tfvars locally if you want to override defaults.
-# terraform.tfvars is ignored by Git.
-# Do not store secrets in this file.
-
-resource_group_name     = "rg-az700-tm-global"
-resource_group_location = "australiaeast"
-dns_suffix              = "87004"
-container_image         = "mcr.microsoft.com/azuredocs/aci-helloworld"

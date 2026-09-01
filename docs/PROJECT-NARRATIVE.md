@@ -9,87 +9,98 @@ This repository follows Microsoft's AZ-700 Microsoft Learn path using one contin
 **Primary Azure region:** Australia East  
 **Secondary Azure region:** Southeast Asia
 
-BlueHarbor is an industrial technology manufacturer with corporate services, manufacturing systems and a growing research division. The company is moving workloads into Azure gradually while retaining part of its existing on-premises estate.
+BlueHarbor is an industrial technology manufacturer with corporate services, manufacturing systems and a growing research division. The company moves into Azure gradually while retaining physical sites and remote users.
 
-The Microsoft Learn module and unit order remains authoritative. The BlueHarbor story exists only to give every Microsoft concept a reason to be introduced.
+## Story-first continuity rule
 
-## Programme rule
+Microsoft Learn module and unit order is the programme structure. The BlueHarbor story gives every Microsoft concept a business reason to appear.
 
 ```text
 Microsoft Learn unit
-  -> new BlueHarbor business requirement
+  -> new BlueHarbor requirement
   -> design decision
   -> implementation
   -> validation
-  -> deliberate failure / troubleshooting
+  -> failure / troubleshooting
   -> Terraform where appropriate
   -> evidence
-  -> carry the architecture forward
+  -> architecture carries forward
 ```
 
-We do not reset the story after each unit. Network foundations persist conceptually across the module. Costly compute can be ephemeral, but the architecture evolves rather than restarting as an unrelated lab.
+The story does not reset between units or modules.
+
+**Legacy work does not outrank story continuity.** Practical labs created before this progressive story are not treated as completed BlueHarbor chapters. If their assumptions, names, topology or order would dilute the narrative, they are rebuilt from scratch at the correct story point. Git history may retain them for reference, but the active repository teaches only the progressive project.
 
 ## Progressive story across the eight Microsoft Learn modules
 
 ### Module 1 — Introduction to Azure Virtual Networks
 
-BlueHarbor begins its Azure migration. Build the cloud network foundation for shared services, manufacturing and research. Add public/private addressing, DNS, VNet connectivity, routing policy and controlled outbound internet access.
+BlueHarbor begins its Azure migration. Design and build the cloud network foundation for shared services, manufacturing and research. Add addressing, public IP concepts, DNS, VNet connectivity, routing policy and controlled outbound Internet access.
 
-End state: a multi-VNet Azure network that the learner can explain packet-by-packet and query-by-query.
+**End state:** a multi-VNet Azure foundation that can be explained packet-by-packet and query-by-query.
 
 ### Module 2 — Design and implement hybrid networking
 
-BlueHarbor still operates servers and industrial systems on-premises. Connect the existing estate to the Azure network built in Module 1 using VPN Gateway, Site-to-Site VPN, Point-to-Site VPN and Virtual WAN concepts.
+BlueHarbor still operates Brisbane/Perth sites and supports remote engineers. Connect the physical estate to the Module 1 Azure network using VPN Gateway, Site-to-Site VPN, Point-to-Site VPN and Virtual WAN concepts.
 
-End state: Azure and BlueHarbor's remote/on-premises networks can communicate through understood hybrid paths.
+**End state:** understood hybrid paths between Azure, sites and individual remote devices.
 
 ### Module 3 — Design and implement Azure ExpressRoute
 
-The business now classifies several workloads as mission-critical. Internet-based VPN alone is no longer the desired primary enterprise connectivity model. Design ExpressRoute, peering, resiliency, Global Reach, FastPath and BGP behaviour.
+Mission-critical engineering, ERP and manufacturing traffic now needs an enterprise private-connectivity design. Introduce ExpressRoute, provider/circuit concepts, peering, BGP, resiliency, Global Reach, FastPath and troubleshooting.
 
-End state: an enterprise private-connectivity design with clear route and redundancy reasoning.
+**End state:** a private-connectivity architecture with clear ownership, route and failure-domain reasoning.
 
 ### Module 4 — Load balance non-HTTP(S) traffic in Azure
 
-BlueHarbor must distribute regional service traffic and make global DNS-based endpoint decisions. Existing Azure Load Balancer and Traffic Manager engineering work is mapped into this module and reviewed in Microsoft Learn order.
+The network path is healthy, but backend and regional failures can still take services down. Build regional Layer 4 availability with Azure Load Balancer, then global DNS-based endpoint selection with Traffic Manager.
+
+**End state:** the learner can distinguish regional backend distribution from global DNS steering and explain health, policy and failover timing.
 
 ### Module 5 — Load balance HTTP(S) traffic in Azure
 
-BlueHarbor launches customer and partner web applications. Design Application Gateway and Front Door for regional and global HTTP(S) delivery.
+BlueHarbor launches customer and partner web applications. HTTP(S)-specific requirements introduce Application Gateway and Azure Front Door.
 
 ### Module 6 — Design and implement network security
 
-BlueHarbor's security team formalises network controls. Add Defender for Cloud recommendations, DDoS Protection, NSGs, Azure Firewall, Firewall Manager and WAF.
+BlueHarbor's security team formalises controls with Defender for Cloud recommendations, DDoS Protection, NSGs, Azure Firewall, Firewall Manager and WAF.
 
 ### Module 7 — Design and implement private access to Azure Services
 
-Application teams begin adopting Azure PaaS services. Remove unnecessary public service exposure using service endpoints, Private Link and private endpoints, including DNS integration.
+Application teams adopt Azure PaaS. BlueHarbor reduces unnecessary public exposure using service endpoints, Private Link/private endpoints and private DNS integration.
 
 ### Module 8 — Design and implement network monitoring
 
-Operations requires evidence, alerting and troubleshooting visibility across the completed network. Implement Azure Monitor, Network Watcher and the monitoring capabilities required by the module and AZ-700 study guide.
+Operations requires visibility and evidence across the finished network using Azure Monitor, Network Watcher and the monitoring capabilities required by Microsoft Learn and the current AZ-700 study guide.
 
 ## Engineering principle
 
-Every new Azure service must answer a business or technical problem already visible in the story.
-
-Examples:
+Every new Azure service must answer a problem already visible in the story.
 
 ```text
-Users memorising IPs
-    -> DNS becomes necessary
+people depend on changing IP addresses
+    -> DNS
 
-Two VNets cannot communicate
-    -> peering becomes necessary
+separate VNets need a permitted path
+    -> peering
 
-Default path does not satisfy policy
-    -> routing becomes necessary
+default routing does not meet policy
+    -> UDR / routing controls
 
-Private servers need outbound internet without public IPs
-    -> NAT Gateway becomes necessary
+private servers need outbound Internet
+    -> NAT Gateway
 
-On-premises systems must reach Azure
-    -> hybrid networking becomes necessary
+physical sites need Azure connectivity
+    -> hybrid VPN
+
+VPN is no longer the desired primary enterprise path
+    -> ExpressRoute
+
+one backend can fail
+    -> Azure Load Balancer
+
+regional endpoints need global selection
+    -> Traffic Manager
 ```
 
-The goal is to understand why a networking component exists before learning how to deploy it.
+The goal is to understand **why** a component exists before learning how to deploy it.

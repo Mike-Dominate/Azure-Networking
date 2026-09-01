@@ -1,187 +1,105 @@
 # Working Method
 
-This programme is designed to teach Azure networking and the engineering practices used to build, verify, troubleshoot, document and reproduce it.
+This programme teaches Azure networking as one progressive BlueHarbor Industries engineering project.
 
-## Coverage governance
+## Governance
 
-- The Microsoft AZ-700 skills measured outline is the programme's coverage authority.
-- The current baseline is the skills outline effective July 27, 2026.
-- External lab repositories are learning references, not the definition of completeness.
-- When Microsoft materially changes the AZ-700 outline, review `docs/PROGRAMME-ROADMAP.md` before continuing blindly.
+- Microsoft Learn AZ-700 path defines module and unit order.
+- The current AZ-700 study guide is the completeness check.
+- Azure product documentation is the technical behaviour authority.
+- The BlueHarbor story provides the progressive business context.
+- Legacy labs are reference history only and do not override story continuity.
 
-## Standard lab lifecycle
+## Story continuity
+
+Do not skip or reshape a chapter merely because a similar service was built previously. Prior knowledge may shorten teaching time, but the BlueHarbor architecture must evolve in Microsoft Learn order.
+
+A unit begins with the business problem that makes the next networking capability necessary.
+
+## Standard lifecycle
 
 ### Phase A — Understand
 
-1. Define the problem the Azure service solves.
-2. Teach the concept before testing the learner on unfamiliar material.
-3. Build the mental model before touching the portal or Terraform.
+1. Identify the exact Microsoft Learn unit.
+2. State the BlueHarbor business problem.
+3. Complete the tutorial/mental model before deployment.
 4. Draw the architecture and traffic/control-plane flow.
-5. Identify control plane vs data plane where relevant.
-6. Identify dependencies, failure points, security boundaries and trade-offs.
-7. Use a short explain-back to confirm understanding.
+5. Identify dependencies, failure points, security boundaries and trade-offs.
+6. Use an explain-back to confirm understanding.
 
 ### Phase B — Direct Azure learning
 
-1. Deploy/configure the service directly using Azure CLI and/or the Azure Portal where educationally useful.
-2. Explain important commands and parameters before execution.
-3. Work one meaningful action at a time during interactive learning.
-4. Inspect each major resource after creation.
-5. Generate real traffic or protocol activity where possible.
-6. Verify behaviour using Azure CLI and client-side/network tools.
-7. Deliberately test at least one failure or misconfiguration where safe.
+1. Follow the Microsoft exercise objective where one exists.
+2. Deploy/configure directly with Azure CLI and/or Portal where educationally useful.
+3. Work one meaningful action at a time during interactive tutoring.
+4. Inspect major resources after creation.
+5. Generate real traffic/protocol activity where possible.
+6. Validate with Azure CLI and client/network tools.
+7. Deliberately test at least one safe failure or misconfiguration.
 
 ### Phase C — Infrastructure as Code
 
-1. Remove or isolate the direct deployment so Terraform starts from a known state.
-2. Build the same architecture in Terraform where practical.
-3. Use small, understandable increments rather than pasting a complete solution.
-4. Run:
-
-```bash
-terraform fmt -recursive
-terraform init
-terraform validate
-terraform plan
-terraform apply
-```
-
-5. Inspect the deployed resources independently with Azure CLI or protocol-level tests.
-6. Compare the direct deployment mental model with the Terraform resource graph.
-7. Do not treat a successful Terraform apply as proof that the service works end to end.
+1. Start Terraform from a known state.
+2. Rebuild the same architecture where useful.
+3. Keep resources explicit and understandable before introducing abstractions.
+4. Run `terraform fmt`, `init`, `validate`, `plan` and `apply`.
+5. Validate the deployed service independently; a successful apply is not proof of end-to-end function.
 
 ### Phase D — Operate and troubleshoot
 
-1. Test normal traffic/control-plane behaviour.
+1. Test normal behaviour.
 2. Test one or more failure scenarios.
-3. Inspect Azure-side configuration and effective state.
-4. Use the appropriate tools rather than guessing: DNS tools, effective routes, Network Watcher, flow logs, application tests and Azure Monitor where applicable.
-5. Record the symptom, hypothesis, investigation, root cause, fix and verification.
+3. Inspect effective Azure state rather than guessing.
+4. Use appropriate tools such as DNS queries, effective routes, Network Watcher, flow logs and application tests.
+5. Record symptom, hypothesis, investigation, root cause, fix and verification.
 
-### Phase E — Document and hand off
+### Phase E — Document, hand off and clean up
 
-1. Update the lab README.
-2. Capture important commands and evidence.
-3. Record lessons learned and trade-offs.
-4. Update the lab handoff.
-5. Update `docs/HANDOFF.md` with the exact programme continuation point.
-6. Update `docs/PROGRAMME-ROADMAP.md` and root `README.md` when status changes.
-7. Commit meaningful progression to Git/GitHub.
-8. Create a rebuild/practice manual for substantial practical labs.
-9. Destroy resources when the lab does not need to remain deployed.
-10. Independently verify that intended resources and Terraform state are clean after teardown.
+1. Update the unit/module README when status changes.
+2. Capture useful commands and evidence.
+3. Record trade-offs and lessons.
+4. Update `docs/HANDOFF.md`, `docs/PROGRAMME-ROADMAP.md` and root `README.md`.
+5. Commit meaningful progression.
+6. Create rebuild notes/manuals for substantial practical work.
+7. Destroy resources that do not need to persist.
+8. Independently verify Azure cleanup and Terraform state cleanup.
+9. Carry the resulting architecture and decisions into the next unit.
 
 ## Status consistency
 
-Whenever a lab status changes, these sources must agree:
+These must agree whenever progress changes:
 
 ```text
 README.md
 docs/PROGRAMME-ROADMAP.md
 docs/HANDOFF.md
-labs/<lab>/README.md
-labs/<lab>/handoff/HANDOFF.md
+modules/<module>/README.md
+modules/<module>/<unit>/README.md
 ```
-
-Do not leave stale `NEXT`, `NOT STARTED`, `IN PROGRESS` or `COMPLETE` markers in conflicting files.
 
 ## Git progression
 
-Prefer small commits that communicate learning progression. Example:
+Prefer small commits tied to the Microsoft unit and BlueHarbor story, for example:
 
 ```text
-Lab 01: document load balancer mental model
-Lab 01: add direct deployment notes
-Lab 01: add Terraform network foundation
-Lab 01: add backend compute and health probe
-Lab 01: implement load balancing rule
-Lab 01: add validation and failure test evidence
-Lab 01: complete handoff
+Module 1 Unit 02: document BlueHarbor VNet design
+Module 1 Unit 04: add CLI VNet implementation
+Module 1 Unit 06: add DNS validation and failure test
 ```
 
-## VS Code usage
+## Tooling
 
-VS Code is the primary engineering workspace. Throughout the programme practise:
+Primary workspace/tools:
 
-- Explorer and file navigation
-- Integrated terminal
-- Multi-file editing
-- Search across the repository
-- Source Control view
-- Git diff inspection
-- Terraform language support
-- Markdown preview
-- Command Palette
-- Workspace settings where useful
+- VS Code
+- Azure CLI
+- Terraform
+- Git/GitHub
+- Azure Portal where visual inspection adds value
+- protocol/network diagnostic tools
 
-## Terraform conventions
+## Design-heavy or expensive services
 
-Start explicit and readable. Optimisation and abstraction come after understanding.
-
-Typical lab layout:
-
-```text
-terraform/
-├── versions.tf
-├── providers.tf
-├── variables.tf
-├── main.tf
-├── outputs.tf
-└── terraform.tfvars.example
-```
-
-Later labs may introduce:
-
-- `locals`
-- `for_each`
-- modules
-- remote state
-- CI validation
-- policy/security scanning
-
-Only introduce these when they improve learning rather than hide the underlying Azure resource relationships.
-
-## Azure CLI conventions
-
-CLI is used to answer questions such as:
-
-- What resources exist?
-- What IPs were assigned?
-- What backend members are configured?
-- What rules/probes/routes are effective?
-- What Azure thinks the current configuration is?
-- Is the service healthy?
-
-Do not treat CLI output as proof by itself when an end-to-end traffic test is possible.
-
-## Design-heavy / expensive services
-
-Full provisioning is not required merely to say a topic was covered. For services such as ExpressRoute, where provider involvement or cost makes a real build impractical, use rigorous alternatives:
-
-- architecture diagrams
-- realistic configuration objects
-- BGP and route tables
-- redundancy/failure scenarios
-- validation plans
-- troubleshooting decision trees
-- service-selection trade-offs
+Full provisioning is not required merely to claim a topic was covered. For services such as ExpressRoute or commercial NVA integrations, use rigorous architecture, route/BGP analysis, configuration objects, redundancy scenarios and troubleshooting where provider involvement or cost makes a full build unreasonable.
 
 The goal is accurate engineering understanding, not artificial spending.
-
-## Evidence
-
-Capture only evidence that teaches or proves something. Useful evidence includes:
-
-- architecture diagrams
-- `terraform plan` summaries
-- Azure CLI resource queries
-- DNS resolution output
-- route/effective route inspection
-- health probe status
-- HTTP responses from multiple backends
-- Network Watcher results
-- flow-log/monitor evidence
-- failure-test observations
-- screenshots that clarify Azure relationships
-
-Do not fill the repository with redundant screenshots.
