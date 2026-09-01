@@ -1,77 +1,81 @@
 # Unit 04 — Monitor your networks using Azure Network Watcher
 
-**BlueHarbor chapter:** Diagnose the complete enterprise network with evidence  
+**BlueHarbor chapter:** Diagnose the complete enterprise path with evidence  
 **Status:** NOT STARTED
 
-## Business event
+## Reconcile Network Watcher ownership
 
-Azure Monitor can tell Operations that something is degraded. The engineer now needs tools that answer **where** the network path is failing.
+Australia East and Southeast Asia may already have auto-enabled Network Watcher instances because BlueHarbor VNets have existed since earlier modules.
 
-This unit deliberately uses architecture created throughout Modules 1–7.
-
-## Diagnostic scenarios
-
-### Security decision
-
-Manufacturing cannot reach Shared Services on an approved port.
-
-Use security-flow/effective-rule diagnostics such as IP Flow Verify where applicable to determine whether the expected traffic is allowed or denied and which rule explains the decision.
-
-### Routing decision
-
-Manufacturing cannot reach an approved external service expected to traverse Azure Firewall.
+Before Terraform attempts to manage them:
 
 ```text
-Manufacturing
-  |
-UDR
-  |
-Azure Firewall
-  |
-destination
+discover regional Network Watchers
+ -> reference/import/reconcile existing instances as appropriate
+ -> create only if truly absent
 ```
 
-Inspect the actual/effective next hop and route state instead of assuming the UDR behaves as intended.
+Do not blindly duplicate service-managed regional Network Watcher resources.
 
-### Critical connection monitoring
+## Network Insights
 
-Monitor important existing paths such as application-to-private-service connectivity where supported by the chosen endpoint architecture. Use recurring connection evidence rather than relying solely on one-time manual tests.
+Use Azure Monitor Network Insights to inspect topology, resource health and dependencies across the existing environment. It is an operational experience over deployed resources, not a separate appliance/VNet to provision.
 
-### VNet flow logs
+## NetOps source
 
-For the new BlueHarbor implementation use **VNet flow logs**, not a design that depends on creating new NSG flow logs.
-
-Flow evidence answers questions such as:
+Add:
 
 ```text
-who communicated with whom?
-which port/protocol?
-what traffic patterns exist?
+bhi-vnet-core-aue
+  snet-management 10.10.1.0/24
+    vm-netops-aue
 ```
 
-### Traffic Analytics
+Configure the current Connection Monitor source dependency/extension.
 
-Use analytics to move from individual flow records toward operational patterns such as top talkers, unexpected conversations and traffic trends.
+## Connection Monitor tests
 
-### Packet capture
-
-Use packet capture as a deeper diagnostic when health, DNS, route, security and flow evidence do not sufficiently isolate the issue.
-
-## Troubleshooting ladder
+Use real critical paths, for example:
 
 ```text
-1. health
-2. metrics / alerts
-3. DNS
-4. connectivity test
-5. NSG / firewall decision
-6. route / next hop
-7. VNet flow evidence / analytics
-8. packet capture when justified
+vm-netops-aue -> Front Door endpoint             TCP/443
+vm-netops-aue -> Partner SQL Private Endpoint    TCP/1433
+vm-netops-aue -> telemetry PLS private service   TCP/9000
+vm-netops-aue -> Brisbane representative target  when a real target exists
 ```
 
-The learner should choose the next tool based on the unanswered question, not randomly click through diagnostics.
+Do not claim Brisbane itself is a continuous Connection Monitor source unless a real supported source/agent is deployed there.
 
-## Terraform role
+## Security decision
 
-Provision persistent monitoring configuration through the same Terraform root. Diagnostic queries and investigations may use Azure CLI/Portal/Network Watcher tools against that Terraform-managed estate.
+Use IP Flow Verify/effective-rule diagnostics where applicable to answer a concrete question such as whether an intended Manufacturing flow is allowed or denied and by which rule.
+
+## Routing decision
+
+For a private workload that should traverse Azure Firewall, inspect effective routes/next hop/BGP evidence. Do not infer the actual path solely from Terraform intent.
+
+## VNet flow logs / Traffic Analytics
+
+Use VNet flow logs for all six BlueHarbor VNets with region-local Storage and central Traffic Analytics.
+
+Do not create new NSG flow logs.
+
+VNet flow logs do not substitute for Virtual WAN hub/gateway metrics or logs.
+
+## Packet capture
+
+Use packet capture only after higher-level evidence fails to isolate the issue.
+
+Authoritative troubleshooting ladder:
+
+```text
+1. Alert / service health
+2. Metrics
+3. DNS result
+4. Connection Monitor / connectivity test
+5. NSG / Firewall decision
+6. Effective route / next hop / BGP
+7. VNet flow logs / Traffic Analytics
+8. Resource-specific logs
+9. Packet capture when justified
+```

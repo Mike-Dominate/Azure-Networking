@@ -1,44 +1,84 @@
 # Unit 05 — Summary
 
-**BlueHarbor chapter:** Final production incident and programme architecture review  
+**BlueHarbor chapter:** Final production incident and programme operations review  
 **Status:** NOT STARTED
 
-## Final incident
+## Deterministic multi-fault incident
 
-Brisbane engineers report intermittent failures accessing the Partner Hub engineering service and its private data service. Manufacturing telemetry simultaneously reports elevated latency.
+Operations receives two concurrent symptoms. The learner is not told that they are separate root causes.
 
-The learner is not given the root cause.
+### Fault A — Brisbane private-data access
 
-Use the cumulative environment and evidence to investigate:
+Break the Brisbane conditional-forwarding path for the Partner Azure SQL namespace.
+
+Expected evidence:
 
 ```text
-DNS?
-hybrid VPN / ExpressRoute / Virtual WAN?
-routing / BGP path?
-Azure Firewall / NSG?
-Front Door / Application Gateway?
-Load Balancer backend health?
-Private Endpoint / private DNS?
-PaaS service?
-application?
+Azure workload
+  database.windows.net -> SQL private IP
+
+Brisbane engineer
+  database.windows.net -> wrong/public answer or resolution failure
 ```
 
-The objective is:
+Required conclusion:
 
-> The business says the service is broken. Prove which networking layer is responsible.
+```text
+PE exists
+Azure private DNS works
+Azure route works
+Brisbane answer differs
+ -> hybrid DNS fault domain
+```
 
-## Final explain-back
+Do not recreate the Private Endpoint merely because a Brisbane application says SQL is unavailable.
+
+### Fault B — AUE telemetry degradation
+
+Make one backend behind `lb-telemetry-aue` unhealthy.
+
+Expected evidence:
+
+```text
+one backend unhealthy
+TCP/9000 service still available through healthy backend
+Health Probe Status degrades
+Data Path Availability may remain healthy
+alert/metric identifies backend condition
+```
+
+The learner must prove that this failure is unrelated to the Brisbane DNS issue.
+
+## Evidence-led investigation
+
+Use the operating ladder:
+
+```text
+1. Alert / service health
+2. Metrics
+3. DNS
+4. Connection Monitor / connectivity test
+5. NSG / Firewall decision
+6. Effective route / next hop / BGP
+7. VNet flow logs / Traffic Analytics
+8. Resource-specific logs
+9. Packet capture when justified
+```
+
+## Explain-back
 
 Be able to explain:
 
-- metrics vs logs vs network-flow evidence;
-- configuration vs observed behavior;
-- why NSG ALLOW does not prove application reachability;
-- how to prove the intended next hop;
-- how failed Load Balancer backends become operational signals;
-- how to isolate Private Endpoint DNS vs routing/service-policy faults;
-- when Connection Monitor, flow logs, Traffic Analytics and packet capture are appropriate;
-- how to trace and monitor a Brisbane user request through DNS, hybrid connectivity, security, application delivery and private PaaS access.
+- central Log Analytics versus regional flow-log Storage;
+- metrics versus logs versus flow data;
+- Load Balancer backend health versus data-path availability;
+- Network Insights versus Network Watcher troubleshooting tools;
+- why auto-created regional Network Watchers must be reconciled rather than duplicated;
+- why synthetic DNS validation is still required even when DNS Private Resolver metrics are healthy;
+- why Connection Monitor source capability must be real, especially for on-premises sources;
+- why VNet flow logs do not represent Virtual WAN hub telemetry;
+- why Traffic Analytics service-managed internals are outside BlueHarbor Terraform ownership;
+- how to isolate a hybrid-DNS fault from an application/backend-health fault.
 
 ## Programme end state
 
@@ -49,14 +89,17 @@ M1 network foundation
  -> M4 service availability
  -> M5 HTTP(S) delivery
  -> M6 security
- -> M7 private PaaS access
+ -> M7 private access
  -> M8 observability / operations
 ```
 
-All practical infrastructure belongs to the same `blueharbor/terraform/` root and one state lineage.
+All persistent project infrastructure belongs to the same `blueharbor/terraform/` root and one state lineage.
 
-## Next step
+## Next step after the architecture audit
 
-Do **not** begin the implementation yet.
+The seven module-transition gates are audited before implementation begins. After the short whole-programme closeout confirms naming, addressing and cross-gate consistency, formal execution starts at:
 
-Perform the full **Modules 1–8 Architecture & Terraform Dependency Audit** first. Validate naming, IP addressing, subnet requirements, resource dependencies, module-to-module handoffs and expected Terraform additions/changes so later units do not force avoidable destructive redesign.
+```text
+Module 1
+Unit 01 — Introduction
+```

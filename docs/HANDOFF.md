@@ -14,7 +14,7 @@ Each unit = previous deployed estate + next requirement.
 
 No routine destroy between units/modules. Persistent infrastructure is Terraform-managed; CLI/Portal/PowerShell/protocol/diagnostic tools validate and troubleshoot.
 
-## Architecture audit status
+## Architecture transition audit
 
 ```text
 Gate 1  M1 -> M2   PASS
@@ -23,108 +23,78 @@ Gate 3  M3 -> M4   PASS
 Gate 4  M4 -> M5   PASS
 Gate 5  M5 -> M6   PASS
 Gate 6  M6 -> M7   PASS
-Gate 7  M7 -> M8   NEXT
+Gate 7  M7 -> M8   PASS
 ```
 
-See [`ARCHITECTURE-DEPENDENCY-AUDIT.md`](ARCHITECTURE-DEPENDENCY-AUDIT.md).
+**All module-transition gates are complete.**
 
-## Approved architecture through Module 6
+## Approved Module 8 operations architecture
 
-The estate includes:
+Central operations platform:
 
 ```text
-Core / Manufacturing / Research / Partner VNets
-AUE + SEA Virtual WAN hubs
-VPN + ExpressRoute
-secured-hub Azure Firewalls + central policy
-DDoS / NSG / ASG
-AUE + SEA telemetry Load Balancers + Traffic Manager
-Front Door Premium + edge WAF
-AUE + SEA Application Gateway WAF_v2
-Core DNS Private Resolver / hybrid DNS
+rg-bhi-monitoring-aue
+law-bhi-netops-aue
+ag-bhi-netops
 ```
 
-## Approved Module 7 private-access evolution
-
-Manufacturing Storage:
+Regional VNet flow-log Storage:
 
 ```text
-snet-mfg-data
- -> Microsoft.Storage service endpoint
- -> restricted Storage archive account
- -> Storage service endpoint policy where supported
+AUE  st-bhi-flow-aue-<unique>
+SEA  st-bhi-flow-sea-<unique>
 ```
 
-Partner AUE:
+VNet flow logs cover all six project VNets and feed Traffic Analytics to the central workspace. New NSG flow logs are not used.
+
+Regional Network Watchers are discovered/reconciled because Azure may already have auto-enabled them; do not blindly create duplicates.
+
+Core management becomes the NetOps source location:
 
 ```text
-snet-private-endpoints   10.40.3.0/24
-snet-appsvc-integration  10.40.4.0/26
-snet-appgw-pl            10.40.5.0/27
+snet-management 10.10.1.0/24
+  vm-netops-aue
 ```
 
-Canonical path:
+Connection Monitor tests real public, private and hybrid paths.
 
-```text
-Application Gateway WAF_v2
- -> App Service Private Endpoint
- -> `/orders` App Service
- -> VNet Integration
- -> SQL Private Endpoint
- -> Azure SQL
-```
-
-SQL/App Service private DNS extends the existing Core/Partner DNS design. SQL public network access is disabled after the private path is proven.
-
-BlueHarbor-owned Private Link Service:
+The Microsoft Load Balancer monitoring exercise uses:
 
 ```text
 lb-telemetry-aue
- -> pls-telemetry-aue
- -> Core consumer PE in 10.10.20.0/24
 ```
 
-Provider NAT subnet:
+and distinguishes backend Health Probe Status from Load Balancer Data Path Availability.
+
+Tier-1 diagnostics/alerts cover real Azure Firewall, Application Gateway, Front Door, hybrid connectivity and related service-health conditions.
+
+Final capstone faults are deterministic:
 
 ```text
-snet-pls-nat 10.20.3.0/27
+hybrid SQL DNS forwarding fault
++
+one AUE telemetry backend unhealthy
 ```
-
-Module 4 AUE Load Balancer uses NIC-backed backend membership for this dependency.
-
-Front Door origin privacy:
-
-```text
-Front Door Premium
- -> Private Link
- -> AUE / SEA Application Gateway WAF_v2
-```
-
-Provider-side subnets:
-
-```text
-AUE 10.40.5.0/27
-SEA 10.50.3.0/27
-```
-
-Migrate through a new private-link origin group, validate, then switch the Front Door route. Keep Module 6 public-origin restrictions during migration/rollback as required.
 
 ## Current programme phase
 
-- **Curriculum execution position:** Module 1 Unit 01 remains the first teaching/build unit.
 - **Story design:** COMPLETE.
-- **Architecture audit:** Gates 1–6 PASS; Gate 7 NEXT.
+- **Module-transition architecture audit:** COMPLETE — all seven gates PASS.
+- **Whole-programme architecture closeout:** NEXT.
 - **Terraform build:** NOT STARTED.
 - **Azure deployment:** NOT STARTED for the new BlueHarbor build.
+- **Formal curriculum execution position after closeout:** Module 1 Unit 01.
 
 ## Immediate resume instruction
 
-Do not start implementation yet.
+Do **not** start Module 1 implementation yet.
 
-Proceed with:
+Proceed with one short:
 
 ```text
-Gate 7 — Module 7 -> Module 8
+WHOLE-PROGRAMME ARCHITECTURE CLOSEOUT
 ```
 
-Audit the final transition, fix conflicts, obtain approval, then perform the whole-programme audit closeout before starting Module 1 Unit 01.
+Check combined addressing, names, resource dependencies, intentional replacements/retirements, special subnet policies, Terraform ownership/import boundaries, DNS and routing/security exceptions.
+
+If closeout passes, start **Module 1 — Unit 01 — Introduction**.

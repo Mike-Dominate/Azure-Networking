@@ -1,6 +1,6 @@
 # BlueHarbor Architecture & Terraform Dependency Audit
 
-This is the running gate record for the progressive BlueHarbor project. Audit one transition at a time before any BlueHarbor Azure deployment begins.
+This is the running gate record for the progressive BlueHarbor project. The transition gates are now complete; a final whole-programme closeout is required before implementation begins.
 
 ## Gate status
 
@@ -12,258 +12,284 @@ This is the running gate record for the progressive BlueHarbor project. Audit on
 | 4 | Module 4 -> Module 5 | **PASS — corrected and approved** |
 | 5 | Module 5 -> Module 6 | **PASS — corrected and approved** |
 | 6 | Module 6 -> Module 7 | **PASS — corrected and approved** |
-| 7 | Module 7 -> Module 8 | **NEXT** |
+| 7 | Module 7 -> Module 8 | **PASS — corrected and approved** |
 
 A gate passes only when story continuity, Azure architecture continuity and Terraform/state continuity agree.
 
 ---
 
-# Gate 1 — Module 1 -> Module 2
+# Gates 1–6 — approved contracts
 
-**Status:** PASS
-
-Module 1 creates the canonical Core, Manufacturing and Research VNets plus DNS, routing, initial peerings and explicit Manufacturing NAT. Module 2 adds classic hybrid connectivity and then evolves production transit to Virtual WAN.
-
----
-
-# Gate 2 — Module 2 -> Module 3
-
-**Status:** PASS
-
-ExpressRoute is added to the existing Virtual WAN architecture rather than creating a second hub. Brisbane and Perth are the physical-site continuity anchors.
-
----
-
-# Gate 3 — Module 3 -> Module 4
-
-**Status:** PASS
-
-Device Telemetry Ingest is introduced as TCP/9000 with AUE/SEA public Standard Load Balancers and Traffic Manager Priority failover.
-
-Gate 5 later made SEA outbound explicit with `nat-telemetry-sea`.
-
-### Gate 6 backward compatibility correction
-
-`lb-telemetry-aue` must use NIC-backed backend-pool membership. Module 7 reuses the exact Load Balancer as a Private Link Service provider, so an incompatible Load Balancer backend-pool model would create an unnecessary rebuild.
-
----
-
-# Gate 4 — Module 4 -> Module 5
-
-**Status:** PASS
-
-Partner Hub is a separate HTTP(S) application with AUE/SEA Partner VNets, regional Application Gateways and global Front Door. Module 5's public Front Door origins are a real intermediate stage.
-
-### Gate 6 forward evolution note
-
-Module 6 hardens the public origins. Module 7 then migrates Front Door Premium to Private-Link-enabled Application Gateway origins using new provider-side Private Link subnets. The original public origin group is not treated as the final architecture.
-
----
-
-# Gate 5 — Module 5 -> Module 6
-
-**Status:** PASS
-
-Module 6 hardens the actual cumulative estate using DDoS, NSG/ASG, Azure Firewall in both existing Virtual WAN hubs, Firewall Policy, secured-hub routing intent, WAF and origin-bypass restrictions.
-
-Partner backend NAT egress is intentionally replaced by firewall egress. Telemetry NAT remains for public Load Balancer symmetry. Direct Module 1 peerings are retired once they would bypass centrally inspected private transit.
-
----
-
-# Gate 6 — Module 6 -> Module 7
-
-**Status:** PASS
-
-## Problem resolved
-
-The original Module 7 described generic "Storage / SQL / App Service" possibilities and optional Private Link Service/App Service integration. That was too ambiguous for a cumulative build.
-
-Gate 6 fixes exact workloads, subnets, DNS ownership and migration paths.
-
-## Service Endpoint target — FIXED
-
-Manufacturing uses the existing data subnet:
+The earlier gates establish one cumulative architecture:
 
 ```text
-snet-mfg-data 10.20.2.0/24
- -> Microsoft.Storage service endpoint
- -> restricted Azure Storage archive account
- -> Storage service endpoint policy where supported
+M1
+Core / Manufacturing / Research VNets
+DNS / routing / initial NAT
+
+M2
+classic VPN learning -> Virtual WAN production transit
+
+M3
+ExpressRoute added to the existing AUE Virtual WAN hub
+
+M4
+Telemetry TCP/9000
+AUE/SEA Standard Load Balancers
+Traffic Manager
+
+M5
+Partner AUE/SEA VNets
+regional Application Gateways
+Front Door
+
+M6
+DDoS / NSG / ASG
+AUE + SEA secured Virtual WAN / Azure Firewall
+WAF / origin hardening
+
+M7
+Storage service endpoint
+Azure SQL + App Service Private Endpoints
+App Service VNet Integration
+telemetry Private Link Service
+Front Door -> Application Gateway Private Link
 ```
 
-Do not use `snet-mfg-app`; that subnet carries the public telemetry Load Balancer service and has different routing constraints.
+Backward corrections discovered by later gates remain authoritative, including:
 
-## Azure SQL Private Endpoint target — FIXED
-
-Partner AUE adds:
-
-```text
-snet-private-endpoints 10.40.3.0/24
-```
-
-Canonical PaaS target:
-
-```text
-Azure SQL logical server + Partner database
- -> SQL Private Endpoint
- -> privatelink.database.windows.net
-```
-
-After private application/hybrid validation, disable SQL public network access according to the current service model.
-
-## App Service VNet Integration — MADE REAL
-
-Partner `/orders` migrates to App Service.
-
-Add:
-
-```text
-snet-appsvc-integration 10.40.4.0/26
-```
-
-with the current required App Service subnet delegation.
-
-Flow:
-
-```text
-Application Gateway WAF_v2
- -> App Service Private Endpoint
- -> App Service `/orders`
- -> VNet Integration
- -> SQL Private Endpoint
-```
-
-This preserves the distinction between App Service outbound VNet Integration and private inbound/service reachability via Private Endpoint.
-
-## Private Link Service — MADE REAL
-
-Reuse:
-
-```text
-lb-telemetry-aue Standard
-TCP/9000
-NIC-backed backend membership
-```
-
-Provider addition:
-
-```text
-snet-pls-nat 10.20.3.0/27
-pls-telemetry-aue
-```
-
-Consumer addition:
-
-```text
-bhi-vnet-core-aue
-snet-private-endpoints 10.10.20.0/24
-consumer PE -> pls-telemetry-aue
-```
-
-Use `services.blueharbor.internal` for the BlueHarbor-owned private service naming path.
-
-Brisbane/Perth consume the service through the existing hybrid network and Core DNS resolver path.
-
-## Private DNS / hybrid forwarding — FIXED
-
-Private zones include the current service-specific zones such as:
-
-```text
-privatelink.database.windows.net
-privatelink.azurewebsites.net
-```
-
-Hybrid DNS uses the existing Core DNS Private Resolver. For Azure SQL, on-premises conditional forwarding targets the appropriate public service namespace (for example `database.windows.net`) toward Azure so Azure DNS can follow the CNAME into the linked private zone.
-
-## PE routing in secured Virtual WAN — FIXED
-
-Private Endpoint subnets use the current network-policy mode required for NSG/route-table enforcement and symmetric hybrid routing.
-
-Do not claim Azure Firewall automatically sees same-VNet Private Endpoint traffic. Same-VNet flows require explicit local subnet/NSG/UDR reasoning.
-
-For branch/on-premises -> PE flows, validate route and return-path behaviour through the secured Virtual WAN.
-
-## Front Door origin privacy — ADDED
-
-Module 6 left Front Door Premium with hardened public Application Gateway origins. Module 7 progresses to Private Link.
-
-Add:
-
-```text
-AUE snet-appgw-pl 10.40.5.0/27
-SEA snet-appgw-pl 10.50.3.0/27
-```
-
-Migration:
-
-```text
-public origin group
- -> create private-link origin group
- -> approve AUE/SEA private connections
- -> validate health
- -> switch route
- -> validate end-to-end
- -> retire public origin data path after rollback window
-```
-
-Do not mix public and Private-Link-enabled origins in a single origin group when current service behaviour does not support that combination.
-
-## Canonical Module 7 address delta
-
-```text
-CORE AUE
-10.10.20.0/24   snet-private-endpoints
-
-MFG AUE
-10.20.3.0/27    snet-pls-nat
-
-PARTNER AUE
-10.40.3.0/24    snet-private-endpoints
-10.40.4.0/26    snet-appsvc-integration
-10.40.5.0/27    snet-appgw-pl
-
-PARTNER SEA
-10.50.3.0/27    snet-appgw-pl
-```
-
-No new VNet/hub is introduced.
-
-## Gate 6 verdict
-
-```text
-Story handoff                         PASS
-Service Endpoint target               PASS — Manufacturing data -> Storage
-Service endpoint policy               PASS — Storage-specific design
-Private Endpoint target               PASS — Azure SQL
-Private Endpoint subnet               PASS
-Secured-vWAN PE routing               PASS with network-policy/route validation
-Hybrid PE DNS                         PASS
-SQL public exposure                   PASS — disable after private proof
-App Service VNet Integration          PASS — real `/orders` modernization
-App Service integration subnet        PASS
-Private Link Service                  PASS — existing telemetry LB
-PLS NAT subnet                        PASS
-Module 4 LB compatibility             PASS — NIC-backed pool contract
-PLS hybrid/on-prem integration        PASS — Core consumer PE
-Front Door Private Link               PASS — private AppGW origin migration
-Terraform continuity                  PASS
-```
+- hybrid DNS resolver subnets in Core;
+- AUE/SEA Virtual Hub `/22` sizing;
+- `nat-telemetry-sea` explicit outbound;
+- NIC-backed `lb-telemetry-aue` backend membership;
+- retirement of direct peerings after secured private transit is proven.
 
 ---
 
 # Gate 7 — Module 7 -> Module 8
 
-**Status:** NEXT
+**Status:** PASS
 
-Audit next:
+## Problem resolved
 
-- which exact resources receive diagnostic settings and where logs/metrics land;
-- whether one or multiple Log Analytics workspaces are justified;
-- how Azure Monitor Network Insights represents the real multi-hub estate;
-- exact Connection Monitor source/destination pairs across VNet, branch, PaaS PE and public service paths;
-- where VNet flow logs are enabled and how Traffic Analytics is connected;
-- how Network Watcher automatic regional enablement is represented in Terraform without duplicate-resource conflicts;
-- which Load Balancer is used by the Microsoft monitoring exercise;
-- alert rules for backend health, firewall/network conditions and key private-path failures;
-- whether DDoS, WAF, Firewall, Front Door, Application Gateway, Private Endpoint and DNS evidence all land in an observable operating model;
-- how the final incident/capstone proves troubleshooting across the complete cumulative environment.
+Module 8 correctly intended to monitor the cumulative estate but left workspace topology, flow-log Storage, Network Watcher ownership, monitored paths, alerting and the final incident too vague.
+
+The approved correction turns Module 8 into an explicit operations architecture.
+
+## Central Log Analytics — FIXED
+
+Create:
+
+```text
+rg-bhi-monitoring-aue
+law-bhi-netops-aue
+```
+
+Appropriate diagnostic logs from AUE and SEA resources land in the same workspace for cross-service correlation.
+
+## Regional flow-log Storage — FIXED
+
+VNet flow logs use region-local Storage:
+
+```text
+AUE  st-bhi-flow-aue-<unique>
+SEA  st-bhi-flow-sea-<unique>
+```
+
+VNet flow logs are enabled on all six BlueHarbor VNets:
+
+```text
+AUE
+bhi-vnet-core-aue
+bhi-vnet-mfg-aue
+bhi-vnet-connectivity-aue
+bhi-vnet-partner-aue
+
+SEA
+bhi-vnet-research-sea
+bhi-vnet-partner-sea
+```
+
+Traffic Analytics feeds the central Log Analytics workspace.
+
+New NSG flow logs are prohibited in the BlueHarbor design.
+
+## Traffic Analytics ownership — FIXED
+
+Terraform owns the workspace, flow-log Storage, VNet flow-log resources/configuration and Traffic Analytics enablement.
+
+Do not manage Azure service-created `NWTA*` DCR/DCE internals.
+
+## Regional Network Watcher ownership — FIXED
+
+Network Watcher may already be auto-enabled because earlier VNets exist in both regions.
+
+Module 8 must:
+
+```text
+discover
+ -> reference/import/reconcile existing regional instances
+ -> create only if genuinely absent
+```
+
+No blind duplicate Network Watcher creation.
+
+## Network Insights — FIXED
+
+Use Azure Monitor Network Insights as an operational topology/health experience over existing network resources. It does not introduce a new BlueHarbor VNet/appliance.
+
+## NetOps probe / Connection Monitor — FIXED
+
+Add a real source in the existing Core management subnet:
+
+```text
+vm-netops-aue
+ -> snet-management 10.10.1.0/24
+```
+
+Representative Connection Monitor tests:
+
+```text
+Front Door endpoint               TCP/443
+Partner SQL Private Endpoint      TCP/1433
+telemetry PLS private service     TCP/9000
+Brisbane target                   where a real reachable target exists
+```
+
+Do not claim continuous Brisbane-source monitoring unless a supported real/Arc-enabled source exists.
+
+## Microsoft Load Balancer exercise — FIXED
+
+Exact target:
+
+```text
+lb-telemetry-aue
+```
+
+Correlate:
+
+```text
+Health Probe Status / DipAvailability
+Data Path Availability / VipAvailability
+```
+
+A single failed backend should degrade backend-health evidence without necessarily making the whole regional service/data path unavailable.
+
+## Alerting — FIXED
+
+Create:
+
+```text
+ag-bhi-netops
+```
+
+Notification receiver values remain sensitive/ignored inputs.
+
+Initial alerts focus on explainable Tier-1 signals such as Load Balancer health, Connection Monitor failures, critical hybrid/firewall/app-delivery conditions, DDoS signals and Resource Health.
+
+## Diagnostic scope — FIXED
+
+Centralize appropriate diagnostic logs for at least:
+
+```text
+AUE + SEA Azure Firewall
+AUE + SEA Application Gateway WAF_v2
+Front Door Premium
+active VPN / Virtual WAN gateway resources
+ExpressRoute where live
+subscription Activity Log
+```
+
+Use current resource-specific logging modes/categories and validate them at implementation time.
+
+## DNS operations — FIXED
+
+DNS Private Resolver metrics show resolver health/activity but do not prove a particular critical name resolves correctly.
+
+Operations combines resolver metrics with synthetic DNS tests, especially comparing Azure and Brisbane answers for Partner SQL private access.
+
+## Final incident — FIXED
+
+The final deterministic incident contains two independent faults:
+
+```text
+Fault A
+Brisbane SQL namespace forwarding broken
+ -> hybrid DNS problem
+
+Fault B
+one lb-telemetry-aue backend unhealthy
+ -> backend-health problem
+```
+
+The learner must isolate both with evidence rather than being told which product is broken.
+
+## Authoritative troubleshooting ladder
+
+```text
+1. Alert / service health
+2. Metrics
+3. DNS result
+4. Connection Monitor / connectivity test
+5. NSG / Firewall decision
+6. Effective route / next hop / BGP
+7. VNet flow logs / Traffic Analytics
+8. Resource-specific logs
+9. Packet capture when justified
+```
+
+## Gate 7 verdict
+
+```text
+M7 -> M8 story                     PASS
+Monitoring existing estate         PASS
+Central Log Analytics              PASS
+Regional flow-log Storage          PASS
+VNet flow-log scope                PASS — all six VNets
+New NSG flow logs                  PASS — prohibited
+Traffic Analytics ownership        PASS
+Network Watcher ownership          PASS — discover/reconcile
+Network Insights                   PASS
+Connection Monitor                 PASS — real NetOps source + real targets
+Load Balancer exercise             PASS — lb-telemetry-aue
+LB health metrics                  PASS
+Alert model                        PASS
+Hybrid monitoring honesty         PASS
+DNS synthetic evidence             PASS
+Final deterministic incident       PASS
+Terraform continuity               PASS
+```
+
+---
+
+# Transition-audit result
+
+```text
+GATE 1  PASS
+GATE 2  PASS
+GATE 3  PASS
+GATE 4  PASS
+GATE 5  PASS
+GATE 6  PASS
+GATE 7  PASS
+```
+
+## Next gate
+
+There is no Gate 8.
+
+Before implementation, perform one **whole-programme architecture closeout** that checks the combined final contracts for:
+
+```text
+IP overlap / subnet reservations
+canonical names / regions
+resource dependency order
+intentional replacements and retirements
+special subnet policies
+Terraform ownership/import boundaries
+DNS-zone/link/forwarding consistency
+routing/security exceptions
+monitoring dependencies
+```
+
+If that closeout passes, formal execution begins at **Module 1, Unit 01**.

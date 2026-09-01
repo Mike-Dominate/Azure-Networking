@@ -1,62 +1,74 @@
 # Unit 02 — Monitor your networks using Azure Monitor
 
-**BlueHarbor chapter:** Establish the central telemetry and alerting layer  
+**BlueHarbor chapter:** Establish the central telemetry, flow and alerting platform  
 **Status:** NOT STARTED
 
-## Business event
+## Central workspace
 
-Operations cannot depend on engineers opening individual Azure resources one at a time to discover failures.
-
-BlueHarbor introduces a central monitoring model across the environment already built.
-
-## Mental model
+Create:
 
 ```text
-existing Azure resources
-        |
-telemetry
-        |
-Azure Monitor
-   /          \
-metrics       logs
-                 |
-           Log Analytics
-        |
-alerts / queries / investigation
+rg-bhi-monitoring-aue
+law-bhi-netops-aue
 ```
 
-## Evidence distinction
+Use one central Log Analytics workspace for appropriate diagnostic logs from both Australia East and Southeast Asia so a single investigation can correlate the full network/application path.
+
+## VNet flow-log destinations
+
+Use region-local Storage:
 
 ```text
-metric -> numerical behavior over time
-log    -> event/detail record
-flow   -> observed network communication pattern
-health -> component/service availability signal
+AUE  st-bhi-flow-aue-<unique>
+SEA  st-bhi-flow-sea-<unique>
 ```
 
-Use the evidence type that matches the troubleshooting question.
-
-## Terraform delta
-
-Extend the existing stack with only the monitoring resources/configuration justified by the final design, for example:
+Target all BlueHarbor VNets:
 
 ```text
-Log Analytics workspace
-diagnostic settings
-metric/log alerts
-action groups
-supporting monitoring configuration
+AUE
+bhi-vnet-core-aue
+bhi-vnet-mfg-aue
+bhi-vnet-connectivity-aue
+bhi-vnet-partner-aue
+
+SEA
+bhi-vnet-research-sea
+bhi-vnet-partner-sea
 ```
 
-The architecture audit determines exact dependencies before implementation.
+Enable VNet flow logs and Traffic Analytics to `law-bhi-netops-aue`.
 
-## Alert mental model
+Do not create new NSG flow logs.
+
+## Traffic Analytics ownership guardrail
+
+Terraform manages the BlueHarbor configuration that enables Traffic Analytics, but it does not attempt to manage Azure's service-created internal `NWTA*` DCR/DCE implementation objects.
+
+## Diagnostic settings
+
+Send current supported resource-specific logs to the central workspace for the Tier-1 network/application resources that produce useful diagnostics, including Azure Firewall, Application Gateway WAF, Front Door, active hybrid gateways/Virtual WAN components and ExpressRoute where live.
+
+Re-query/revalidate supported categories at implementation time.
+
+## Alerting
+
+Create:
 
 ```text
-signal
-  -> condition
-  -> alert rule
-  -> action group / response
+ag-bhi-netops
 ```
 
-Module 8 should turn earlier infrastructure failures into observable events rather than simply adding monitoring resources for completion credit.
+Receiver details come from sensitive/ignored Terraform input.
+
+Initial alert families should have explicit operational meaning, for example:
+
+- Load Balancer backend/data-path health;
+- Connection Monitor failure/latency/packet loss;
+- key VPN/ExpressRoute/gateway health conditions;
+- Azure Firewall critical health/service conditions;
+- Application Gateway / Front Door origin availability;
+- DDoS attack/mitigation signals;
+- Resource Health for critical network resources.
+
+Prefer a small explainable alert set to alert spam.

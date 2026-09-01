@@ -1,460 +1,373 @@
 # BlueHarbor Industries — Module 8 Project Story
 
-## Project — Build the Network Operations Centre
+## Project — Build the BlueHarbor Network Operations Centre
 
 **Microsoft Learn module:** Design and implement network monitoring  
-**Company:** BlueHarbor Industries (BHI)  
-**Terraform model:** extend the same cumulative `blueharbor/terraform/` stack  
-**Status:** NOT STARTED
+**Status:** NOT STARTED  
+**Terraform model:** extend the same cumulative `blueharbor/terraform/` state
 
 ## Starting point from Module 7
 
-BlueHarbor now has a substantial enterprise environment built progressively across seven modules:
+BlueHarbor now operates one substantial enterprise environment:
 
 ```text
-Module 1 -> VNets, DNS, peering, routing, NAT
-Module 2 -> hybrid VPN / remote connectivity / Virtual WAN
-Module 3 -> ExpressRoute enterprise-connectivity design
-Module 4 -> Azure Load Balancer and Traffic Manager
-Module 5 -> Application Gateway and Front Door
-Module 6 -> DDoS, NSGs/ASGs, Azure Firewall, secured hub, WAF
-Module 7 -> service endpoints, Private Endpoint/Private Link, private DNS integration
+M1 network foundation
+M2 hybrid connectivity / Virtual WAN
+M3 ExpressRoute
+M4 telemetry availability / Load Balancer / Traffic Manager
+M5 Partner Hub / Application Gateway / Front Door
+M6 secured Virtual WAN / Azure Firewall / DDoS / WAF / segmentation
+M7 service endpoints / Private Endpoints / Private Link / hybrid private DNS
 ```
 
-The architecture works, but Operations asks the final programme question:
+Operations asks:
 
-> If the network starts failing at 2 AM, how will we know what failed before users tell us?
+> If the network starts failing at 2 AM, how do we identify the failing layer before users tell us?
 
-Module 8 changes the focus from **configuration** to **evidence**.
-
-```text
-What should the network do?
-        -> configuration
-
-What is the network actually doing?
-        -> observability
-```
+Module 8 changes the emphasis from configuration to evidence.
 
 ---
 
-## Chapter 01 — Introduction: We built it; can we operate it?
+## Chapter 01 — We built it; can we operate it?
 
-A user reports that the Partner Hub is slow.
-
-That symptom could come from many layers:
+A Partner Hub complaint can originate from:
 
 ```text
 DNS
-hybrid connectivity
-routing
+VPN / ExpressRoute
+Virtual WAN / routing
 Azure Firewall / NSG
 Front Door
 Application Gateway
-backend health
+App Service
 Private Endpoint
-PaaS service
+Azure SQL
 application
 ```
 
-The operational goal is to stop guessing and instead gather evidence that narrows the fault domain.
-
-### Evidence model
+Evidence categories:
 
 ```text
-METRICS
-What is happening numerically?
-
-LOGS
-What events occurred?
-
-FLOW DATA
-Who communicated with whom?
-
-HEALTH
-Is the component available/healthy?
-
-TOPOLOGY
-How are resources related?
-
-CONNECTION TESTING
-Can source A reach destination B through the expected path?
-
-PACKET EVIDENCE
-What actually travelled on the wire/path when deeper inspection is necessary?
+METRICS      numerical behaviour over time
+LOGS         event/detail records
+FLOW DATA    observed communications
+HEALTH       component/service availability
+TOPOLOGY     resource relationships
+CONNECTION   synthetic/repeated reachability evidence
+PACKETS      deep evidence when higher layers are insufficient
 ```
 
 ---
 
-## Chapter 02 — Azure Monitor: Build the operational telemetry layer
+## Chapter 02 — Azure Monitor: establish one operational telemetry layer
 
-BlueHarbor Operations wants a central way to collect, query and act on telemetry from the environment already built.
-
-Conceptually:
+Create a dedicated monitoring resource group and central workspace:
 
 ```text
-BlueHarbor resources
-VNets / gateways / Load Balancer / App Gateway / Firewall / applications
-        |
-        v
-telemetry
-        |
-        v
-Azure Monitor
-   /          \
-metrics       logs
-                 |
-           Log Analytics
-   \             /
-    alerts / workbooks / investigation
+rg-bhi-monitoring-aue
+  law-bhi-netops-aue
 ```
 
-### Business outcome
+Both regions send appropriate diagnostic logs to the central workspace.
 
-Move from:
+### Regional flow-log storage
+
+VNet flow-log Storage remains region-local:
 
 ```text
-user reports outage
--> engineer starts investigating
+st-bhi-flow-aue-<unique>
+st-bhi-flow-sea-<unique>
 ```
 
-to:
+AUE flow-log target VNets:
 
 ```text
-telemetry detects condition
--> alert fires
--> operations investigates with evidence
+bhi-vnet-core-aue
+bhi-vnet-mfg-aue
+bhi-vnet-connectivity-aue
+bhi-vnet-partner-aue
 ```
 
-### Terraform delta
-
-Extend the existing stack with monitoring resources/configuration such as the capabilities required by the final design:
+SEA flow-log target VNets:
 
 ```text
-Log Analytics workspace
-monitoring/diagnostic settings
-metric alerts
-alert action groups
-flow-log configuration
-Connection Monitor configuration where appropriate
-supporting storage/workspaces where required
+bhi-vnet-research-sea
+bhi-vnet-partner-sea
 ```
 
-The architecture audit before implementation will determine exact placement and dependencies.
+Enable VNet flow logs and Traffic Analytics. During the learning programme use a short supported processing interval, such as 10 minutes, so experiments become visible without excessive waiting.
 
-### Core alert mental model
+Do not create new NSG flow logs.
+
+### Traffic Analytics ownership boundary
+
+Terraform manages:
 
 ```text
-metric / log signal
-        |
-condition
-        |
-alert rule
-        |
-action group / response path
+workspace
+regional flow-log Storage
+VNet flow-log configuration
+Traffic Analytics enablement
 ```
+
+Do not take ownership of service-managed Traffic Analytics implementation objects such as Azure-created `NWTA*` DCR/DCE resources.
+
+### Diagnostic settings
+
+Send appropriate resource logs to `law-bhi-netops-aue` for Tier-1 resources including:
+
+```text
+AUE + SEA Azure Firewall
+AUE + SEA Application Gateway WAF_v2
+Front Door Premium
+active VPN / Virtual WAN gateway resources
+ExpressRoute where live
+subscription Activity Log
+```
+
+Use resource-specific structured logs where the current service supports them. Diagnostic categories are revalidated during implementation.
+
+### Alerting
+
+Add:
+
+```text
+ag-bhi-netops
+```
+
+Notification addresses/receivers are supplied by sensitive/ignored Terraform input and are never committed to the public repository.
+
+Start with alerts that have a clear operational explanation rather than creating dozens for coverage credit.
 
 ---
 
-## Chapter 03 — Exercise: Monitor the Load Balancer we already built
+## Chapter 03 — Monitor the Load Balancer we already built
 
-Microsoft's Load Balancer monitoring exercise maps directly onto the existing BlueHarbor telemetry service from Module 4.
-
-Do **not** create a toy replacement Load Balancer.
+Use:
 
 ```text
-Manufacturing / service clients
-        |
-existing Azure Load Balancer
-        |
-   +----+----+
-   |         |
-backend01 backend02
+lb-telemetry-aue
 ```
 
-Module 4 asked:
+No replacement Load Balancer is created.
 
-> How do we keep the regional service available when a backend fails?
-
-Module 8 asks:
-
-> How does Operations detect and investigate that failure without manually testing every backend?
-
-### Failure experiment
-
-Start healthy:
+Track the distinction between:
 
 ```text
-backend01 healthy
-backend02 healthy
+Health Probe Status / DipAvailability
+ -> are backend instances responding?
+
+Data Path Availability / VipAvailability
+ -> is the Load Balancer data path itself available?
 ```
 
-Introduce a controlled failure:
+Controlled incident:
 
 ```text
-backend01 unhealthy
-backend02 healthy
+telemetry-aue-01  HEALTHY
+telemetry-aue-02  HEALTHY
+
+stop/break telemetry-aue-02
+
+telemetry-aue-01  HEALTHY
+telemetry-aue-02  UNHEALTHY
 ```
 
-Then trace:
+Expected operational lesson:
 
 ```text
-failure
-  -> monitoring signal
-  -> alert / evidence
-  -> investigation
-  -> root cause
-  -> restoration
+backend health degrades
+service may remain available
+alert/evidence identifies the backend problem
 ```
 
-The value of the exercise is the observable signal and investigation path, not merely the fact that the Load Balancer still exists.
+A successful `terraform apply` is not monitoring evidence. Generate the failure and observe the signal.
 
 ---
 
-## Chapter 04 — Network Watcher: Find where the network is wrong
+## Chapter 04 — Network Watcher: isolate where the path is failing
 
-Azure Monitor can tell Operations that something is degraded. Network Watcher tools help isolate where the network path is failing.
+### Reconcile regional Network Watchers first
 
-This chapter deliberately reuses knowledge from every earlier module.
+By Module 8, Azure may already have regional Network Watcher instances because VNets have existed in Australia East and Southeast Asia since earlier modules.
 
-### Scenario A — IP Flow Verify / security decision
-
-Ticket:
-
-> Manufacturing cannot reach Shared Services over an approved port.
-
-Instead of reading NSG rules manually and guessing:
+Implementation sequence:
 
 ```text
-source + destination + protocol + port
-        |
-IP Flow Verify / relevant diagnostic
-        |
-ALLOW / DENY
-        |
-matching rule / evidence
+discover existing regional Network Watchers
+ -> reference/import/reconcile as appropriate
+ -> create only if genuinely absent and required
 ```
 
-This operationalizes Module 6 security knowledge.
+Do not create duplicate service-managed regional instances.
 
-### Scenario B — Next Hop / routing decision
+### Network Insights
 
-Ticket:
+Use Azure Monitor Network Insights as the operational topology/health experience over the existing resources. Do not invent a separate Terraform appliance called Network Insights.
 
-> Manufacturing cannot reach an approved external service.
+### NetOps synthetic probe
 
-Expected path:
+Add one real NOC source:
 
 ```text
-Manufacturing
-      |
-UDR
-      |
-Azure Firewall
-      |
-destination
+bhi-vnet-core-aue
+  snet-management 10.10.1.0/24
+    vm-netops-aue
 ```
 
-Use routing/effective-state tooling to determine whether the actual next hop matches the intended design.
+Install/configure the current monitoring dependency required by Connection Monitor.
 
-This operationalizes Module 1 routing and Module 6 firewall architecture.
-
-### Scenario C — Connection Monitor / critical path
-
-Monitor an important path such as:
+Representative Connection Monitor tests:
 
 ```text
-Partner Hub application
-        |
-private network path
-        |
-Private Endpoint / critical service
+vm-netops-aue -> Front Door endpoint            TCP/443
+vm-netops-aue -> Partner SQL Private Endpoint   TCP/1433
+vm-netops-aue -> telemetry private service      TCP/9000
+vm-netops-aue -> Brisbane target                 when a real target exists
 ```
 
-Where supported by the chosen endpoint model, use Connection Monitor to gather ongoing reachability/latency evidence rather than relying on a one-time manual test.
+If no real Arc-enabled/agent-capable Brisbane source exists, do not claim continuous Brisbane -> Azure Connection Monitor coverage. Perform controlled Brisbane client tests and correlate them with Azure-side monitoring instead.
 
-### Scenario D — VNet flow logs
+### Security/effective-rule test
 
-BlueHarbor wants evidence of network communication patterns:
+Use a real flow such as Manufacturing to an approved internal destination and inspect the NSG/security decision with the current supported Network Watcher diagnostic.
 
-```text
-source
-  -> destination
-  -> port/protocol
-  -> observed flow information
-```
+### Route test
 
-Use **VNet flow logs** for the new BlueHarbor design. Do not base the 2026 project on creating new NSG flow logs.
+For a private workload expected to use Azure Firewall, inspect the effective route/next hop rather than assuming routing intent/UDRs are correct.
 
-### Scenario E — Traffic Analytics
+### VNet flow logs and Traffic Analytics
 
-Flow records answer individual flow questions. Traffic Analytics helps Operations reason about larger traffic patterns such as:
+Use the six real BlueHarbor VNets. VNet flow logs do not represent Virtual WAN hub packet capture; Virtual WAN gateways/hubs retain their own metrics/logs/Insights evidence.
 
-```text
-top talkers
-traffic distribution
-unexpected communication patterns
-ports/protocol usage
-network trends
-```
+### Packet capture
 
-### Scenario F — packet capture / deeper inspection
+Use packet capture only after higher-level health, DNS, route, security and flow evidence has failed to isolate the fault.
 
-Use packet capture only when higher-level evidence is insufficient.
-
-A sensible escalation ladder is:
+Authoritative escalation ladder:
 
 ```text
-1. resource/service health
-2. metrics and alerts
+1. Alert / service health
+2. Metrics
 3. DNS result
-4. connection test
-5. NSG/firewall decision
-6. route / next hop
-7. flow evidence
-8. packet capture when necessary
+4. Connection Monitor / connectivity test
+5. NSG / Firewall decision
+6. Effective route / next hop / BGP
+7. VNet flow logs / Traffic Analytics
+8. Resource-specific logs
+9. Packet capture only when still necessary
 ```
-
-Do not start with packet capture when simpler evidence can isolate the problem.
 
 ---
 
-## Chapter 05 — Summary: Final BlueHarbor production incident
+## Chapter 05 — Final deterministic production incident
 
-The final module summary becomes the programme-wide operational incident.
+Do not use a vague or random capstone. Create two known faults in the complete cumulative environment without telling the learner which layer is responsible.
 
-### Incident
+### Fault A — hybrid DNS
 
-> Brisbane engineers report intermittent failures accessing the Partner Hub engineering service and its private data service. At the same time, Manufacturing telemetry reports elevated latency.
+Break/misconfigure the Brisbane forwarding path for the Azure SQL service namespace.
 
-The learner is **not** given the root cause.
-
-The environment includes the architecture created across all previous modules:
+Expected evidence pattern:
 
 ```text
-Brisbane / Perth / remote users
-        |
-VPN / ExpressRoute / Virtual WAN
-        |
-secured routing / Azure Firewall
-        |
-+----------------------+-------------------+
-|                                          |
-Partner Hub                            Manufacturing
-|                                          |
-Front Door / App Gateway               Load Balancer
-|                                          |
-Private Endpoint                      telemetry backends
-|
-PaaS data service
+Azure workload
+  database.windows.net -> Partner SQL private IP
+
+Brisbane engineer
+  database.windows.net -> wrong/public answer or resolution failure
 ```
 
-### Investigation method
-
-Form hypotheses and eliminate them with evidence:
+The learner must prove:
 
 ```text
-DNS?
-hybrid connectivity?
-route / BGP path?
-Azure Firewall?
-NSG?
-Front Door / App Gateway origin health?
-Load Balancer backend health?
-Private Endpoint / private DNS?
-PaaS service?
-application?
+Private Endpoint exists
+Azure-side route is valid
+Azure-side private DNS is valid
+Brisbane answer differs
+        -> hybrid DNS fault domain
 ```
 
-### Example multi-fault pattern
+### Fault B — telemetry backend health
 
-One fault may be a hybrid DNS inconsistency:
+Make one `lb-telemetry-aue` backend unhealthy.
+
+Expected pattern:
 
 ```text
-Azure workload -> service name -> private IP
-Brisbane client -> same name -> wrong/public result
+one backend unhealthy
+regional TCP/9000 service remains available through healthy backend
+Health Probe Status degrades
+Data Path Availability can remain healthy
+alert/evidence identifies backend fault
 ```
 
-That points toward the hybrid DNS path rather than immediate Private Endpoint recreation.
+The learner must separate the DNS incident from the backend-health incident rather than assuming one common failure.
 
-A second fault may be degraded telemetry backend health:
+## DNS operations principle
+
+DNS Private Resolver platform metrics help prove resolver availability/activity, but they do not prove a given name resolves to the correct private destination.
+
+Use:
 
 ```text
-backend01 healthy
-backend02 unhealthy
+resolver/platform metrics
++
+synthetic name-resolution tests
 ```
 
-Monitoring and network/application evidence should identify which layer is responsible.
-
-The purpose is not to memorize tool names. The purpose is to answer:
-
-> The business says the service is broken. Prove which networking layer is responsible.
+for critical names such as the Partner SQL service.
 
 ---
 
 ## Module 8 Terraform progression
 
-The cumulative Terraform root already represents the environment built through Module 7.
+The existing Modules 1–7 resources remain deployed.
 
-Module 8 adds the operations layer to those exact resources:
-
-```text
-existing Load Balancer
-        + metrics / diagnostics / alerts
-
-existing Azure Firewall
-        + diagnostic settings / logs
-
-existing VNets
-        + VNet flow logs
-
-existing critical application paths
-        + connection monitoring
-
-complete existing environment
-        + Log Analytics / monitoring platform
-```
-
-Expected plan principle:
+Module 8 adds only the operations layer and the intentional NetOps probe:
 
 ```text
-Modules 1–7 resources: preserved
-Module 8 monitoring resources/config: added
-unexpected replacement/destruction: STOP AND INVESTIGATE
+law-bhi-netops-aue
+regional flow-log Storage
+VNet flow logs / Traffic Analytics
+resource diagnostic settings
+alerts / action group
+Connection Monitor
+vm-netops-aue
 ```
 
----
+Expected plan rule:
 
-## Final architecture-board explain-back
-
-The learner should be able to explain:
-
-- metrics versus logs versus flow data;
-- what configuration tells us versus what telemetry proves;
-- why an NSG ALLOW does not prove application reachability;
-- how to prove traffic is taking the intended next hop;
-- how failed Load Balancer backends should become operational signals;
-- how to separate Private Endpoint DNS failures from routing/service-policy failures;
-- when Connection Monitor is useful;
-- when flow logs/Traffic Analytics are useful;
-- when packet capture is justified;
-- how to walk a Brisbane user request through DNS, hybrid connectivity, security, application delivery and private PaaS access while identifying observability at every stage.
+```text
+unexpected destruction/replacement of application/network resources
+ -> STOP AND INVESTIGATE
+```
 
 ## Programme end state
 
 ```text
-ONE BLUEHARBOR BUSINESS STORY
+ONE BLUEHARBOR STORY
 ONE AZURE ENVIRONMENT
 ONE TERRAFORM ROOT
-ONE TERRAFORM STATE LINEAGE
+ONE STATE LINEAGE
 
-M1 network foundation
- -> M2 hybrid connectivity
- -> M3 enterprise connectivity
- -> M4 service availability
- -> M5 HTTP(S) delivery
+M1 foundation
+ -> M2 hybrid
+ -> M3 ExpressRoute
+ -> M4 L4 availability
+ -> M5 L7 delivery
  -> M6 security
- -> M7 private PaaS access
- -> M8 observability and operations
+ -> M7 private access
+ -> M8 operations
 ```
 
-The next programme activity is the **Modules 1–8 Architecture & Terraform Dependency Audit**. Do not begin the actual Module 1 build until that audit has validated continuity, addressing, naming, dependencies and expected Terraform resource evolution across the full chain.
+## What happens after this module
+
+The module-to-module dependency audit is completed **before** implementation starts. After Gate 7 and the whole-programme closeout are approved, the formal execution position returns to:
+
+```text
+Module 1
+Unit 01 — Introduction
+```
+
+No BlueHarbor Terraform deployment begins until that closeout is recorded.

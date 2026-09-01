@@ -20,11 +20,11 @@ blueharbor/terraform/
 | 4 | M4 -> M5 | **PASS** |
 | 5 | M5 -> M6 | **PASS** |
 | 6 | M6 -> M7 | **PASS** |
-| 7 | M7 -> M8 | **NEXT** |
+| 7 | M7 -> M8 | **PASS** |
 
-Do not begin BlueHarbor deployment until Gate 7 and the audit closeout pass.
+All module-transition gates pass. One whole-programme closeout remains before deployment.
 
-## Approved cumulative architecture through Module 7
+## Approved cumulative architecture through Module 8
 
 ```text
 M1
@@ -43,8 +43,8 @@ Traffic Manager
   |
 M5
 Partner AUE/SEA application VNets
-Application Gateway Standard_v2
-Front Door Standard
+regional Application Gateways
+Front Door
   |
 M6
 secured Virtual WAN
@@ -53,60 +53,43 @@ DDoS / NSG / ASG
 Front Door Premium + WAF
 Application Gateway WAF_v2
   |
-M7 Manufacturing
-Storage Service Endpoint + service-side restriction/policy
-  |
-M7 Partner
+M7
+Storage Service Endpoint
 App Service Private Endpoint + VNet Integration
 Azure SQL Private Endpoint
-private DNS / hybrid DNS
+telemetry Private Link Service
+Front Door -> App Gateway Private Link
   |
-M7 BlueHarbor-owned private service
-existing AUE telemetry LB -> Private Link Service
-Core consumer Private Endpoint
-  |
-M7 global web origin privacy
-Front Door Premium -> Private Link -> AUE/SEA App Gateway WAF_v2
-```
-
-Module 7 adds no new VNet or transit hub.
-
-## Canonical Module 7 subnet additions
-
-```text
-CORE AUE
-10.10.20.0/24   snet-private-endpoints
-
-MFG AUE
-10.20.3.0/27    snet-pls-nat
-
-PARTNER AUE
-10.40.3.0/24    snet-private-endpoints
-10.40.4.0/26    snet-appsvc-integration
-10.40.5.0/27    snet-appgw-pl
-
-PARTNER SEA
-10.50.3.0/27    snet-appgw-pl
+M8
+law-bhi-netops-aue
+regional VNet flow-log Storage
+all-six-VNet VNet flow logs + Traffic Analytics
+regional Network Watcher reconciliation
+vm-netops-aue + Connection Monitor
+diagnostic settings / alerts / deterministic capstone
 ```
 
 ## Official module sequence
 
-| Module | Microsoft Learn module | Execution status | Story status |
+| Module | Microsoft Learn module | Execution status | Story/audit status |
 |---:|---|---|---|
-| 1 | Introduction to Azure Virtual Networks | Unit 01 is first build point | DESIGNED |
+| 1 | Introduction to Azure Virtual Networks | Unit 01 is first execution point after closeout | DESIGNED / AUDITED |
 | 2 | Design and implement hybrid networking | NOT STARTED | DESIGNED / AUDITED |
 | 3 | Design and implement Azure ExpressRoute | NOT STARTED | DESIGNED / AUDITED |
 | 4 | Load balance non-HTTP(S) traffic in Azure | NOT STARTED | DESIGNED / AUDITED |
 | 5 | Load balance HTTP(S) traffic in Azure | NOT STARTED | DESIGNED / AUDITED |
 | 6 | Design and implement network security | NOT STARTED | DESIGNED / AUDITED |
 | 7 | Design and implement private access to Azure Services | NOT STARTED | DESIGNED / AUDITED |
-| 8 | Design and implement network monitoring | NOT STARTED | DESIGNED / GATE 7 NEXT |
+| 8 | Design and implement network monitoring | NOT STARTED | DESIGNED / AUDITED |
 
 ## Current phase
 
 ```text
-STORY DESIGN        COMPLETE
-AUDIT GATES 1–6     PASS
-AUDIT GATE 7        NEXT
-TERRAFORM BUILD     NOT STARTED
+STORY DESIGN                 COMPLETE
+MODULE-TRANSITION AUDIT      COMPLETE — GATES 1–7 PASS
+WHOLE-PROGRAMME CLOSEOUT     NEXT
+TERRAFORM BUILD              NOT STARTED
+AZURE DEPLOYMENT             NOT STARTED
 ```
+
+Do not begin the BlueHarbor build until the closeout checks the combined contracts and passes.

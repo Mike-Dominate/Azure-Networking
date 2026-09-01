@@ -2,30 +2,131 @@
 
 **Microsoft Learn:** https://learn.microsoft.com/en-us/training/modules/design-implement-network-monitoring/
 
-**BlueHarbor project:** Build the operations and observability layer for the complete enterprise network  
+**BlueHarbor project:** Operate and troubleshoot the complete BlueHarbor enterprise network  
 **Status:** NOT STARTED
 
-Module 8 is the final operational layer of the BlueHarbor project. It does not create a separate monitoring lab. It observes, validates and troubleshoots the exact cumulative environment built through Modules 1–7.
+Module 8 is the operations layer for the exact cumulative environment built through Modules 1–7. It does not create a separate monitoring lab.
+
+## Starting estate
+
+Operations must observe a real multi-region environment containing:
 
 ```text
-Modules 1–7
-network + hybrid + delivery + security + private access
-        |
-        + Azure Monitor
-        + Log Analytics / diagnostics
-        + alerts
-        + Connection Monitor
-        + VNet flow logs / Traffic Analytics
-        + Network Watcher troubleshooting
-        v
-same BlueHarbor Terraform stack and state lineage
+Core / Manufacturing / Research / Partner VNets
+AUE + SEA Virtual WAN hubs
+VPN + ExpressRoute
+AUE + SEA Azure Firewall
+DDoS / NSG / ASG / WAF
+AUE + SEA telemetry Load Balancers + Traffic Manager
+Front Door Premium + Private Link to regional App Gateway WAF_v2 origins
+Storage service endpoint
+Azure SQL + App Service Private Endpoints
+App Service VNet Integration
+BlueHarbor telemetry Private Link Service
+Core DNS Private Resolver / hybrid DNS
 ```
 
-The core business question is:
+The business question is:
 
-> Configuration tells us what the network should do. How do we prove what this complete environment is actually doing?
+> Configuration tells us what should happen. How do we prove what the network is actually doing before users become our monitoring system?
 
-Read [`PROJECT-STORY.md`](PROJECT-STORY.md) before starting the module.
+## Canonical monitoring platform
+
+One central Log Analytics workspace:
+
+```text
+rg-bhi-monitoring-aue
+  law-bhi-netops-aue
+```
+
+Appropriate diagnostic logs from both regions land in that workspace so investigations can correlate the complete service path.
+
+Flow logs have a different locality constraint. Use region-local Storage:
+
+```text
+Australia East
+  st-bhi-flow-aue-<unique>
+
+Southeast Asia
+  st-bhi-flow-sea-<unique>
+```
+
+Enable **VNet flow logs** for all six BlueHarbor VNets and feed Traffic Analytics into `law-bhi-netops-aue`.
+
+Do not create new NSG flow logs.
+
+## Regional Network Watcher ownership
+
+Azure normally auto-enables Network Watcher when VNets are created/updated in a region. Therefore Module 8 must first discover the Australia East and Southeast Asia Network Watcher instances and reconcile them with Terraform ownership/reference as appropriate.
+
+Do not blindly create duplicate regional Network Watcher resources.
+
+## NetOps synthetic probe
+
+Give the existing management subnet an operational purpose:
+
+```text
+bhi-vnet-core-aue
+  snet-management 10.10.1.0/24
+    vm-netops-aue
+```
+
+`vm-netops-aue` becomes the Azure source for Connection Monitor and controlled synthetic tests.
+
+Representative tests include:
+
+```text
+Front Door endpoint               TCP/443
+Partner SQL Private Endpoint      TCP/1433
+telemetry PLS private service     TCP/9000
+Brisbane representative target    where a real reachable target exists
+```
+
+Do not pretend an on-premises source is continuously monitored unless the required real/Arc-enabled source exists.
+
+## Load Balancer monitoring exercise
+
+Use the existing primary service:
+
+```text
+lb-telemetry-aue
+```
+
+Correlate at least:
+
+```text
+Health Probe Status / DipAvailability
+Data Path Availability / VipAvailability
+```
+
+The first answers whether backends are responding. The second answers whether the Load Balancer data path is available.
+
+## Alerting
+
+Create:
+
+```text
+ag-bhi-netops
+```
+
+The actual notification receiver is supplied through ignored/sensitive Terraform input, not committed to the public repository.
+
+Keep the first alert set small and meaningful: Load Balancer health/data path, Connection Monitor failures, critical firewall/gateway/connectivity conditions, application-delivery health, DDoS attack/mitigation signals and Resource Health where appropriate.
+
+## Diagnostics
+
+Centralize appropriate logs for Tier-1 resources such as:
+
+```text
+azfw-bhi-aue / azfw-bhi-sea
+appgw-partner-aue / appgw-partner-sea
+Front Door Premium
+active VPN / Virtual WAN gateway resources
+ExpressRoute resources where live
+subscription Activity Log
+```
+
+Use current resource-specific logging modes/tables where supported. Revalidate diagnostic categories at implementation time rather than freezing stale category names into the curriculum.
 
 ## Microsoft Learn units
 
@@ -35,26 +136,4 @@ Read [`PROJECT-STORY.md`](PROJECT-STORY.md) before starting the module.
 4. Monitor your networks using Azure Network Watcher
 5. Summary
 
-## Cumulative Terraform rule
-
-All persistent monitoring configuration extends:
-
-```text
-blueharbor/terraform/
-```
-
-Do not build replacement VNets, VMs or Load Balancers solely to satisfy monitoring exercises when the corresponding BlueHarbor resources already exist.
-
-Module 8 should attach monitoring to real project resources such as:
-
-- the existing Module 4 Load Balancer;
-- the VNets and routing paths from Module 1;
-- hybrid connectivity from Modules 2–3;
-- Azure Firewall and security controls from Module 6;
-- critical application/private endpoint paths from Modules 5–7.
-
-Azure CLI, Portal and diagnostic tools are used to inspect evidence and troubleshoot the Terraform-managed environment.
-
-## Current-product note
-
-For new flow-log design, use **VNet flow logs** rather than designing new NSG flow-log deployments. Current Microsoft guidance has moved new implementations toward VNet flow logs.
+All persistent monitoring configuration extends the same `blueharbor/terraform/` root and state lineage.

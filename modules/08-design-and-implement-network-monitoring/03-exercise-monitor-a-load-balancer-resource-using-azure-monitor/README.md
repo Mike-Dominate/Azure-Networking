@@ -1,55 +1,58 @@
 # Unit 03 — Exercise: Monitor a load balancer resource using Azure Monitor
 
-**BlueHarbor chapter:** Monitor the existing production telemetry service  
+**BlueHarbor chapter:** Detect a real telemetry backend failure  
 **Status:** NOT STARTED
 
-## Microsoft objective, BlueHarbor implementation
+## Exact Microsoft-exercise target
 
-Use the Load Balancer created earlier in Module 4. Do **not** create a replacement demonstration Load Balancer solely for this exercise.
-
-```text
-clients
-  |
-existing BlueHarbor Load Balancer
-  |
-+---------+
-|         |
-backend01 backend02
-```
-
-## Progressive learning
-
-Module 4 proved that the service can survive an unhealthy backend.
-
-Module 8 proves that Operations can **detect and investigate** that unhealthy backend.
-
-## Failure experiment
+Use the existing Module 4 primary Load Balancer:
 
 ```text
-initial
-backend01 healthy
-backend02 healthy
-
-controlled incident
-backend01 unhealthy
-backend02 healthy
+lb-telemetry-aue
 ```
 
-Trace:
+Do not create a replacement Load Balancer.
+
+## Two different health questions
+
+Correlate:
+
+```text
+Health Probe Status / DipAvailability
+ -> are the backends responding to the configured probe?
+
+Data Path Availability / VipAvailability
+ -> is the Load Balancer data path itself available?
+```
+
+Do not treat these as interchangeable signals.
+
+## Controlled incident
+
+```text
+START
+telemetry-aue-01 HEALTHY
+telemetry-aue-02 HEALTHY
+
+FAULT
+telemetry-aue-02 UNHEALTHY
+
+EXPECTED
+regional service can remain available through telemetry-aue-01
+Health Probe Status degrades
+Data Path Availability may remain healthy
+alert/metric evidence identifies the backend condition
+```
+
+## Evidence chain
 
 ```text
 failure
--> monitoring signal
--> alert/evidence
--> investigation
--> root cause
--> restoration
+ -> metric/alert signal
+ -> backend-health investigation
+ -> root cause
+ -> restoration
+ -> metric recovery
 ```
 
-## Terraform rule
-
-Attach monitoring configuration to the existing Load Balancer in the cumulative Terraform state. Previous Module 4 infrastructure must remain intact unless an intentional change is required.
-
-## Validation
-
-A successful Terraform apply is not proof. Generate/observe the actual failure condition and demonstrate that the expected monitoring evidence appears.
+Attach persistent monitoring/alerts to the existing cumulative resource. A Terraform apply alone is not evidence; create and observe the fault.
