@@ -3,10 +3,6 @@
 **BlueHarbor chapter:** Restrict Manufacturing archive access to Azure Storage  
 **Status:** NOT STARTED
 
-## Business event
-
-The controlled Manufacturing data service introduced in Module 6 must write archives/backups to Azure Storage.
-
 Use:
 
 ```text
@@ -15,27 +11,38 @@ bhi-vnet-mfg-aue
         |
 Microsoft.Storage service endpoint
         |
-Azure Storage archive account
+Manufacturing archive Storage
 ```
 
-Do **not** use the public telemetry subnet for this scenario.
+A service endpoint does not create a private service NIC/IP. It extends the subnet identity to the supported Azure service so service-side network rules can trust the approved subnet.
 
-## Mental model
+Add a Storage service endpoint policy where the current Azure service/API supports the intended restriction to BlueHarbor-approved Storage resources.
 
-A service endpoint does not create a private endpoint NIC or private service IP in the subnet.
+## Secured-hub routing exception
 
-It extends supported subnet identity to the service so the service-side network policy can trust only approved network sources.
+By Module 7, private workload Internet egress is normally controlled through the secured Virtual WAN/Azure Firewall architecture.
 
-## BlueHarbor policy
-
-Add a Storage service endpoint policy where the current service/API supports it so `snet-mfg-data` can be constrained to the approved archive Storage resource rather than arbitrary Storage destinations.
-
-## Decision rule
+Storage service-endpoint traffic from `snet-mfg-data` is an **intentional exception**:
 
 ```text
-approved subnet identity + service restriction
- -> Service Endpoint
+snet-mfg-data
+ -> service endpoint route
+ -> Azure Storage
+```
 
-private IP representing the target service
- -> Private Endpoint
+Do not claim that this flow traverses Azure Firewall.
+
+Security controls for this path are:
+
+```text
+service endpoint
+service endpoint policy
+Storage network/VNet rule
+```
+
+Decision rule:
+
+```text
+approved subnet identity + service-side restriction -> Service Endpoint
+private IP representing target service              -> Private Endpoint
 ```

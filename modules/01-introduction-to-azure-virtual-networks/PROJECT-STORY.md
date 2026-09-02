@@ -2,17 +2,15 @@
 
 ## Project brief
 
-BlueHarbor Industries (BHI) is moving selected systems into Azure gradually. You are the Azure Network Engineer responsible for building the network foundation and explaining how names, addresses and packets move through it.
+BlueHarbor Industries is moving selected systems into Azure gradually. You are the Azure Network Engineer responsible for building the network foundation and explaining how names, addresses and packets move through it.
 
 **Primary region:** Australia East  
 **Secondary region:** Southeast Asia  
-**Terraform model:** first practical establishes the single cumulative `blueharbor/terraform/` state lineage
+**Terraform model:** first persistent practical establishes the single cumulative `blueharbor/terraform/` state lineage
 
 The project begins with no finished Azure network. Each Microsoft Learn unit introduces the next business requirement, and no pre-story practical counts as completion credit.
 
 ## Canonical network contract
-
-The address/subnet plan below is the contract carried into every later module.
 
 ### Australia East
 
@@ -36,30 +34,21 @@ bhi-vnet-research-sea   10.30.0.0/16
 
 Later modules may add VNets/subnets, but they must not rename or recreate these objects simply because a new module starts.
 
-## Business divisions
+## Canonical private namespace
+
+BlueHarbor-owned private DNS begins with one parent zone:
 
 ```text
-BlueHarbor Industries
-|
-+-- Core / Shared Services
-|   +-- management
-|   +-- DNS / common services
-|   +-- internal applications
-|
-+-- Manufacturing
-|   +-- production applications
-|   +-- operational data
-|
-+-- Research
-    +-- development
-    +-- experimental workloads
+blueharbor.internal
 ```
+
+Later BlueHarbor-owned records such as `telemetry.services.blueharbor.internal` remain beneath this namespace. Microsoft Private Link service zones remain separate because Microsoft owns those namespaces.
 
 ## Chapter 01 — Migration brief
 
 **Unit 01 — Introduction**
 
-BlueHarbor appoints you to design its Azure network. Understand the business, responsibilities and learning objectives. No Azure deployment is required.
+Understand the company, role, module outcomes and progressive engineering method. No Azure or Terraform deployment is required.
 
 **Current programme position: here.**
 
@@ -67,53 +56,63 @@ BlueHarbor appoints you to design its Azure network. Understand the business, re
 
 **Unit 02 — Explore Azure Virtual Networks**
 
-Design and approve the canonical VNet/subnet contract above. Understand CIDR, non-overlap, subnet purpose and growth before deployment.
+Design and approve the canonical VNet/subnet contract. Understand CIDR, non-overlap, subnet purpose and growth before deployment.
 
-## Chapter 03 — One controlled public-facing test service
+## Chapter 03 — Understand public IP services before exposing anything
 
 **Unit 03 — Configure public IP services**
 
-Operations needs a controlled external test endpoint. This creates the reason to understand private/public IPs, static/dynamic assignment and exposure decisions.
+Operations needs you to understand how a future Azure service can be exposed safely. Learn public versus private IPs, static/dynamic allocation, SKU/availability concepts and exposure decisions.
 
-Any persistent resource used for the BlueHarbor project is represented in the cumulative Terraform stack.
+Do **not** create a throwaway persistent public endpoint just for this concept unit. Public IP resources will appear naturally later when the persistent story requires VPN gateways, Load Balancers and Application Gateways.
 
 ## Chapter 04 — Build the approved network foundation
 
 **Unit 04 — Exercise: Design and implement a virtual network in Azure**
 
-Create the canonical BlueHarbor VNets and subnets through the cumulative Terraform root. Preserve Microsoft's exercise objective, then independently inspect the resulting Azure state with CLI/Portal.
+This is the first persistent BlueHarbor infrastructure checkpoint.
 
-This is the first major persistent infrastructure checkpoint. Later units modify this same code/state rather than create new lab copies.
+Before/within the practical, establish the project `global_suffix`, bootstrap the Azure Blob Terraform backend and migrate the single state lineage, then create the canonical VNets/subnets through the same Terraform root.
+
+Independently inspect Azure state with CLI/Portal after apply.
 
 ## Chapter 05 — Nobody wants to memorise IP addresses
 
 **Unit 05 — Design name resolution for your virtual network**
 
-As workloads grow, changing IPs become an operational problem. Stable names introduce DNS naturally.
+Stable names introduce DNS naturally. Teach Azure-provided DNS, Azure Private DNS and DNS Private Resolver concepts, but do not deploy hybrid resolver endpoints before the hybrid business requirement exists.
 
-Teach Azure DNS behaviour and the matching study-guide depth, including the role of Azure DNS Private Resolver, but do not deploy hybrid resolver endpoints before the hybrid business requirement exists.
+Canonical BlueHarbor-owned namespace:
+
+```text
+blueharbor.internal
+```
 
 ## Chapter 06 — Build the internal directory
 
 **Unit 06 — Exercise: Configure domain name servers settings in Azure**
 
-Extend the existing Terraform environment with BlueHarbor's internal/private DNS design and VNet links. Prove it with real DNS queries and deliberately break one DNS path.
+Extend the living Terraform environment with:
 
-The resulting DNS architecture is carried into Module 2; hybrid DNS capability will extend it rather than replace it.
+```text
+Azure Private DNS zone: blueharbor.internal
+required VNet links
+representative internal records/autoregistration behaviour where appropriate
+```
+
+Prove resolution using real queries and deliberately break/recover one DNS path.
+
+Hybrid DNS in Module 2 extends this design; it does not replace it.
 
 ## Chapter 07 — Manufacturing needs Core Services
 
 **Unit 07 — Enable cross-virtual network connectivity with peering**
 
-Manufacturing needs an internal service in Core/Shared Services.
-
-Create the regional peering relationship:
+Create:
 
 ```text
 bhi-vnet-mfg-aue <-> bhi-vnet-core-aue
 ```
-
-DNS may resolve the destination, but separate VNets still need a network path.
 
 ```text
 DNS success != connectivity success
@@ -123,56 +122,50 @@ DNS success != connectivity success
 
 **Unit 08 — Exercise: Connect two Azure virtual networks using global virtual network peering**
 
-Preserve Microsoft's global-peering objective with the existing BlueHarbor VNets:
+Create:
 
 ```text
 bhi-vnet-core-aue <-> bhi-vnet-research-sea
 ```
 
-Prove isolation first, create the global peering through Terraform, then prove the changed connectivity.
+Prove isolation before and connectivity after the Terraform change.
 
 ## Chapter 09 — Connectivity exists, but the path must be controlled
 
 **Unit 09 — Implement virtual network traffic routing**
 
-Security asks where packets actually travel. Introduce system routes, UDRs, next-hop choice and effective routes using the existing BlueHarbor subnets. Include a deliberate route failure.
-
-Do not design generic routing logic that automatically attaches the same route table to every future special-purpose subnet.
+Learn system routes, UDRs, next-hop choice and effective routes using existing subnets. Do not attach generic route tables to every future special-purpose subnet.
 
 ## Chapter 10 — Remove unnecessary public IPs
 
 **Unit 10 — Configure internet access with Azure Virtual NAT**
 
-Selected private Manufacturing workload subnet(s) need outbound Internet access without individual public IPs.
-
-Add NAT Gateway to explicitly selected workload subnets only.
+Make `snet-mfg-app` an explicit NAT-managed workload subnet:
 
 ```text
-outbound Internet access != unsolicited inbound access
+snet-mfg-app
+ -> nat-mfg-aue
+ -> explicit NAT public IP resource
 ```
 
-Do not create Terraform logic that implicitly associates NAT Gateway with every subnet added later.
+This outbound path is retained for the later public telemetry Load Balancer architecture.
+
+Do not blanket-associate NAT to every subnet.
 
 ## Chapter 11 — Architecture review
 
-**Unit 11 — Summary**
-
-Explain the complete Module 1 network from any workload: IP/subnet/VNet, DNS path, cross-VNet path, effective route, outbound Internet path and likely failure points.
+Explain IP/subnet/VNet placement, DNS resolution, cross-VNet connectivity, effective routing and outbound Internet behaviour from any workload.
 
 ## Module 1 end state carried into Module 2
 
-The following are deployed, Terraform-managed and remain in the same state:
-
 ```text
-bhi-vnet-core-aue
-bhi-vnet-mfg-aue
-bhi-vnet-research-sea
-canonical subnets
-private DNS architecture / VNet links
+three canonical VNets/subnets
+blueharbor.internal private DNS architecture / links
 Core <-> Manufacturing peering
 Core <-> Research global peering
 routing configuration
-selected NAT Gateway association(s)
+nat-mfg-aue association to snet-mfg-app
+one Azure Blob Terraform state lineage
 ```
 
-Module 2 starts from this exact environment and adds hybrid connectivity. It does not rename, rebuild or conceptually recreate the Module 1 network.
+Module 2 starts from this exact environment.

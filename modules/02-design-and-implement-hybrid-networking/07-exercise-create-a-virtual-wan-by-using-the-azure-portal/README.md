@@ -3,38 +3,36 @@
 **BlueHarbor chapter:** Make Virtual WAN the active production transit  
 **Status:** NOT STARTED
 
-Preserve Microsoft's Virtual WAN exercise objective, but implement BlueHarbor's persistent architecture through the cumulative Terraform stack.
-
-## Build on what already exists
-
-Do not destroy the Module 1 VNets or the classic Module 2 VPN edge.
+Preserve Microsoft's exercise objective but implement the persistent BlueHarbor architecture through the cumulative Terraform stack.
 
 Add/configure:
 
 ```text
 bhi-vwan
 bhi-vhub-aue   10.200.0.0/22
-Brisbane branch/site connectivity
-Perth branch/site connectivity
-approved remote-user connectivity where practical
+Brisbane branch connectivity
+Perth branch connectivity
+Virtual WAN User VPN pool 172.31.241.0/24
 VNet connections for Core / Manufacturing / Research
 ```
 
 ## Intentional migration
 
-Before a workload VNet is attached to `bhi-vhub-aue`, change any classic `use_remote_gateways` dependency that conflicts with Virtual WAN gateway ownership.
+Before a workload VNet is attached to `bhi-vhub-aue`, remove/change any classic workload-side `use_remote_gateways` dependency that conflicts with Virtual WAN ownership.
 
-Terraform must show this as an understood architecture delta, not accidental drift.
+The direct Module 1 peerings remain for now; Virtual WAN becomes the active enterprise/hybrid transit layer.
 
-The direct Module 1 peerings can remain; Virtual WAN becomes the active hybrid transit layer.
+## Classic edge after cutover
 
-## End-state rule
+Do not destroy the classic connectivity VNet, VPN Gateway or earlier S2S/P2S objects.
 
-At the end of this unit:
+But after the validated cutover:
 
 ```text
-Virtual WAN = active production transit
-classic VPN edge = still deployed / historical first-stage architecture
+Virtual WAN branch path = active production
+classic branch path      = non-production / inactive
 ```
+
+Do not accidentally create an unexplained dual-active production topology. If a later exercise needs failback, design the route preference and activation explicitly.
 
 The state lineage remains continuous.

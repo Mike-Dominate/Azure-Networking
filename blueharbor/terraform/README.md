@@ -7,7 +7,7 @@ This directory is the **single authoritative Terraform root** for the entire Blu
 Every applicable Microsoft Learn unit extends the Terraform code and state produced by the previous unit.
 
 ```text
-first practical
+first persistent practical
     Terraform baseline
           |
           + next requirement
@@ -15,106 +15,163 @@ first practical
 next practical
     same code + same state + new resources/config
           |
-          + next requirement
-          v
-...
-          |
           v
 Module 8
     complete BlueHarbor environment
 ```
 
-This is not a folder containing independent lab solutions.
+There are no independent per-lab Terraform roots.
+
+## When Terraform actually starts
+
+Module 1 Units 01–03 are teaching/design chapters and do not require a persistent BlueHarbor deployment.
+
+The first persistent infrastructure checkpoint is:
+
+```text
+Module 1
+Unit 04 — Exercise: Design and implement a virtual network in Azure
+```
+
+Immediately before/within that first practical, establish the one project state backend and then build the canonical network foundation.
+
+## One-state remote-backend contract
+
+Canonical state resources:
+
+```text
+rg-bhi-tfstate-aue
+stbhitfstate<global_suffix>
+container: tfstate
+key: blueharbor.tfstate
+```
+
+Use the AzureRM backend with Microsoft Entra ID/Azure CLI-compatible authentication. Do not commit Storage keys, SAS tokens or client secrets.
+
+Bootstrap sequence:
+
+```text
+1. begin this same root with temporary local state
+2. Terraform creates the backend resource group/storage/container
+3. configure the azurerm backend
+4. terraform init -migrate-state
+5. verify state exists in Azure Blob
+6. continue from that exact remote state through M1-M8
+```
+
+This is a **state migration**, not a new state lineage.
+
+Protect state infrastructure from accidental destruction and enable appropriate Storage recovery/versioning controls when implemented.
+
+## Global uniqueness contract
+
+Choose once before the first deployment:
+
+```text
+global_suffix = six lowercase alphanumeric characters
+```
+
+Do not change it casually. It becomes part of globally unique Azure names that would otherwise collide.
+
+Examples:
+
+```text
+stbhitfstate<suffix>
+stbhimfgarchive<suffix>
+stbhiflowaue<suffix>
+stbhiflowsea<suffix>
+```
+
+Use the suffix only where global uniqueness requires it. Keep normal resource names readable.
+
+## Local configuration and Git
+
+Real local values are ignored:
+
+```text
+*.tfvars
+*.tfvars.json
+backend.hcl
+*.backend.hcl
+```
+
+Safe examples may be committed. `.terraform.lock.hcl` remains tracked.
+
+State files and plans are never committed.
 
 ## What we do NOT do
 
 Do not:
 
-- create `lab01/terraform`, `lab02/terraform`, `lab03/terraform` as independent full deployments;
-- copy the complete previous Terraform project into a new unit folder;
-- start a fresh state file because a new lab begins;
-- destroy the environment at the end of every unit;
-- create persistent Azure resources manually in Portal/CLI and leave Terraform unaware of them;
-- accept a plan that unexpectedly destroys earlier BlueHarbor infrastructure.
+- create independent `lab01/terraform`, `lab02/terraform`, etc.;
+- copy the complete previous Terraform root into the next unit;
+- start a fresh state file because a module changes;
+- routinely destroy the environment after a unit;
+- create persistent Azure resources manually and leave Terraform unaware;
+- use state deletion to hide drift;
+- accept unexpected destruction/replacement in a plan.
 
-## What we DO
-
-For each practical unit:
+## Standard practical workflow
 
 ```text
 1. inspect current code/state/environment
 2. identify the new BlueHarbor requirement
-3. change this Terraform root
+3. modify this Terraform root only
 4. terraform fmt -recursive
 5. terraform init
 6. terraform validate
 7. terraform plan
-8. inspect the delta carefully
-9. terraform apply
-10. independently validate Azure behaviour
-11. run failure/troubleshooting exercise
-12. encode permanent infrastructure fixes here
-13. re-plan / re-apply / re-validate
-14. commit the checkpoint to Git
-15. continue from this exact state in the next unit
+8. read plan as architecture delta
+9. STOP on unexpected destroy/replace
+10. terraform apply
+11. independently validate Azure behaviour
+12. run the failure/troubleshooting exercise
+13. encode permanent infrastructure fixes here
+14. re-plan / re-apply / re-validate
+15. Git checkpoint
+16. carry this exact state into the next unit
 ```
 
-## Git is the lab-history mechanism
+## Special-purpose subnet guardrail
 
-The current working tree always represents the latest complete BlueHarbor architecture.
+Do not build generic loops that attach NSGs, UDRs or NAT Gateways to every subnet.
 
-Historical lab states are recovered from Git commits rather than by maintaining duplicate Terraform directories.
-
-Conceptually:
+Later subnets have special service requirements, including:
 
 ```text
-Git commit A = BlueHarbor after M1 U04
-Git commit B = BlueHarbor after M1 U06
-Git commit C = BlueHarbor after M1 U08
-...
-main         = current full environment
+GatewaySubnet
+DNS Private Resolver endpoint subnets
+Application Gateway subnets
+Private Endpoint subnets
+App Service VNet Integration subnet
+Private Link Service NAT subnet
+Application Gateway Private Link subnets
 ```
 
-## State rule
+Each is configured only when its story requirement is reached.
 
-The first real Terraform deployment establishes the state lineage for the project. The chosen backend must be documented and maintained consistently.
+## Terraform ownership boundaries
 
-State files and sensitive variable values must not be committed to Git.
+Terraform owns persistent BlueHarbor infrastructure/configuration.
 
-Never delete state simply to avoid fixing a Terraform/Azure discrepancy.
+CLI/Portal/protocol tools inspect, validate and troubleshoot.
 
-## Plan rule
-
-Every plan should be read as a change report against the environment we have already built.
-
-Typical healthy progression:
+Later exceptions include:
 
 ```text
-previous resources: unchanged
-new unit resources: create
-required integration changes: update in place where expected
-unexpected destroy/replace: STOP AND INVESTIGATE
+Azure-auto-created Network Watcher
+ -> discover/reconcile/import/reference instead of duplicate
+
+Traffic Analytics NWTA* internals
+ -> Azure service-managed
+
+provider-side ExpressRoute dependencies
+ -> model/document honestly when external
 ```
 
-A replacement can be valid, but only when the BlueHarbor design intentionally requires it and the reason is understood before apply.
+## Expected file growth
 
-## Provisioning versus validation
-
-Terraform manages persistent infrastructure.
-
-Azure CLI, Portal and protocol tools can be used to:
-
-- query actual resource state;
-- inspect assigned addresses and effective configuration;
-- test DNS, HTTP and connectivity;
-- inspect routes, health and logs;
-- troubleshoot.
-
-The validation tool must not become a second unmanaged provisioning path.
-
-## Expected growth
-
-Files are added only when the BlueHarbor story introduces that concern. Over the full programme this directory may evolve toward something like:
+Files appear only when their story requirement is introduced. A likely final shape is:
 
 ```text
 versions.tf
@@ -136,8 +193,8 @@ monitoring.tf
 outputs.tf
 ```
 
-This list is a possible destination, not a requirement to create empty files in advance.
+Do not pre-create empty files merely to match this list.
 
-## End state
+## Final planning authority
 
-By Module 8, this Terraform root should describe the cumulative BlueHarbor Azure networking environment built from Module 1 onward, with monitoring observing the same network, hybrid connectivity, delivery, security and private-access components created throughout the programme.
+Read [`../../docs/WHOLE-PROGRAMME-ARCHITECTURE-CLOSEOUT.md`](../../docs/WHOLE-PROGRAMME-ARCHITECTURE-CLOSEOUT.md) before making a change whose naming, addressing, subnet policy or lifecycle is unclear.

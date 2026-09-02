@@ -7,123 +7,105 @@
 
 Module 7 starts from the exact secured estate produced by Modules 1–6. It does not create a separate PaaS lab.
 
-## Starting security/network state
-
-```text
-secured Virtual WAN
-AUE + SEA Azure Firewall
-central Firewall Policy / routing intent
-hybrid VPN + ExpressRoute
-Core DNS Private Resolver
-DDoS / NSG / ASG
-Front Door Premium + WAF
-AUE + SEA Application Gateway WAF_v2
-public telemetry Load Balancers
-```
-
-## Three deliberately different private-access scenarios
-
-### Manufacturing — Storage service endpoint
+## Manufacturing — Storage service endpoint
 
 ```text
 snet-mfg-data 10.20.2.0/24
   |
 Microsoft.Storage service endpoint
   |
-Storage firewall/VNet restriction
+Storage network/VNet restriction
   |
-Azure Storage archive account
+Manufacturing archive Storage
 ```
 
-A Storage service endpoint is used because the requirement is **approved subnet identity + service-side restriction**, not a private IP for Storage.
+A Storage service endpoint is used because the requirement is approved subnet identity + service-side restriction, not a private IP for Storage.
 
-A Storage service endpoint policy is added where supported/appropriate to constrain the subnet to the approved Storage resource.
+Use a Storage service endpoint policy where the current Azure service/API supports the intended resource restriction.
 
-### Partner Hub — Private Endpoints + App Service VNet Integration
+### Secured-hub exception
 
-Australia East gains:
+The service-endpoint route to Azure Storage is intentionally **not described as traversing the central Azure Firewall**. It is a deliberate exception to the general secured-hub Internet-egress model.
+
+Enforcement for this path is:
 
 ```text
-bhi-vnet-partner-aue
-  snet-private-endpoints    10.40.3.0/24
-  snet-appsvc-integration   10.40.4.0/26
-  snet-appgw-pl             10.40.5.0/27
+service endpoint
++ service endpoint policy
++ Storage network/VNet rules
 ```
 
-Canonical managed data service:
+If BlueHarbor later requires packet inspection for this Storage path, revisit the design rather than pretending the service endpoint is inspected by Firewall.
+
+## Partner Hub — Private Endpoints + VNet Integration
+
+AUE additions:
 
 ```text
-Azure SQL logical server + Partner database
-  -> Private Endpoint in snet-private-endpoints
-  -> privatelink.database.windows.net
+snet-private-endpoints    10.40.3.0/24
+snet-appsvc-integration   10.40.4.0/26
+snet-appgw-pl             10.40.5.0/27
 ```
 
-Partner `/orders` is modernized to App Service:
+Canonical path:
 
 ```text
 Application Gateway WAF_v2
-  -> App Service Private Endpoint
-  -> App Service
-  -> VNet Integration via snet-appsvc-integration
-  -> Azure SQL Private Endpoint
+ -> App Service Private Endpoint
+ -> App Service /orders
+ -> VNet Integration
+ -> SQL Private Endpoint
+ -> Azure SQL
 ```
 
-Private DNS for App Service uses the current service-specific zone, including `privatelink.azurewebsites.net` where applicable.
+## BlueHarbor-owned Private Link Service
 
-### BlueHarbor-owned service — Private Link Service
-
-Reuse the real Module 4 AUE telemetry service:
+Reuse:
 
 ```text
 lb-telemetry-aue Standard
-  -> Private Link Service
-  -> consumer Private Endpoint in Core
+ -> pls-telemetry-aue
+ -> Core consumer PE 10.10.20.0/24
 ```
 
-Manufacturing adds:
+Manufacturing provider subnet:
 
 ```text
 snet-pls-nat 10.20.3.0/27
 ```
 
-Core adds:
+BlueHarbor-owned private name:
 
 ```text
-snet-private-endpoints 10.10.20.0/24
+telemetry.services.blueharbor.internal
 ```
 
-The Module 4 AUE Load Balancer uses NIC-backed backend membership so this later Private Link Service does not require rebuilding the service.
+which remains beneath the Module 1 `blueharbor.internal` zone.
 
 ## Front Door origin privacy
 
-Module 6 hardened public Application Gateway origins. Module 7 evolves the origin path further:
-
 ```text
 Front Door Premium
-  -> Private Link
-  -> AUE / SEA Application Gateway WAF_v2 origins
+ -> Private Link
+ -> AUE / SEA Application Gateway WAF_v2
 ```
 
-SEA adds:
+Provider-side subnets:
 
 ```text
-bhi-vnet-partner-sea
-  snet-appgw-pl 10.50.3.0/27
+AUE 10.40.5.0/27
+SEA 10.50.3.0/27
 ```
 
-Use a new Private-Link-enabled origin group, validate both private origin connections, switch the route, then retire the public origin data path. Do not mix public and Private-Link-enabled origins in the same origin group when the current service model does not support that combination.
+Migrate through a new Private-Link-enabled origin group, validate and switch the route before retiring the old public origin data path.
 
 ## DNS/hybrid rule
 
-Private Endpoint DNS extends the existing Core DNS Private Resolver architecture.
-
-For hybrid service resolution, forward the appropriate **public service zone** (for example `database.windows.net`) toward Azure DNS through the existing resolver path so Azure can follow the service's CNAME into the linked private DNS zone.
+Private Endpoint DNS extends the existing Core DNS Private Resolver architecture. Microsoft service-owned Private Link zones remain separate from `blueharbor.internal`.
 
 ## Secured-Virtual-WAN rule
 
-Private Endpoint subnets use the current network-policy configuration required for NSG/route-table enforcement in the secured Virtual WAN design. The approved contract is to enable Private Endpoint network policies where required so the `/32` private endpoint routes do not silently bypass the intended hybrid routing/security behaviour.
-
-Do not claim Azure Firewall sees same-VNet Private Endpoint traffic automatically. Local same-VNet flows require their own subnet policy/NSG/UDR reasoning.
+Private Endpoint subnet network policies/NSGs/routes are configured deliberately. Do not claim Azure Firewall automatically sees same-VNet Private Endpoint traffic.
 
 ## Microsoft Learn units
 
@@ -135,4 +117,4 @@ Do not claim Azure Firewall sees same-VNet Private Endpoint traffic automaticall
 6. Exercise: Create an Azure private endpoint using Azure PowerShell
 7. Summary
 
-Persistent BlueHarbor infrastructure is implemented through the same `blueharbor/terraform/` root and independently validated with CLI/Portal/PowerShell/protocol tests.
+Persistent changes extend the same Terraform root/state.

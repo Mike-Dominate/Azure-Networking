@@ -9,9 +9,16 @@ crash.*.log
 terraform.rc
 
 # Sensitive/local Terraform values
-*.auto.tfvars
-*.auto.tfvars.json
-terraform.tfvars
+*.tfvars
+*.tfvars.json
+backend.hcl
+*.backend.hcl
+
+# Safe examples may be committed
+!*.tfvars.example
+!*.tfvars.json.example
+!backend.hcl.example
+!*.backend.hcl.example
 
 # Keys and certificates
 *.pem
@@ -39,3 +46,6 @@ Thumbs.db
 # Temporary evidence/output
 **/evidence/tmp/
 *.log
+
+# Intentionally tracked Terraform dependency lock file
+# .terraform.lock.hcl is NOT ignored.

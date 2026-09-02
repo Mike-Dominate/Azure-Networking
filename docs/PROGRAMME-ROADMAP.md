@@ -10,31 +10,30 @@ Canonical Terraform root:
 blueharbor/terraform/
 ```
 
-## Architecture audit status
+## Planning status
 
-| Gate | Transition | Status |
-|---:|---|---|
-| 1 | M1 -> M2 | **PASS** |
-| 2 | M2 -> M3 | **PASS** |
-| 3 | M3 -> M4 | **PASS** |
-| 4 | M4 -> M5 | **PASS** |
-| 5 | M5 -> M6 | **PASS** |
-| 6 | M6 -> M7 | **PASS** |
-| 7 | M7 -> M8 | **PASS** |
+```text
+STORY DESIGN                     COMPLETE
+MODULE-TRANSITION AUDIT          COMPLETE — GATES 1–7 PASS
+WHOLE-PROGRAMME CLOSEOUT         PASS
+IMPLEMENTATION READY             YES
+TERRAFORM BUILD                  NOT STARTED
+AZURE DEPLOYMENT                 NOT STARTED
+CURRENT CURRICULUM POSITION      M1 U01
+```
 
-All module-transition gates pass. One whole-programme closeout remains before deployment.
-
-## Approved cumulative architecture through Module 8
+## Final cumulative programme chain
 
 ```text
 M1
-VNets / DNS / routing / NAT
+VNets / blueharbor.internal / peerings / routing / NAT
   |
 M2
-VPN -> Virtual WAN
+classic VPN/P2S -> Virtual WAN
+Core DNS Private Resolver
   |
 M3
-ExpressRoute on existing hub
+ExpressRoute on existing AUE hub
   |
 M4
 Telemetry TCP/9000
@@ -42,16 +41,14 @@ AUE/SEA Standard Load Balancers
 Traffic Manager
   |
 M5
-Partner AUE/SEA application VNets
+Partner AUE/SEA VNets
 regional Application Gateways
 Front Door
   |
 M6
 secured Virtual WAN
 AUE/SEA Azure Firewall
-DDoS / NSG / ASG
-Front Door Premium + WAF
-Application Gateway WAF_v2
+DDoS / NSG / ASG / WAF
   |
 M7
 Storage Service Endpoint
@@ -61,19 +58,38 @@ telemetry Private Link Service
 Front Door -> App Gateway Private Link
   |
 M8
-law-bhi-netops-aue
+central Log Analytics
 regional VNet flow-log Storage
-all-six-VNet VNet flow logs + Traffic Analytics
-regional Network Watcher reconciliation
-vm-netops-aue + Connection Monitor
-diagnostic settings / alerts / deterministic capstone
+VNet flow logs / Traffic Analytics
+Connection Monitor / diagnostics / alerts
 ```
+
+## Final cross-programme contracts
+
+```text
+Classic P2S pool       172.31.240.0/24
+vWAN User VPN pool     172.31.241.0/24
+Private DNS zone       blueharbor.internal
+Remote state           Azure Blob / one migrated state lineage
+Global unique names    one persistent six-character suffix
+```
+
+Storage-account naming examples:
+
+```text
+stbhitfstate<suffix>
+stbhimfgarchive<suffix>
+stbhiflowaue<suffix>
+stbhiflowsea<suffix>
+```
+
+See [`WHOLE-PROGRAMME-ARCHITECTURE-CLOSEOUT.md`](WHOLE-PROGRAMME-ARCHITECTURE-CLOSEOUT.md) for full addressing, subnet and lifecycle contracts.
 
 ## Official module sequence
 
 | Module | Microsoft Learn module | Execution status | Story/audit status |
 |---:|---|---|---|
-| 1 | Introduction to Azure Virtual Networks | Unit 01 is first execution point after closeout | DESIGNED / AUDITED |
+| 1 | Introduction to Azure Virtual Networks | **IN PROGRESS — Unit 01 current** | DESIGNED / AUDITED / CLOSEOUT PASS |
 | 2 | Design and implement hybrid networking | NOT STARTED | DESIGNED / AUDITED |
 | 3 | Design and implement Azure ExpressRoute | NOT STARTED | DESIGNED / AUDITED |
 | 4 | Load balance non-HTTP(S) traffic in Azure | NOT STARTED | DESIGNED / AUDITED |
@@ -82,14 +98,8 @@ diagnostic settings / alerts / deterministic capstone
 | 7 | Design and implement private access to Azure Services | NOT STARTED | DESIGNED / AUDITED |
 | 8 | Design and implement network monitoring | NOT STARTED | DESIGNED / AUDITED |
 
-## Current phase
+## Execution rule
 
-```text
-STORY DESIGN                 COMPLETE
-MODULE-TRANSITION AUDIT      COMPLETE — GATES 1–7 PASS
-WHOLE-PROGRAMME CLOSEOUT     NEXT
-TERRAFORM BUILD              NOT STARTED
-AZURE DEPLOYMENT             NOT STARTED
-```
+The planning phase is finished. Begin at Module 1 Unit 01 and continue in Microsoft Learn order.
 
-Do not begin the BlueHarbor build until the closeout checks the combined contracts and passes.
+Do not pre-build future resources simply because their final address/name is already known. The closeout is a dependency contract, not permission to skip the progressive story.

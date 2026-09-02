@@ -1,75 +1,70 @@
 # Azure Networking Engineering Programme
 
-A hands-on Azure networking programme that follows Microsoft's official AZ-700 Microsoft Learn learning path in the published module and unit order, using one continuous fictional company project: **BlueHarbor Industries**.
-
-> **Primary curriculum:** https://learn.microsoft.com/en-us/training/paths/design-implement-microsoft-azure-networking-solutions-az-700/
->
-> **Coverage check:** https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/az-700
->
-> **Technical authority:** Microsoft Azure product documentation for the service being implemented.
+A hands-on Azure networking programme that follows Microsoft's official AZ-700 Microsoft Learn learning path in published module/unit order, using one continuous fictional company project: **BlueHarbor Industries**.
 
 ## Programme principle
 
 This is one cumulative project, not a collection of disposable labs.
 
-Every Microsoft Learn unit introduces the next BlueHarbor requirement. The **story, Azure environment, Terraform code and Terraform state all continue from the previous unit**.
-
 ```text
 Microsoft Learn unit
--> BlueHarbor business problem
--> mental model
--> design decision
--> MODIFY THE EXISTING TERRAFORM STACK
--> terraform plan: inspect the incremental change
--> terraform apply
--> independent validation
--> deliberate failure / troubleshooting
--> repair through Terraform where infrastructure configuration changed
--> evidence / Git checkpoint
--> NEXT UNIT STARTS FROM THIS EXACT STATE
+ -> BlueHarbor business problem
+ -> mental model
+ -> incremental design
+ -> same Terraform root/state
+ -> plan / apply when the unit requires infrastructure
+ -> independent validation
+ -> deliberate failure / troubleshooting
+ -> evidence / Git checkpoint
+ -> next unit starts from the exact resulting state
 ```
 
-### Cumulative Terraform rule
-
-There is one canonical living Terraform implementation for BlueHarbor:
+Canonical Terraform root:
 
 ```text
 blueharbor/terraform/
 ```
 
-We do **not** create an isolated Terraform root for each lab and we do **not** copy the previous lab into a new folder.
+No routine `terraform destroy` occurs between units/modules. Persistent Azure configuration is Terraform-managed; CLI/Portal/protocol tools inspect, validate and troubleshoot.
 
-Instead:
+## Planning status
 
 ```text
-Lab/Unit 1 Terraform
-        |
-        + new requirement
-        v
-Lab/Unit 2 Terraform
-        |
-        + new requirement
-        v
-Lab/Unit 3 Terraform
-        |
-        + new requirement
-        v
-...
-        v
-Module 8 = complete BlueHarbor environment
+Story design                         COMPLETE
+Transition audit Gates 1-7           PASS
+Whole-programme architecture closeout PASS
+Implementation ready                 YES
 ```
 
-Git commits provide historical lab checkpoints. The working Terraform code represents the **current complete architecture**.
+Authoritative closeout:
 
-No routine `terraform destroy` occurs between units or modules. A destroy/replacement is performed only when the BlueHarbor design itself requires removal/replacement, or when the user explicitly chooses to reset the complete project.
+[`docs/WHOLE-PROGRAMME-ARCHITECTURE-CLOSEOUT.md`](docs/WHOLE-PROGRAMME-ARCHITECTURE-CLOSEOUT.md)
 
-Azure CLI, Portal and protocol tools may be used for inspection, validation and troubleshooting. Persistent Azure infrastructure configuration is managed through Terraform.
+## Current position
 
-### Story continuity outranks legacy work
+```text
+BlueHarbor Industries
+Microsoft Learn Module 1 — Introduction to Azure Virtual Networks
+Unit 01 — Introduction
+Status — CURRENT
+Azure deployment — NONE required
+Terraform deployment — NONE required
+```
 
-Previous labs built before the BlueHarbor storyline do **not** count as completed project chapters and are not reused merely because they already exist.
+The first persistent Terraform infrastructure checkpoint is Module 1 Unit 04. Before/within that practical, the one project state lineage is bootstrapped and migrated to the approved Azure Blob backend.
 
-If old work would force the story around earlier assumptions, naming, topology or sequencing, rebuild it at the correct point in the BlueHarbor project. Old commits remain available in Git history for reference only.
+## Key final contracts
+
+```text
+Primary region               Australia East
+Secondary region             Southeast Asia
+Private DNS parent zone      blueharbor.internal
+Classic P2S pool             172.31.240.0/24
+Virtual WAN User VPN pool    172.31.241.0/24
+Terraform root               blueharbor/terraform/
+Terraform remote state       Azure Blob / one state lineage
+Global unique naming         one persistent 6-char lowercase alphanumeric suffix
+```
 
 ## Official Microsoft Learn curriculum
 
@@ -84,69 +79,8 @@ If old work would force the story around earlier assumptions, naming, topology o
 | 7 | Design and implement private access to Azure Services | NOT STARTED |
 | 8 | Design and implement network monitoring | NOT STARTED |
 
-## Current position
+## Working rule
 
-```text
-BlueHarbor Industries
-Microsoft Learn Module 1 — Introduction to Azure Virtual Networks
-Unit 01 — Introduction
-Phase — start the cumulative project from the beginning
-Azure deployment — NONE required for Unit 01
-Terraform stack — blueprint created; first resources added when the story requires them
-```
+Complete the tutorial/mental model before changing infrastructure. Preserve Microsoft's learning objective, but implement practical changes as small understandable deltas in the one cumulative Terraform environment.
 
-## Repository layout
-
-```text
-Azure-Networking/
-├── README.md
-├── blueharbor/
-│   └── terraform/
-│       └── README.md      # rules for the one cumulative Terraform stack
-├── docs/
-│   ├── HANDOFF.md
-│   ├── MSLEARN-UNIT-MAP.md
-│   ├── PROGRAMME-ROADMAP.md
-│   ├── PROJECT-NARRATIVE.md
-│   ├── SOURCE-REFERENCE.md
-│   └── WORKING-METHOD.md
-└── modules/
-    ├── 01-introduction-to-azure-virtual-networks/
-    ├── 02-design-and-implement-hybrid-networking/
-    ├── 03-design-and-implement-azure-expressroute/
-    ├── 04-load-balance-non-http-traffic-in-azure/
-    ├── 05-load-balance-http-traffic-in-azure/
-    ├── 06-design-and-implement-network-security/
-    ├── 07-design-and-implement-private-access-to-azure-services/
-    └── 08-design-and-implement-network-monitoring/
-```
-
-Each module contains Microsoft Learn unit numbering and a BlueHarbor `PROJECT-STORY.md` where designed. The module folders contain the teaching story; `blueharbor/terraform/` contains the actual cumulative infrastructure.
-
-## Learning rule
-
-Complete the tutorial and mental model before changing infrastructure. For exercises, preserve Microsoft's learning objective but implement the BlueHarbor version through the existing Terraform stack.
-
-A new unit should normally result in a **small understandable Terraform delta**, not an unrelated deployment.
-
-## Definition of done for a practical unit
-
-A practical unit is complete only when applicable items are satisfied:
-
-- Microsoft Learn objective understood;
-- BlueHarbor business reason understood;
-- architecture / packet / query flow explainable;
-- the existing Terraform stack was extended rather than replaced;
-- `terraform plan` showed only the intended project delta;
-- Terraform apply completed successfully;
-- previous BlueHarbor infrastructure still exists unless deliberate design change removed it;
-- independent Azure/protocol validation completed;
-- deliberate failure/troubleshooting completed;
-- permanent fixes are represented in Terraform;
-- evidence and Git checkpoint captured;
-- resulting infrastructure and state become the starting point for the next unit;
-- learner can explain the design and trade-offs without the guide.
-
-## Resume
-
-Always read [`docs/HANDOFF.md`](docs/HANDOFF.md) before continuing.
+Always read [`docs/HANDOFF.md`](docs/HANDOFF.md) before resuming.
