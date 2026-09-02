@@ -1,0 +1,121 @@
+name: Repository Health
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repository-health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check unresolved merge markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git grep -nE '^(<<<<<<<|>>>>>>>)' -- .; then
+            echo 'Unresolved merge conflict marker found.'
+            exit 1
+          fi
+
+      - name: Check module structure and internal Markdown links
+        shell: python
+        run: |
+          from pathlib import Path
+          from urllib.parse import unquote
+          import re
+          import sys
+
+          root = Path.cwd().resolve()
+          errors = []
+
+          modules = root / "modules"
+          if not modules.is_dir():
+              errors.append("Missing modules/ directory")
+          else:
+              module_dirs = sorted(p for p in modules.iterdir() if p.is_dir())
+              expected_module_numbers = [f"{i:02d}" for i in range(1, 9)]
+              actual_module_numbers = [p.name[:2] for p in module_dirs]
+              if actual_module_numbers != expected_module_numbers:
+                  errors.append(
+                      "Module numbering mismatch: expected "
+                      + ", ".join(expected_module_numbers)
+                      + "; found "
+                      + ", ".join(actual_module_numbers)
+                  )
+
+              for module in module_dirs:
+                  if not (module / "README.md").is_file():
+                      errors.append(f"Missing module README: {module.relative_to(root)}")
+                  if not (module / "PROJECT-STORY.md").is_file():
+                      errors.append(f"Missing module PROJECT-STORY.md: {module.relative_to(root)}")
+
+                  units = sorted(
+                      p for p in module.iterdir()
+                      if p.is_dir() and re.match(r"^\d{2}-", p.name)
+                  )
+                  if not units:
+                      errors.append(f"No numbered units in {module.relative_to(root)}")
+                      continue
+
+                  expected_units = [f"{i:02d}" for i in range(1, len(units) + 1)]
+                  actual_units = [p.name[:2] for p in units]
+                  if actual_units != expected_units:
+                      errors.append(
+                          f"Unit numbering gap in {module.relative_to(root)}: "
+                          f"expected {expected_units}; found {actual_units}"
+                      )
+
+                  for unit in units:
+                      if not (unit / "README.md").is_file():
+                          errors.append(f"Missing unit README: {unit.relative_to(root)}")
+
+          link_pattern = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
+          for md_file in root.rglob("*.md"):
+              text = md_file.read_text(encoding="utf-8")
+              for match in link_pattern.finditer(text):
+                  raw_target = match.group(1).strip()
+                  if not raw_target:
+                      continue
+                  if raw_target.startswith(("http://", "https://", "mailto:", "#")):
+                      continue
+
+                  # Markdown permits an optional quoted title after a path.
+                  target = raw_target.split(" ", 1)[0].strip("<>")
+                  target = unquote(target.split("#", 1)[0].split("?", 1)[0])
+                  if not target:
+                      continue
+
+                  if target.startswith("/"):
+                      resolved = (root / target.lstrip("/")).resolve()
+                  else:
+                      resolved = (md_file.parent / target).resolve()
+
+                  try:
+                      resolved.relative_to(root)
+                  except ValueError:
+                      errors.append(
+                          f"Link escapes repository: {md_file.relative_to(root)} -> {raw_target}"
+                      )
+                      continue
+
+                  if not resolved.exists():
+                      line = text.count("\n", 0, match.start()) + 1
+                      errors.append(
+                          f"Broken internal link: {md_file.relative_to(root)}:{line} -> {raw_target}"
+                      )
+
+          if errors:
+              print("Repository health check failed:")
+              for error in errors:
+                  print(f"- {error}")
+              sys.exit(1)
+
+          print("Repository structure and internal Markdown links are healthy.")
