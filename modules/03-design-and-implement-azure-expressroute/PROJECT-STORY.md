@@ -124,18 +124,20 @@ A successful deployment must be followed by inspection of gateway scale/SKU conc
 
 ---
 
-## Chapter 05 — Provision an ExpressRoute circuit
+## Chapter 05 — Provision the Brisbane ExpressRoute circuit/path
 
 Create the logical Azure circuit where practical and understand the service-key/provider handoff:
 
 ```text
-Terraform creates circuit
+Terraform creates Brisbane circuit/path A
  -> Azure service key / circuit identity
  -> provider provisioning boundary
  -> circuit provisioning state
 ```
 
 Do not pretend the external carrier portion exists when it does not.
+
+This first circuit/path is enough to establish Azure-to-site private connectivity. A second independent Perth circuit/provider path is introduced later for the Global Reach learning objective.
 
 ---
 
@@ -167,6 +169,8 @@ BGP advertisements = maps describing reachable destinations
 
 Trace learned routes through the Virtual WAN ExpressRoute gateway and hub router rather than through a fictional Core VNet gateway.
 
+The current study guide also requires Microsoft peering selection/configuration knowledge. Treat Microsoft peering as an explicit conditional-external extension because it requires appropriate validated public-prefix/routing prerequisites; do not fake them.
+
 ---
 
 ## Chapter 07 — Resiliency: ExpressRoute preferred, VPN retained
@@ -184,35 +188,52 @@ The exact routing preference and failover configuration must be verified against
 
 Teach dual paths/BGP sessions, circuit/provider/location diversity, BFD concepts, disaster recovery and encryption-over-ExpressRoute decisions.
 
+BFD, provider-side BGP and encryption mechanisms whose prerequisites do not exist in the lab are handled as explicit conditional-external configuration/failure work, not as claimed live state.
+
 ---
 
-## Chapter 08 — Global Reach: reuse Brisbane and Perth
+## Chapter 08 — Global Reach: add the second circuit/path and connect Brisbane to Perth
 
 Do not invent a Singapore office.
 
-Use the physical sites already established in Module 2:
+Global Reach requires two ExpressRoute circuit/provider paths. Make that dependency explicit:
 
 ```text
 Brisbane
   |
-ExpressRoute circuit / provider path A
+ExpressRoute circuit/provider path A
   |
-Microsoft backbone / Global Reach concept
+Microsoft backbone / Global Reach
   |
-ExpressRoute circuit / provider path B
+ExpressRoute circuit/provider path B
   |
 Perth Manufacturing
 ```
 
 Where actual carrier circuits are unavailable, treat the provider-dependent portion as architecture/configuration/failure analysis while preserving the same BlueHarbor sites.
 
+### Forward security dependency
+
+Global Reach sends circuit-to-circuit traffic directly rather than through the Virtual WAN hub security appliance. Therefore this Global Reach stage is **intentionally retired in Module 6** when BlueHarbor's policy becomes centrally inspected private transit.
+
+The learner must understand both architectures and why the security requirement changes the preferred path.
+
 ---
 
-## Chapter 09 — FastPath: eligibility must match the chosen circuit model
+## Chapter 09 — FastPath: exact Virtual WAN eligibility
 
 Do not claim FastPath merely because the unit exists.
 
-Unit 03 must record the actual provider/Direct and gateway design. Unit 09 then determines whether that combination supports the required FastPath behaviour.
+For BlueHarbor's **Virtual WAN** architecture, the current rule is:
+
+```text
+ExpressRoute Direct circuit
++
+Virtual WAN ExpressRoute Gateway >= 5 scale units
+        -> FastPath automatically enabled for supported traffic
+```
+
+A normal provider ExpressRoute circuit is not treated as FastPath-enabled inside Virtual WAN under the current support model.
 
 Mental distinction:
 
@@ -221,7 +242,7 @@ control-plane architecture still requires the ExpressRoute gateway
 supported FastPath traffic can use a more direct data path
 ```
 
-If the chosen cumulative lab model is not eligible, teach the exact supported design and explain why BlueHarbor's current lab path cannot activate it rather than creating a disconnected environment.
+If BlueHarbor's cumulative lab chooses the provider-circuit model, Unit 09 teaches the supported Direct design and explains precisely why the current lab path cannot activate vWAN FastPath rather than creating a disconnected environment.
 
 ---
 
@@ -252,11 +273,12 @@ Explain without relying on the Portal:
 - why ExpressRoute was added to Virtual WAN rather than creating a second hub;
 - circuit versus gateway;
 - classic VNet ExpressRoute gateway versus Virtual WAN ExpressRoute gateway;
-- BGP/private peering;
+- BGP/private peering and Microsoft peering prerequisites;
 - why VPN remains useful;
 - route preference/failover;
-- Brisbane/Perth Global Reach reasoning;
-- FastPath eligibility;
+- why Global Reach uses two circuits/provider paths;
+- why Global Reach must later retire if private transit must be inspected by the secured hub;
+- exact vWAN FastPath eligibility;
 - privacy versus encryption;
 - the end-to-end troubleshooting sequence.
 

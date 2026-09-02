@@ -1,102 +1,134 @@
 # Source and Coverage Reference
 
-## Primary curriculum authority
+## Authority order
 
-The programme structure and teaching sequence must follow Microsoft's official AZ-700 Microsoft Learn learning path:
+The BlueHarbor programme uses three Microsoft authorities for different purposes:
+
+```text
+Microsoft Learn AZ-700 learning path
+  -> curriculum module/unit order
+
+Current AZ-700 study guide
+  -> completeness check against skills measured
+
+Current Azure product documentation
+  -> exact technical behaviour / implementation constraints
+```
+
+Primary curriculum:
 
 `https://learn.microsoft.com/en-us/training/paths/design-implement-microsoft-azure-networking-solutions-az-700/`
 
-The learning path currently contains eight modules:
+Coverage authority:
 
-1. Introduction to Azure Virtual Networks
-2. Design and implement hybrid networking
-3. Design and implement Azure ExpressRoute
-4. Load balance non-HTTP(S) traffic in Azure
-5. Load balance HTTP(S) traffic in Azure
-6. Design and implement network security
-7. Design and implement private access to Azure Services
-8. Design and implement network monitoring
+`https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/az-700`
 
-The module order above is the authoritative programme sequence.
-
-## Coverage completeness authority
-
-The current Microsoft AZ-700 study guide / skills measured outline is used as a coverage check so that exam objectives that are broader than an individual Learn module are not missed.
-
-Current baseline:
-
-- Exam: AZ-700 — Designing and Implementing Microsoft Azure Networking Solutions
-- Skills outline baseline: effective July 27, 2026
-
-Rule:
+Current coverage baseline:
 
 ```text
-Microsoft Learn path = curriculum structure and sequence
-Microsoft AZ-700 study guide = completeness check inside that structure
-Azure product documentation = technical implementation authority
+AZ-700 skills measured effective July 27, 2026
+Last BlueHarbor coverage verification: September 2, 2026
 ```
 
-If the study guide contains an objective that the Learn module treats only briefly, add it as an extension inside the matching module/lab rather than inventing a disconnected standalone programme sequence.
+The objective-by-objective mapping is maintained in:
+
+[`AZ700-STUDY-GUIDE-COVERAGE.md`](AZ700-STUDY-GUIDE-COVERAGE.md)
+
+## Curriculum rule
+
+Microsoft Learn controls **when** a topic is introduced. The study guide controls whether the programme is **complete enough**.
+
+If the study guide contains a capability that the main Learn unit treats only briefly, add it as an extension inside the nearest matching Learn unit. Do not create a disconnected parallel lab sequence simply to tick exam bullets.
 
 Example:
 
 ```text
-Microsoft Learn Module 1: Introduction to Azure Virtual Networks
-  -> name resolution lesson covers public/private DNS
-  -> AZ-700 study guide also requires Azure DNS Private Resolver
-  -> therefore Private Resolver belongs as a Module 1 name-resolution extension
-     rather than as a separate unrelated programme track
+M1 name-resolution units
+  -> Azure DNS / VNet DNS
+  -> study-guide extension: DNS Private Resolver concepts
+
+M2 hybrid requirement appears
+  -> deploy the actual Core DNS Private Resolver endpoints
 ```
 
-## Supplemental references
+## Authoritative practical workflow
 
-External repositories such as `rithinskaria/kodekloud-az700` may be used for extra scenarios or implementation ideas, but they do not define the programme order or required scope.
-
-Other Microsoft Learn modules and Azure product documentation may be used when the AZ-700 study guide requires a capability that the main learning-path lesson does not explain deeply enough.
-
-## Engineering implementation rule
-
-Microsoft Learn provides the learning objective and scenario boundary. Our engineering implementation deepens the practical work through Azure CLI, Terraform, troubleshooting, validation, Git/GitHub and rebuild documentation without changing the objective.
-
-Normal practical-lab order:
+Persistent Azure infrastructure is **Terraform-first and cumulative**.
 
 ```text
-Microsoft Learn lesson/tutorial
-  -> explain mental model with everyday analogy
-  -> visual architecture / packet or query flow
-  -> understanding check
-  -> design our practical implementation
-  -> manual Azure CLI implementation
-  -> protocol / Azure CLI validation
-  -> deliberate failure and troubleshooting
-  -> Portal inspection where useful
-  -> Terraform rebuild
-  -> independent validation
-  -> evidence and rebuild documentation
-  -> safe teardown
-  -> learner explain-back
+Microsoft Learn unit
+ -> BlueHarbor business requirement
+ -> mental model / architecture / packet or query flow
+ -> understanding check
+ -> inspect CURRENT Terraform + deployed estate
+ -> define the smallest coherent delta
+ -> modify SAME blueharbor/terraform root
+ -> terraform fmt / init / validate / plan
+ -> STOP on unexplained destroy/replace
+ -> terraform apply when the unit requires infrastructure
+ -> independent CLI / Portal / protocol validation
+ -> deliberate failure / troubleshooting
+ -> reconcile permanent fixes into Terraform
+ -> evidence / Git checkpoint
+ -> next unit starts from this exact code/state/environment
 ```
 
-## Cost/practicality rule
+Azure CLI, PowerShell, Portal and protocol tools are for inspection, validation, exercises and troubleshooting. They must not become an unmanaged second provisioning path for persistent BlueHarbor infrastructure.
 
-Where a Microsoft Learn objective is expensive or unrealistic to provision in a personal Azure subscription, such as a full production ExpressRoute circuit, use serious architecture simulation and configuration analysis instead of pretending an unnecessary deployment is required.
+There is **no normal `safe teardown` step** at the end of a unit or module. Intentional retirement/replacement occurs only when a later BlueHarbor requirement changes the architecture.
 
-Such work can include:
+See [`WORKING-METHOD.md`](WORKING-METHOD.md) for the operational workflow.
 
-- architecture diagrams
-- configuration-object analysis
-- BGP and route reasoning
-- redundancy and failure scenarios
-- validation plans
-- troubleshooting workflows
-- service-selection trade-offs
+## Coverage modes
 
-## Drift prevention
+Study-guide objectives are intentionally classified rather than forcing every feature into the persistent architecture:
 
-Before teaching or redesigning any module:
+```text
+BUILD
+ -> persistent cumulative BlueHarbor resource/configuration
 
-1. Read the corresponding Microsoft Learn module.
-2. Use its learning objectives and unit titles as the core scope.
-3. Check the current AZ-700 study guide for additional objectives that belong inside the same module.
-4. Do not create standalone topics merely because they are interesting Azure networking features.
-5. Update the programme roadmap and handoff whenever Microsoft's learning path changes.
+CONFIGURE / VALIDATE
+ -> real configuration/diagnostic work on existing BlueHarbor resources
+
+CONTROLLED EXPERIMENT
+ -> hands-on change used to learn a feature; any temporary delta is deliberately reconciled into the approved architecture
+
+DESIGN / TROUBLESHOOT
+ -> deep architecture, configuration-object, packet/route and failure analysis where persistent deployment would distort the cumulative design
+
+CONDITIONAL EXTERNAL
+ -> hands-on when a carrier, owned public prefix, RADIUS/NVA appliance, real public domain/certificate or other external prerequisite exists; otherwise rigorous design/configuration/failure analysis
+```
+
+Coverage completeness does **not** mean every Azure feature remains permanently deployed. It means every current exam objective has a deliberate learning home and treatment.
+
+## External-dependency rule
+
+Provider- or ownership-dependent features must be represented honestly.
+
+Examples include:
+
+- ExpressRoute provider provisioning and some BGP operations;
+- ExpressRoute Direct/MACsec-specific scenarios;
+- Microsoft peering that requires validated public prefixes;
+- Custom IP Prefix / BYOIP;
+- third-party Virtual WAN NVAs;
+- RADIUS environments;
+- trusted public-domain certificates for end-to-end TLS.
+
+Never claim a dependency exists when it does not.
+
+## Cost rule
+
+Cost does not justify routine destruction of the cumulative environment. Where a study objective requires a commercial/external dependency that cannot realistically be obtained for the lab, preserve the real BlueHarbor architecture and use serious configuration/failure analysis instead of a fake deployment.
+
+## Drift-prevention rule
+
+Before teaching or implementing any unit:
+
+1. confirm the current Microsoft Learn unit title/objective;
+2. check the corresponding rows in `AZ700-STUDY-GUIDE-COVERAGE.md`;
+3. verify service constraints against current Microsoft product documentation;
+4. inspect the current BlueHarbor Terraform/state/environment;
+5. do not pre-build future resources merely because their final design is known;
+6. update roadmap/handoff/coverage when Microsoft changes the learning path or study guide.

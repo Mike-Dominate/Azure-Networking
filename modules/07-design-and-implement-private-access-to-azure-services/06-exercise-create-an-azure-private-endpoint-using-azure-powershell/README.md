@@ -99,11 +99,25 @@ create new private-link origin group
  -> create/approve AUE + SEA private origin connections
  -> validate origin health
  -> switch Front Door route
- -> validate end-to-end HTTP(S)
+ -> validate end-to-end application delivery
  -> retire public origin data path after rollback window
 ```
 
 Do not mix public and Private-Link-enabled origins inside one origin group where the current Front Door service does not support that design.
+
+### Origin TLS guardrail
+
+When the Front Door origin protocol is HTTPS for a Private-Link-enabled Application Gateway, certificate subject-name validation is mandatory.
+
+The narrative hostname `portal.blueharbor.example` does not represent a real trusted public certificate. Therefore the baseline private-origin lab must use a supported origin protocol/configuration that can be honestly validated.
+
+Only claim:
+
+```text
+Front Door -> HTTPS -> Application Gateway
+```
+
+when a real learner-controlled domain and matching trusted certificate chain are available and configured. That conditional practical is where end-to-end TLS is proved.
 
 ## Failure tests
 
@@ -113,6 +127,7 @@ Do not mix public and Private-Link-enabled origins inside one origin group where
 - App Service VNet Integration subnet/delegation wrong;
 - App Gateway cannot resolve/reach App Service PE;
 - Front Door private origin connection not approved;
-- Front Door route still points to old public origin group.
+- Front Door route still points to old public origin group;
+- HTTPS origin certificate name/chain does not validate when end-to-end TLS is enabled.
 
 End with Terraform, Azure state, DNS and application paths reconciled.

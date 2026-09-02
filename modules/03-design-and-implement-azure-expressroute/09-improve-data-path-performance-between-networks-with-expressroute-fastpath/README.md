@@ -1,13 +1,20 @@
 # Unit 09 — Improve data path performance between networks with ExpressRoute FastPath
 
-**BlueHarbor chapter:** Evaluate and use FastPath only if the cumulative ExpressRoute design is eligible  
+**BlueHarbor chapter:** Evaluate FastPath against the exact cumulative Virtual WAN design  
 **Status:** NOT STARTED
 
-## Dependency
+## Current Virtual WAN eligibility contract
 
-Unit 03 must already have recorded the chosen ExpressRoute connectivity model and gateway design.
+For BlueHarbor's Virtual WAN implementation, treat FastPath as active only when the current supported conditions are met:
 
-Do not create another ExpressRoute architecture simply to demonstrate FastPath.
+```text
+ExpressRoute Direct circuit
++
+Virtual WAN ExpressRoute Gateway >= 5 scale units
+        -> FastPath automatically enabled for supported traffic
+```
+
+A standard provider ExpressRoute circuit must **not** be described as FastPath-enabled inside Virtual WAN under the current support matrix.
 
 ## Mental model
 
@@ -16,13 +23,13 @@ control/routing architecture
 still includes the ExpressRoute gateway
 
 supported FastPath data traffic
-can use a more direct supported path to the Azure workload
+can use a more direct supported path
 ```
 
 ## Engineering rule
 
-First verify whether BlueHarbor's actual provider/ExpressRoute Direct and Virtual WAN gateway combination supports the required FastPath behaviour.
+If BlueHarbor uses ExpressRoute Direct and the qualifying Virtual WAN gateway scale, validate FastPath in the same architecture.
 
-If it does, implement/validate it in the same architecture. If it does not, explain the supported reference design and the exact eligibility gap instead of falsely claiming activation.
+If BlueHarbor uses a provider circuit, explain the exact eligibility gap and the supported Direct reference design instead of creating a disconnected second ExpressRoute topology just to tick the objective.
 
-'FastPath is faster' is not a sufficient explanation; describe the control-plane and data-plane difference.
+Also distinguish this Virtual WAN rule from classic VNet ExpressRoute-gateway FastPath scenarios; do not merge the support matrices conceptually.

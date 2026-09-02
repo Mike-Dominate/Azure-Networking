@@ -99,6 +99,22 @@ SEA 10.50.3.0/27
 
 Migrate through a new Private-Link-enabled origin group, validate and switch the route before retiring the old public origin data path.
 
+### TLS truth
+
+For a Private-Link-enabled Application Gateway origin, Front Door certificate subject-name validation is mandatory when the origin protocol is HTTPS.
+
+`portal.blueharbor.example` is narrative-only and cannot be treated as a real publicly trusted certificate identity.
+
+Therefore:
+
+```text
+baseline lab
+client -> HTTPS -> Front Door
+Front Door -> App Gateway private origin using a supported lab origin protocol
+```
+
+True Front Door -> Application Gateway HTTPS/end-to-end TLS is a conditional practical: enable it only when a real learner-controlled domain and matching trusted certificate chain are available. Do not claim a successful end-to-end TLS design using `.example`.
+
 ## DNS/hybrid rule
 
 Private Endpoint DNS extends the existing Core DNS Private Resolver architecture. Microsoft service-owned Private Link zones remain separate from `blueharbor.internal`.

@@ -2,10 +2,10 @@
 
 **Status:** PASS  
 **Scope:** Modules 1–8 combined architecture  
-**Result:** IMPLEMENTATION READY  
+**Result:** IMPLEMENTATION READY after final curriculum QA  
 **Formal execution position:** Module 1 — Unit 01 — Introduction
 
-This closeout is the final planning gate after the seven module-transition audits. It validates that the complete BlueHarbor design can be built progressively through one Terraform root and one state lineage without avoidable destructive redesign.
+This closeout is the final architecture gate after the seven module-transition audits. A separate final curriculum/QA pass subsequently checked current AZ-700 coverage and cross-service constraints; see `FINAL-CURRICULUM-QA.md`.
 
 ## 1. Canonical regions
 
@@ -231,6 +231,9 @@ Research VNet connection to AUE hub
 Module 1 direct Core<->Mfg / Core<->Research peerings
  -> retired after secured Virtual WAN private transit is proven
 
+Module 3 Brisbane<->Perth ExpressRoute Global Reach
+ -> retired in Module 6 after secured ER-to-ER transit is proven
+
 Partner app NAT egress
  -> retired after secured-hub Azure Firewall egress is proven
 
@@ -329,6 +332,15 @@ Module 1 Unit 03 teaches public/private IP design and Azure public-IP behaviour 
 
 The first real BlueHarbor infrastructure checkpoint remains Unit 04. Public IP resources later appear naturally when VPN gateways, Load Balancers and Application Gateways require them.
 
+## 13. Final curriculum / service guardrails
+
+The final QA pass added four programme-wide guardrails:
+
+1. `docs/AZ700-STUDY-GUIDE-COVERAGE.md` maps every July 27, 2026 AZ-700 study-guide capability to a Learn/BlueHarbor unit and coverage mode.
+2. Azure Route Server remains mandatory learning but is not deployed into a BlueHarbor VNet connected to Virtual WAN merely for exam coverage.
+3. Virtual WAN ExpressRoute FastPath is treated as active only with ExpressRoute Direct plus a Virtual WAN ExpressRoute Gateway of at least five scale units under the current support model.
+4. Front Door Private Link to an HTTPS Application Gateway origin requires valid certificate subject-name validation; the `.example` narrative name is never used to fake trusted end-to-end TLS.
+
 ## Closeout verdict
 
 ```text
@@ -348,16 +360,20 @@ Service Endpoint exception       PASS
 Terraform ownership boundaries   PASS
 Monitoring dependencies          PASS
 Sensitive/local file handling    PASS
+Current AZ-700 coverage          PASS
+Final service guardrails         PASS
 ```
 
 # FINAL RESULT
 
 ```text
-STORY DESIGN                 COMPLETE
-TRANSITION AUDIT GATES 1-7   PASS
-WHOLE-PROGRAMME CLOSEOUT     PASS
-IMPLEMENTATION READY         YES
-TERRAFORM BUILD              NOT STARTED
-AZURE DEPLOYMENT             NOT STARTED
-FORMAL POSITION              M1 U01 — Introduction
+STORY DESIGN                         COMPLETE
+TRANSITION AUDIT GATES 1-7           PASS
+WHOLE-PROGRAMME CLOSEOUT             PASS
+JULY-2026 STUDY-GUIDE COVERAGE       COMPLETE
+FINAL CURRICULUM / ARCHITECTURE QA   PASS
+IMPLEMENTATION READY                 YES
+TERRAFORM BUILD                      NOT STARTED
+AZURE DEPLOYMENT                     NOT STARTED
+FORMAL POSITION                      M1 U01 — Introduction
 ```

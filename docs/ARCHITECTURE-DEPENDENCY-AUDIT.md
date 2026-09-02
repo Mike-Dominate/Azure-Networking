@@ -30,6 +30,7 @@ classic VPN/P2S learning
 
 M3
 ExpressRoute added to existing AUE Virtual WAN hub
+Global Reach uses Brisbane + Perth circuit/provider paths
 VPN retained as alternate enterprise transport where designed
 
 M4
@@ -46,6 +47,7 @@ M6
 DDoS / NSG / ASG
 AUE + SEA secured Virtual WAN / Azure Firewall
 WAF / origin hardening
+retire direct-peering + Global Reach bypasses after secured path proof
 
 M7
 Storage service endpoint
@@ -73,6 +75,7 @@ Later gates were allowed to correct earlier architecture **before deployment**. 
 - `lb-telemetry-aue` uses NIC-backed backend-pool membership for later Private Link Service compatibility;
 - Research's Virtual WAN connection moves to the SEA hub when that hub is activated;
 - direct Module 1 peerings retire after centrally inspected private transit is proven;
+- Module 3 Global Reach retires in Module 6 because its direct ER-to-ER path bypasses the secured hub;
 - Partner backend NAT egress retires after Azure Firewall becomes authoritative;
 - Front Door public origins progress to Private Link in Module 7.
 
@@ -102,20 +105,41 @@ The final review also records:
 - Module 1 Unit 03 does not create a disposable public endpoint; Unit 04 remains the first persistent infrastructure checkpoint;
 - local/sensitive tfvars and backend configuration are ignored while `.terraform.lock.hcl` remains tracked.
 
-See [`WHOLE-PROGRAMME-ARCHITECTURE-CLOSEOUT.md`](WHOLE-PROGRAMME-ARCHITECTURE-CLOSEOUT.md) for the complete final contract.
+## Final curriculum / architecture QA
+
+**Status: PASS**
+
+Final QA adds these authoritative corrections:
+
+```text
+SOURCE-REFERENCE workflow        Terraform-first / cumulative / no routine teardown
+July-2026 study-guide coverage   objective-by-objective matrix COMPLETE
+Global Reach                     two circuits/provider paths; retire in M6 when inspected transit is required
+vWAN FastPath                    ExpressRoute Direct + ER gateway >= 5 scale units
+Route Server                     mandatory learning; no unsupported vWAN-spoke deployment
+Front Door/AppGW HTTPS           trusted subject/name required; no fake .example end-to-end TLS
+```
+
+See:
+
+- [`WHOLE-PROGRAMME-ARCHITECTURE-CLOSEOUT.md`](WHOLE-PROGRAMME-ARCHITECTURE-CLOSEOUT.md)
+- [`AZ700-STUDY-GUIDE-COVERAGE.md`](AZ700-STUDY-GUIDE-COVERAGE.md)
+- [`FINAL-CURRICULUM-QA.md`](FINAL-CURRICULUM-QA.md)
 
 # FINAL AUDIT RESULT
 
 ```text
-GATE 1                       PASS
-GATE 2                       PASS
-GATE 3                       PASS
-GATE 4                       PASS
-GATE 5                       PASS
-GATE 6                       PASS
-GATE 7                       PASS
-WHOLE-PROGRAMME CLOSEOUT     PASS
-IMPLEMENTATION READY         YES
+GATE 1                               PASS
+GATE 2                               PASS
+GATE 3                               PASS
+GATE 4                               PASS
+GATE 5                               PASS
+GATE 6                               PASS
+GATE 7                               PASS
+WHOLE-PROGRAMME CLOSEOUT             PASS
+JULY-2026 STUDY-GUIDE COVERAGE       COMPLETE
+FINAL CURRICULUM / ARCHITECTURE QA   PASS
+IMPLEMENTATION READY                 YES
 ```
 
 Formal execution begins at **Module 1 — Unit 01 — Introduction**.

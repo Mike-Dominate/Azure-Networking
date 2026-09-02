@@ -55,13 +55,18 @@ snet-partner-app -> secured Virtual WAN -> Azure Firewall -> approved Internet
 
 This is a deliberate architecture evolution, not end-of-lab cleanup.
 
-## Retire bypass peerings
+## Retire private-transit bypasses
 
-Once secured private transit is verified, remove the direct Module 1 peerings that would bypass central inspection:
+Once secured private transit is verified, remove/disable paths that would bypass central inspection:
 
 ```text
-Core <-> Manufacturing
-Core <-> Research
+Core <-> Manufacturing direct peering
+Core <-> Research global peering
+Brisbane <-> Perth ExpressRoute Global Reach
 ```
 
-The VNets and workloads remain; only the production transit path changes.
+Global Reach was a valid Module 3 learning stage, but its circuit-to-circuit data path does not traverse the secured Virtual WAN firewall.
+
+Before disabling it, prove the intended ER-to-ER secured-hub path. If current Azure requires Microsoft support enablement for ExpressRoute-to-ExpressRoute transit through the security appliance, record/obtain that prerequisite rather than assuming a self-service configuration exists.
+
+The VNets, ExpressRoute circuits/site identities and workloads remain; only the production transit path changes.

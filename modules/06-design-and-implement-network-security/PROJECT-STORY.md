@@ -26,6 +26,7 @@ bhi-vwan
   -> bhi-vhub-aue 10.200.0.0/22
   -> bhi-vhub-sea 10.200.4.0/22
   -> VPN / ExpressRoute / VNet connections
+  -> Global Reach stage between Brisbane and Perth
 
 EXPLICIT OUTBOUND
 nat-mfg-aue
@@ -129,7 +130,9 @@ unnecessary lateral access                              DENY
 management                                               approved source only
 ```
 
-Also harden Partner application subnets so backend access comes from the intended Application Gateway path and unnecessary lateral access is denied.
+Also harden Partner application subnets so backend access comes from the intended Application Gateway path and unnecessary lateral traffic is denied.
+
+Current-study-guide security extensions in this chapter include deliberate remote-administration design (including Azure Bastion selection where justified) and Azure Virtual Network Manager security-admin concepts. They must not create policy that silently competes with the final Azure Firewall routing model.
 
 Deliberately create one rule-priority conflict and prove the result using effective rules/IP flow diagnostics rather than guessing.
 
@@ -288,18 +291,38 @@ snet-partner-app -> secured Virtual WAN -> Azure Firewall -> approved Internet
 
 Retire the Partner app NAT associations/resources when the firewall path is proven. This is an architectural replacement, not end-of-lab teardown.
 
-### Retire direct peering bypasses
+### Retire private-transit bypasses
 
-Module 1 direct peerings were useful when the estate was small. Once the policy requires centrally inspected private transit, direct peerings can bypass the secured Virtual WAN path.
+Earlier direct paths were valid learning/architecture stages. Once policy requires centrally inspected private transit, they become bypasses.
 
-Intentionally remove:
+After the secured private path is proven, intentionally remove/disable:
 
 ```text
 Core <-> Manufacturing direct peering
 Core <-> Research global peering
+Brisbane <-> Perth ExpressRoute Global Reach
 ```
 
-only after the secured-hub route path is proven. Workload VNets remain intact; the production transit changes.
+Why Global Reach retires:
+
+```text
+Global Reach
+ -> ER circuit-to-circuit traffic directly across Microsoft backbone
+ -> does not traverse the Virtual WAN hub security appliance
+```
+
+BlueHarbor's Module 6 target is instead:
+
+```text
+ER / VPN / VNet private traffic
+ -> secured Virtual WAN routing
+ -> Azure Firewall
+ -> approved destination
+```
+
+If ER-to-ER transit through the security appliance requires Microsoft support enablement under the current service model, treat that as a real platform dependency and validate it before disabling the proven fallback path.
+
+Workload VNets and site identities remain intact; only the production transit changes.
 
 ---
 
@@ -379,7 +402,7 @@ Application Gateway WAF_v2
  -> regional HTTP(S) protection / origin boundary
 ```
 
-The learner must explain why the route path matters, why public ingress needs symmetry exceptions, why Partner NAT egress is replaced but telemetry NAT remains, why direct peerings are retired, and why WAF does not replace DDoS/NSG/Azure Firewall.
+The learner must explain why the route path matters, why public ingress needs symmetry exceptions, why Partner NAT egress is replaced but telemetry NAT remains, why direct peerings and Global Reach retire when they bypass inspected transit, and why WAF does not replace DDoS/NSG/Azure Firewall.
 
 ## Carry-forward into Module 7
 

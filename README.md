@@ -8,6 +8,7 @@ This is one cumulative project, not a collection of disposable labs.
 
 ```text
 Microsoft Learn unit
+ -> matching current AZ-700 study-guide extensions
  -> BlueHarbor business problem
  -> mental model
  -> incremental design
@@ -33,12 +34,16 @@ No routine `terraform destroy` occurs between units/modules. Persistent Azure co
 Story design                         COMPLETE
 Transition audit Gates 1-7           PASS
 Whole-programme architecture closeout PASS
+July-2026 study-guide coverage       COMPLETE
+Final curriculum / architecture QA   PASS
 Implementation ready                 YES
 ```
 
-Authoritative closeout:
+Authoritative planning/coverage records:
 
-[`docs/WHOLE-PROGRAMME-ARCHITECTURE-CLOSEOUT.md`](docs/WHOLE-PROGRAMME-ARCHITECTURE-CLOSEOUT.md)
+- [`docs/WHOLE-PROGRAMME-ARCHITECTURE-CLOSEOUT.md`](docs/WHOLE-PROGRAMME-ARCHITECTURE-CLOSEOUT.md)
+- [`docs/AZ700-STUDY-GUIDE-COVERAGE.md`](docs/AZ700-STUDY-GUIDE-COVERAGE.md)
+- [`docs/FINAL-CURRICULUM-QA.md`](docs/FINAL-CURRICULUM-QA.md)
 
 ## Current position
 
@@ -66,6 +71,27 @@ Terraform remote state       Azure Blob / one state lineage
 Global unique naming         one persistent 6-char lowercase alphanumeric suffix
 ```
 
+## Important final QA guardrails
+
+```text
+Global Reach
+ -> requires two ExpressRoute circuits/provider paths
+ -> valid M3 stage
+ -> retires in M6 when centrally inspected ER-to-ER transit becomes authoritative
+
+vWAN FastPath
+ -> ExpressRoute Direct
+ -> Virtual WAN ExpressRoute Gateway >= 5 scale units
+
+Azure Route Server
+ -> mandatory study-guide learning
+ -> do not deploy into a BlueHarbor VNet connected to Virtual WAN merely for coverage
+
+Front Door private App Gateway origin over HTTPS
+ -> trusted certificate subject/name required
+ -> .example never counts as trusted end-to-end TLS
+```
+
 ## Official Microsoft Learn curriculum
 
 | Module | Microsoft Learn module | Status |
@@ -81,6 +107,6 @@ Global unique naming         one persistent 6-char lowercase alphanumeric suffix
 
 ## Working rule
 
-Complete the tutorial/mental model before changing infrastructure. Preserve Microsoft's learning objective, but implement practical changes as small understandable deltas in the one cumulative Terraform environment.
+Complete the tutorial/mental model before changing infrastructure. Before each unit, inspect the corresponding rows in [`docs/AZ700-STUDY-GUIDE-COVERAGE.md`](docs/AZ700-STUDY-GUIDE-COVERAGE.md), then preserve Microsoft's learning objective while implementing practical changes as small understandable deltas in the one cumulative Terraform environment.
 
 Always read [`docs/HANDOFF.md`](docs/HANDOFF.md) before resuming.

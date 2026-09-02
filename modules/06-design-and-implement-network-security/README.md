@@ -24,6 +24,7 @@ enterprise transit
  -> bhi-vhub-aue 10.200.0.0/22
  -> bhi-vhub-sea 10.200.4.0/22
  -> VPN / ExpressRoute / VNet connections
+ -> Module 3 Global Reach stage between Brisbane and Perth
 
 explicit outbound
  -> nat-mfg-aue
@@ -46,7 +47,7 @@ posture review
  -> secure AUE hub first and prove policy
  -> centralise policy with Firewall Manager
  -> secure both regional hubs + routing intent
- -> retire direct peerings that bypass inspected private transit
+ -> retire private-transit bypasses (direct peerings + Global Reach)
  -> replace Partner app NAT egress with firewall-controlled egress
  -> preserve explicit public-ingress return-path exceptions
  -> upgrade Front Door / Application Gateways for WAF
@@ -67,6 +68,20 @@ posture review
 ```
 
 By the end of the module, approved Internet and private traffic use secured Virtual WAN routing where appropriate, while public Application Gateway and public Load Balancer paths retain deliberate symmetry exceptions.
+
+## Private-transit bypass rule
+
+Any earlier path that bypasses the secured-hub firewall is reviewed when private routing intent becomes authoritative.
+
+That includes:
+
+```text
+Core <-> Manufacturing direct peering
+Core <-> Research global peering
+ExpressRoute Global Reach between Brisbane and Perth
+```
+
+Global Reach is valid in Module 3, but its direct circuit-to-circuit path does not traverse the secured hub. Module 6 therefore disables it after the inspected ER-to-ER path is proven. If current Azure requires Microsoft support enablement for ER-to-ER transit through the security appliance, record and satisfy that dependency rather than pretending it is a normal self-service toggle.
 
 ## Public-path guardrail
 
@@ -94,5 +109,7 @@ The exact supported route-table/service requirements are verified against curren
 9. Exercise: Secure your Virtual Hub using Azure Firewall Manager
 10. Implement a Web Application Firewall
 11. Summary and resources
+
+Current study-guide extensions such as Bastion/remote-administration design and Azure Virtual Network Manager security administration are covered inside the matching security units without creating a disconnected parallel topology. See `docs/AZ700-STUDY-GUIDE-COVERAGE.md`.
 
 Persistent infrastructure changes are Terraform-managed in the same `blueharbor/terraform/` root. CLI, Portal and diagnostic tools validate the resulting security behaviour.

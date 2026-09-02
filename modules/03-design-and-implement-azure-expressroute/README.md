@@ -30,13 +30,57 @@ existing Virtual WAN / VPN connectivity
         -> design circuit/provider/BGP/resiliency
         -> learn the classic ExpressRoute VNet-gateway model
         -> implement BlueHarbor's ExpressRoute Gateway in bhi-vhub-aue
-        -> provision/connect the circuit where practical
+        -> provision/connect the Brisbane circuit/path where practical
         -> configure private peering/BGP
         -> make route preference/failover behaviour explicit
-        -> use Brisbane + Perth for Global Reach reasoning
-        -> evaluate FastPath eligibility against the chosen circuit model
+        -> add a distinct Perth circuit/provider path for Global Reach learning
+        -> evaluate FastPath against the exact Virtual WAN support rules
         -> troubleshoot the complete path
 ```
+
+## ExpressRoute circuit contract
+
+Global Reach requires two ExpressRoute circuits/provider paths. BlueHarbor therefore treats them explicitly:
+
+```text
+Brisbane
+ -> ExpressRoute circuit/provider path A
+
+Perth
+ -> ExpressRoute circuit/provider path B
+```
+
+The exact external carrier provisioning may be simulated where commercial dependencies are unavailable, but the logical two-circuit requirement is not hand-waved.
+
+## Global Reach lifecycle
+
+Module 3 uses Global Reach as a real learning stage:
+
+```text
+Brisbane ER circuit A
+        |
+Global Reach
+        |
+Perth ER circuit B
+```
+
+This is **not** the final Module 6 security path. When Module 6 later requires centrally inspected private transit through secured Virtual WAN hubs, Global Reach is intentionally disabled because its circuit-to-circuit traffic bypasses the secured hub/firewall path.
+
+That retirement is an approved architecture evolution, not cleanup.
+
+## Virtual WAN FastPath rule
+
+For BlueHarbor's persistent Virtual WAN architecture, FastPath is considered active only when the current support conditions are met:
+
+```text
+ExpressRoute Direct
++
+Virtual WAN ExpressRoute Gateway >= 5 scale units
+```
+
+Under the current service model, this is automatically enabled for supported traffic. A normal provider ExpressRoute circuit is not treated as FastPath-enabled in Virtual WAN.
+
+If the lab uses a provider circuit, Unit 09 teaches the exact eligibility gap instead of creating a disconnected second architecture.
 
 ## Microsoft Learn units
 

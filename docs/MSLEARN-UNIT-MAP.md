@@ -1,24 +1,36 @@
 # Microsoft Learn AZ-700 Unit Map
 
-This file is the authoritative unit sequence for the repository.
+This file is the authoritative **execution sequence** for the repository.
 
 Primary source:
+
 `https://learn.microsoft.com/en-us/training/paths/design-implement-microsoft-azure-networking-solutions-az-700/`
+
+Completeness source:
+
+`https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/az-700`
+
+Current study-guide baseline: **skills measured effective July 27, 2026**.
+
+Objective-by-objective coverage lives in:
+
+[`AZ700-STUDY-GUIDE-COVERAGE.md`](AZ700-STUDY-GUIDE-COVERAGE.md)
 
 ## Rule
 
 ```text
-Learning Path
--> Module
--> Unit
--> Microsoft exercise where present
--> BlueHarbor engineering extension
--> incremental change to the SAME Terraform environment
+Microsoft Learn learning path
+ -> module
+ -> unit
+ -> Microsoft exercise where present
+ -> matching current study-guide extensions
+ -> BlueHarbor engineering requirement
+ -> incremental change to SAME Terraform environment when infrastructure is required
 ```
 
-No parallel lab sequence and no legacy-practical completion credit. The BlueHarbor project is built in this order.
+No parallel lab sequence and no legacy-practical completion credit.
 
-The Terraform implementation is also sequential: every applicable unit modifies `blueharbor/terraform/` and inherits the same state/deployed environment from the previous unit.
+A study-guide extension is inserted **inside the nearest matching Learn unit**. It does not change module/unit numbering.
 
 ## Module 1 — Introduction to Azure Virtual Networks
 
@@ -36,7 +48,7 @@ The Terraform implementation is also sequential: every applicable unit modifies 
 
 **Current position:** Unit 01 — Introduction.
 
-Study-guide additions such as Azure DNS Private Resolver are inserted inside the matching Microsoft Learn objective, not as separate units.
+Study-guide extensions embedded here include Public IP Prefix/BYOIP design, public DNS depth, Azure Virtual Network Manager connectivity concepts and Azure Route Server. Route Server is not allowed to be deployed into a VNet that is/will be connected to the BlueHarbor Virtual WAN merely for exam coverage.
 
 ## Module 2 — Design and implement hybrid networking
 
@@ -49,6 +61,8 @@ Study-guide additions such as Azure DNS Private Resolver are inserted inside the
 7. Exercise: Create a Virtual WAN by using the Azure portal
 8. Create a network virtual appliance (NVA) in a virtual hub
 9. Summary
+
+Study-guide extensions here include HA VPN design, explicit IKE/IPsec policy, Azure Extended Network, RADIUS/Entra P2S authentication, Always On VPN and Azure Network Adapter requirements.
 
 ## Module 3 — Design and implement Azure ExpressRoute
 
@@ -64,6 +78,8 @@ Study-guide additions such as Azure DNS Private Resolver are inserted inside the
 10. Troubleshoot ExpressRoute connection issues
 11. Summary and resources
 
+Study-guide extensions here include Microsoft peering, route advertisement, encryption-over-ER and BFD. Global Reach explicitly uses two circuit/provider paths and is later retired in Module 6 if it would bypass secured-hub inspection. vWAN FastPath uses the current Direct + minimum-5-scale-unit rule.
+
 ## Module 4 — Load balance non-HTTP(S) traffic in Azure
 
 1. Introduction
@@ -74,6 +90,8 @@ Study-guide additions such as Azure DNS Private Resolver are inserted inside the
 6. Exercise: Create a Traffic Manager profile using the Azure portal
 7. Summary
 
+Study-guide extensions include public/internal and regional/cross-region decisions, Gateway Load Balancer, inbound NAT rules and explicit outbound-rule/SNAT comparison with the canonical NAT Gateway design.
+
 ## Module 5 — Load balance HTTP(S) traffic in Azure
 
 1. Introduction
@@ -83,6 +101,8 @@ Study-guide additions such as Azure DNS Private Resolver are inserted inside the
 5. Design and configure Azure Front Door
 6. Exercise: Create a Front Door for a highly available web application
 7. Summary
+
+Study-guide extensions include Application Gateway autoscale/rewrite rules and Front Door TLS, caching, acceleration, rules, rewrite and redirect. Private Link origin security is completed in Module 7 after Premium/WAF hardening in Module 6.
 
 ## Module 6 — Design and implement network security
 
@@ -98,6 +118,8 @@ Study-guide additions such as Azure DNS Private Resolver are inserted inside the
 10. Implement a Web Application Firewall
 11. Summary and resources
 
+Study-guide extensions include Azure Bastion remote-admin design and Azure Virtual Network Manager security-admin concepts. Module 6 also removes private-transit bypasses, including Global Reach when centrally inspected ER-to-ER transit becomes the requirement.
+
 ## Module 7 — Design and implement private access to Azure Services
 
 1. Introduction
@@ -108,6 +130,8 @@ Study-guide additions such as Azure DNS Private Resolver are inserted inside the
 6. Exercise: Create an Azure private endpoint using Azure PowerShell
 7. Summary
 
+The study-guide Private Link Service/on-prem integration and Front Door origin Private Link objectives are implemented against the real telemetry and Partner Hub architectures. End-to-end TLS to a Private-Link-enabled App Gateway origin is conditional on a real trusted domain/certificate.
+
 ## Module 8 — Design and implement network monitoring
 
 1. Introduction
@@ -116,25 +140,25 @@ Study-guide additions such as Azure DNS Private Resolver are inserted inside the
 4. Monitor your networks using Azure Network Watcher
 5. Summary
 
-Module 8 depth also includes Connection Monitor, Traffic Analytics, VNet flow logs and diagnostic logging as required by the module objectives and current study guide.
+Module 8 includes Connection Monitor, Azure Monitor Network Insights, VNet flow logs, Traffic Analytics, resource diagnostics, DDoS/Defender evidence and the deterministic final incident.
 
-## Extension pattern
+## Standard extension/execution pattern
 
 ```text
-1. Teach Microsoft Learn unit
-2. State BlueHarbor business problem
-3. Explain mental model / analogy
-4. Trace architecture / packet / query flow
-5. Check understanding
-6. Determine what must change in the CURRENT BlueHarbor architecture
-7. Modify the SAME Terraform root
-8. terraform fmt / init / validate
-9. terraform plan — verify intended incremental delta
-10. terraform apply
-11. Validate independently with Azure CLI / Portal / protocol tools
-12. Break and troubleshoot one relevant component
-13. Encode permanent infrastructure fixes in Terraform
-14. Re-plan / re-apply / re-validate
-15. Capture evidence and Git checkpoint
-16. Carry code + state + deployed Azure environment forward
+1. Teach the exact Microsoft Learn unit
+2. State the BlueHarbor business problem
+3. Check AZ700-STUDY-GUIDE-COVERAGE.md for required extensions
+4. Explain mental model / analogy
+5. Trace architecture / packet / query flow
+6. Check understanding
+7. Determine the delta from the CURRENT BlueHarbor estate
+8. Modify the SAME Terraform root when persistent infrastructure is required
+9. terraform fmt / init / validate / plan
+10. inspect plan for intended incremental delta
+11. apply
+12. validate independently with CLI / Portal / protocol tools
+13. break/troubleshoot one relevant component
+14. reconcile permanent infrastructure fixes into Terraform
+15. capture evidence and Git checkpoint
+16. carry exact code/state/deployed environment forward
 ```

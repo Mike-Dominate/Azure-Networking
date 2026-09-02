@@ -6,6 +6,7 @@ This is the authoritative continuation record.
 
 ```text
 Microsoft Learn order is authoritative.
+Current AZ-700 study guide is the completeness authority.
 One BlueHarbor story.
 One blueharbor/terraform/ root.
 One Terraform state lineage.
@@ -26,6 +27,8 @@ Gate 5  M5 -> M6                     PASS
 Gate 6  M6 -> M7                     PASS
 Gate 7  M7 -> M8                     PASS
 Whole-programme architecture closeout PASS
+July-2026 study-guide coverage       COMPLETE
+Final curriculum / architecture QA   PASS
 Implementation ready                 YES
 ```
 
@@ -33,6 +36,8 @@ See:
 
 - [`ARCHITECTURE-DEPENDENCY-AUDIT.md`](ARCHITECTURE-DEPENDENCY-AUDIT.md)
 - [`WHOLE-PROGRAMME-ARCHITECTURE-CLOSEOUT.md`](WHOLE-PROGRAMME-ARCHITECTURE-CLOSEOUT.md)
+- [`AZ700-STUDY-GUIDE-COVERAGE.md`](AZ700-STUDY-GUIDE-COVERAGE.md)
+- [`FINAL-CURRICULUM-QA.md`](FINAL-CURRICULUM-QA.md)
 
 ## Final canonical address additions
 
@@ -52,8 +57,6 @@ Classic P2S       172.31.240.0/24
 vWAN User VPN     172.31.241.0/24
 ```
 
-Full subnet contract is in the closeout document.
-
 ## Final DNS contract
 
 BlueHarbor-owned private namespace:
@@ -62,14 +65,6 @@ BlueHarbor-owned private namespace:
 blueharbor.internal
 ```
 
-Later BlueHarbor-owned records such as:
-
-```text
-telemetry.services.blueharbor.internal
-```
-
-remain under that parent private zone.
-
 Microsoft Private Link zones remain service-owned, for example:
 
 ```text
@@ -77,7 +72,7 @@ privatelink.database.windows.net
 privatelink.azurewebsites.net
 ```
 
-Hybrid resolution uses the existing Core DNS Private Resolver architecture.
+Hybrid resolution uses the Core DNS Private Resolver architecture.
 
 ## Terraform state contract
 
@@ -94,25 +89,25 @@ Use Microsoft Entra ID/Azure CLI-compatible backend authentication. Do not commi
 
 `global_suffix` is one six-character lowercase alphanumeric value chosen once and carried through the project for Azure resources that require global uniqueness.
 
-## Important routing/security exceptions
-
-Public Application Gateway and telemetry Load Balancer service paths retain deliberate symmetric return-path exceptions where the Azure service requires them.
-
-Manufacturing Storage service-endpoint traffic from `snet-mfg-data` is also an intentional exception to central Azure Firewall egress inspection; its enforcement is service endpoint + endpoint policy + Storage network rules.
-
-## Intentional later retirements
-
-These are approved architecture evolutions, not cleanup:
+## Important routing/security evolutions
 
 ```text
 classic workload gateway transit -> Virtual WAN
 Research AUE-hub connection -> SEA hub
 Core<->Mfg and Core<->Research direct peerings -> retire after secured transit proof
+Brisbane<->Perth Global Reach -> retire in M6 after secured ER-to-ER path proof
 Partner NAT egress -> retire after firewall egress proof
 Front Door public origin group -> Private-Link-enabled origin group
 ```
 
-Classic VPN resources remain deployed after the Virtual WAN cutover, but the classic branch path is non-production/inactive unless a later explicit failback design says otherwise.
+If current Azure requires Microsoft support enablement for ExpressRoute-to-ExpressRoute transit through a secured vWAN security appliance, treat it as a real prerequisite rather than assuming it is a self-service toggle.
+
+## Final study-guide/service guardrails
+
+- `docs/AZ700-STUDY-GUIDE-COVERAGE.md` must be checked at every unit so current skills outside the visible Learn exercise are not skipped.
+- Azure Route Server is covered as a mandatory M1 routing extension but is not deployed into a VNet connected to Virtual WAN simply for exam coverage.
+- vWAN FastPath means ExpressRoute Direct plus a Virtual WAN ExpressRoute Gateway of at least five scale units under the current support model.
+- Front Door -> private Application Gateway HTTPS requires a real trusted certificate subject/name; `.example` is never used to fake end-to-end TLS.
 
 ## Current programme position
 
@@ -126,4 +121,4 @@ Terraform deployment — NONE required
 
 ## Immediate resume instruction
 
-Begin **Module 1 — Unit 01 — Introduction** using the BlueHarbor migration brief and mental model. Do not skip to Terraform. The first persistent infrastructure checkpoint is Module 1 Unit 04.
+Begin **Module 1 — Unit 01 — Introduction** using the BlueHarbor migration brief and mental model. Before each unit, check its corresponding rows in `AZ700-STUDY-GUIDE-COVERAGE.md`. Do not skip to Terraform. The first persistent infrastructure checkpoint is Module 1 Unit 04.
