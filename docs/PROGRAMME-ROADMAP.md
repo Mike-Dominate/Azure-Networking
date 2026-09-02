@@ -10,6 +10,12 @@ Canonical Terraform root:
 blueharbor/terraform/
 ```
 
+Learner-performance standard:
+
+```text
+docs/LEARNER-MASTERY-FRAMEWORK.md
+```
+
 ## Planning status
 
 ```text
@@ -18,11 +24,30 @@ MODULE-TRANSITION AUDIT              COMPLETE — GATES 1–7 PASS
 WHOLE-PROGRAMME CLOSEOUT             PASS
 JULY-2026 STUDY-GUIDE COVERAGE       COMPLETE
 FINAL CURRICULUM / ARCHITECTURE QA   PASS
+LEARNER MASTERY FRAMEWORK             ACTIVE
 IMPLEMENTATION READY                 YES
 TERRAFORM BUILD                      NOT STARTED
 AZURE DEPLOYMENT                     NOT STARTED
 CURRENT CURRICULUM POSITION          M1 U01
+CURRENT MASTERY POSITION              M1 U01 — NOT STARTED
 ```
+
+## Learning progression
+
+Every practical now moves through four distinct learner states:
+
+```text
+LEARNED
+  -> mental model and design understood
+BUILT
+  -> intended infrastructure/configuration implemented
+VALIDATED
+  -> behaviour independently proven
+MASTERED
+  -> failure, evidence, communication and low-guidance gate passed
+```
+
+Deployment alone does not complete a practical.
 
 ## Final cumulative programme chain
 
@@ -73,6 +98,29 @@ VNet flow logs / Traffic Analytics
 Connection Monitor / diagnostics / alerts
 ```
 
+## Learner-experience chain
+
+The same infrastructure progression is now wrapped in this repeatable mastery loop:
+
+```text
+business trigger
+  -> job reality
+  -> recall existing estate
+  -> mental model / packet path
+  -> architecture delta
+  -> Terraform change
+  -> independent validation
+  -> deliberate fault
+  -> diagnostic framework
+  -> pressure incident
+  -> evidence + stakeholder communication
+  -> low-guidance repeat
+  -> mastery gate
+  -> exact estate carried forward
+```
+
+Guidance deliberately reduces from Module 1 to Module 8. Module 1 teaches the method explicitly; by Module 8 the learner is expected to operate the accumulated estate from symptoms and evidence with minimal hints.
+
 ## Final cross-programme contracts
 
 ```text
@@ -91,6 +139,12 @@ Microsoft Learn remains the execution sequence. Before each unit, use:
 
 to add the current July 27, 2026 study-guide objectives inside the matching unit without creating a parallel curriculum.
 
+The learner-performance layer is defined separately in:
+
+[`LEARNER-MASTERY-FRAMEWORK.md`](LEARNER-MASTERY-FRAMEWORK.md)
+
+It changes **how deeply each applicable unit must be demonstrated**, not the Microsoft Learn sequence or technical scope.
+
 ## Official module sequence
 
 | Module | Microsoft Learn module | Execution status | Story/audit status |
@@ -104,8 +158,23 @@ to add the current July 27, 2026 study-guide objectives inside the matching unit
 | 7 | Design and implement private access to Azure Services | NOT STARTED | DESIGNED / AUDITED / QA PASS |
 | 8 | Design and implement network monitoring | NOT STARTED | DESIGNED / AUDITED / QA PASS |
 
+## Mastery emphasis by module
+
+```text
+M1  Foundation mode        — explain and build correct habits
+M2  Engineering mode       — choose more of the implementation path
+M3  Design/dependency mode — reason honestly about external boundaries
+M4  Service availability   — diagnose probes, backends and global selection
+M5  Application delivery   — combine DNS, TLS, routing and backend health
+M6  Senior security change — protect existing paths while hardening the estate
+M7  Private access         — diagnose DNS/private-path behaviour end-to-end
+M8  Operations/on-call     — investigate the full estate from symptoms/telemetry
+```
+
 ## Execution rule
 
 The planning/QA phase is finished. Begin at Module 1 Unit 01 and continue in Microsoft Learn order.
 
 Do not pre-build future resources simply because their final address/name is already known. The closeout/coverage maps are dependency contracts, not permission to skip the progressive story.
+
+Do not mark a practical complete merely because Terraform applied successfully. Use the mastery framework and record the correct `LEARNED`, `BUILT`, `VALIDATED` or `MASTERED` state.
