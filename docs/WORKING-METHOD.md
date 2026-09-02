@@ -9,8 +9,30 @@ This programme teaches Azure networking as one progressive BlueHarbor Industries
 - Azure product documentation is the technical behaviour authority.
 - The BlueHarbor story provides the progressive business context.
 - `docs/LEARNER-MASTERY-FRAMEWORK.md` defines the learner-performance and mastery standard.
+- `docs/RETRIEVAL-AND-SYNTAX-PROGRESSION.md` defines the teach -> recall -> reuse -> extend repetition standard.
 - Legacy labs are reference history only and do not override story continuity.
 - `blueharbor/terraform/` is the single canonical Terraform root for the project.
+
+## Core teaching law
+
+A learner must never be expected to independently use a genuinely new Azure concept or syntax pattern before it has been taught.
+
+The assistance taper applies to **previously taught material**, not to new material.
+
+Every module therefore follows this rhythm:
+
+```text
+TEACH new module concepts and new syntax
+-> RETRIEVE the previous mental model without notes
+-> REWRITE / REUSE previously learned syntax from memory
+-> EXTEND the live BlueHarbor estate with the new capability
+-> VALIDATE old + new behaviour together
+-> TROUBLESHOOT the combined architecture
+-> REPEAT with reduced guidance
+-> MASTER
+```
+
+The educational purpose of the cumulative estate is spaced retrieval. The learner repeatedly has to remember how earlier networking concepts, Terraform patterns and Azure CLI validation work while solving later business problems.
 
 ## Story and infrastructure continuity
 
@@ -64,18 +86,45 @@ A successful deployment is therefore an intermediate state, not the end of learn
 
 ## Standard lifecycle
 
-### Phase A — Understand and recall
+### Phase A — Teach the new capability
 
-1. Identify the exact Microsoft Learn unit.
+1. Identify the exact Microsoft Learn unit/module objective.
 2. State the BlueHarbor business problem.
-3. Complete the tutorial/mental model before deployment.
-4. Answer short recall questions about the existing BlueHarbor estate before opening implementation instructions.
-5. Draw the architecture and traffic/control-plane flow.
-6. Identify dependencies, failure points, security boundaries and trade-offs.
-7. Predict expected validation outcomes before running tests.
-8. Use an explain-back to confirm understanding.
+3. Teach the new concept before expecting independent work.
+4. Explain the purpose, architecture, data/control-plane model, dependencies, security boundaries and trade-offs.
+5. Teach any genuinely new Terraform/HCL, Azure CLI or protocol syntax required by the capability.
+6. Demonstrate at least one worked example where appropriate.
+7. Use an explain-back to confirm that the learner understands the new capability before moving to independent work.
 
-### Phase B — Define the incremental change
+### Phase B — Retrieve previous knowledge before reference
+
+1. Ask the learner to explain the previous module/unit mental model without notes.
+2. Ask short recall questions about the current BlueHarbor estate.
+3. Require recall of important previously taught Terraform or CLI syntax before showing it again.
+4. Ask the learner to draw the earlier traffic/DNS/control-plane path from memory.
+5. Let the learner attempt first; review/reference material comes after the attempt.
+
+The purpose is retrieval practice, not punishment. Failed recall triggers review and another attempt.
+
+### Phase C — Reuse previously learned syntax
+
+1. Identify which old syntax patterns naturally appear in the new business requirement.
+2. Ask the learner to write those familiar portions from memory.
+3. Prefer legitimate reuse in the real architecture over artificial duplicate labs.
+4. If the live estate does not need another resource of that type, use a temporary Git branch/scratch file, code-repair drill or CLI retrieval exercise instead of creating duplicate live resources.
+5. Only the genuinely new syntax is taught line-by-line.
+
+Example:
+
+```text
+M1 taught VNet/subnet HCL.
+M2 needs GatewaySubnet.
+
+Learner writes the new subnet block from memory.
+Instructor then teaches the new VPN Gateway HCL.
+```
+
+### Phase D — Define the incremental change
 
 1. Inspect the current BlueHarbor architecture and Terraform code.
 2. State what already exists from previous units.
@@ -84,17 +133,18 @@ A successful deployment is therefore an intermediate state, not the end of learn
 5. If an existing resource must change, explain why the new business requirement requires that change.
 6. State what earlier functionality could regress because of this change.
 
-### Phase C — Extend the living Terraform stack
+### Phase E — Extend the living Terraform stack
 
 1. Work in `blueharbor/terraform/`.
 2. Add or modify readable Terraform files without hiding the Azure relationships prematurely.
-3. Run:
+3. Previously taught Terraform workflow commands should increasingly be recalled rather than reprinted automatically:
 
 ```text
 terraform fmt -recursive
 terraform init
 terraform validate
 terraform plan
+terraform apply
 ```
 
 4. Read the plan as an architecture change report.
@@ -102,16 +152,17 @@ terraform plan
 6. Apply only after the delta is understood.
 7. Keep the same state lineage for the next unit.
 
-### Phase D — Independently validate
+### Phase F — Independently validate
 
 1. Inspect deployed resources independently using Azure CLI/Portal where useful.
-2. Test real traffic/control-plane behaviour.
-3. Compare actual results to predictions made before the test.
-4. Inspect effective Azure state rather than inferring success from Terraform output.
-5. Use DNS queries, effective routes, Network Watcher, flow logs, HTTP/TLS tests, backend health and Azure Monitor where applicable.
-6. Record command/action, expected result, actual result, pass/fail and interpretation.
+2. Previously taught CLI inspection patterns should increasingly be reconstructed from memory.
+3. Test real traffic/control-plane behaviour.
+4. Compare actual results to predictions made before the test.
+5. Inspect effective Azure state rather than inferring success from Terraform output.
+6. Use DNS queries, effective routes, Network Watcher, flow logs, HTTP/TLS tests, backend health and Azure Monitor where applicable.
+7. Record command/action, expected result, actual result, pass/fail and interpretation.
 
-### Phase E — Deliberately fail and troubleshoot
+### Phase G — Deliberately fail and troubleshoot
 
 1. Introduce at least one realistic, controlled fault for applicable practical units.
 2. Define the symptom precisely before changing anything.
@@ -127,7 +178,7 @@ terraform plan
 12. Ensure permanent infrastructure fixes are represented in Terraform.
 13. Re-run plan/apply and end with Terraform and Azure agreeing.
 
-### Phase F — Pressure scenario
+### Phase H — Pressure scenario
 
 For substantial practical units, complete a timed or constrained incident after the guided fault exercise.
 
@@ -142,7 +193,7 @@ A pressure scenario includes:
 
 The purpose is to test method under pressure, not reward reckless speed.
 
-### Phase G — Evidence and communication
+### Phase I — Evidence and communication
 
 1. Capture the smallest useful evidence set.
 2. Record the Terraform plan/apply delta.
@@ -153,20 +204,20 @@ The purpose is to test method under pressure, not reward reckless speed.
 7. Record trade-offs and lessons.
 8. Never commit secrets, credentials, SAS tokens, private keys, real tfvars or unnecessary sensitive logs.
 
-### Phase H — Low-guidance repeat and mastery gate
+### Phase J — Low-guidance repeat and mastery gate
 
 Before marking the practical mastered:
 
 1. Repeat the core reasoning or implementation with materially less guidance.
-2. Reproduce important validation commands from memory where appropriate.
+2. Reproduce important previously taught Terraform/CLI syntax from memory.
 3. Diagnose a second fault or variation without a runbook where safe.
 4. Answer the unit's scenario/interview questions without notes.
 5. Explain the design and failure path in plain language.
 6. Complete the applicable checklist in `docs/LEARNER-MASTERY-FRAMEWORK.md`.
 
-Because BlueHarbor is cumulative, a repeat does **not** normally mean destroying and rebuilding the live estate. Use temporary Git branches, controlled configuration changes, diagrams, second faults and low-guidance Terraform deltas instead.
+Because BlueHarbor is cumulative, a repeat does **not** normally mean destroying and rebuilding the live estate. Use legitimate new resources, temporary Git branches, controlled configuration changes, diagrams, second faults and low-guidance Terraform deltas instead.
 
-### Phase I — Checkpoint and carry forward
+### Phase K — Checkpoint and carry forward
 
 1. Update unit/module README when status changes.
 2. Capture useful commands and evidence.
@@ -179,18 +230,33 @@ Because BlueHarbor is cumulative, a repeat does **not** normally mean destroying
 
 ## Assistance taper
 
-The amount of procedural help reduces deliberately as the learner progresses.
+The amount of procedural help reduces deliberately for **old skills** while new skills continue to be taught properly.
 
 ```text
-Module 1      foundation mode — high guidance
-Module 2      engineering mode — moderate guidance
-Module 3      design/dependency mode — moderate-low guidance
-Modules 4-5   service-delivery mode — low guidance for repeated concepts
-Modules 6-7   senior-change mode — requirements + constraints + acceptance criteria
-Module 8      operations/on-call mode — symptoms + objectives, minimal hints
+Module 1      foundation mode — new Terraform/networking patterns explicitly taught
+Module 2      teach hybrid first; prior M1 syntax becomes prompted recall
+Module 3      teach ExpressRoute first; prior M1/M2 patterns increasingly self-produced
+Modules 4-5   teach new delivery services; basic Terraform/network syntax should be contextual reuse
+Modules 6-7   teach new security/private-access concepts; old implementation patterns largely independent
+Module 8      teach monitoring capabilities; operations work expects automatic reuse of prior network/CLI reasoning
 ```
 
-Do not remove explanation of genuinely new Azure behaviour. Remove repetitive hand-holding for skills already demonstrated.
+Never interpret "less guidance" as "do not teach the new module."
+
+## Module retrieval contract
+
+Every module after Module 1 must explicitly state:
+
+```text
+PREVIOUS-MODULE MENTAL MODEL TO RECALL
+PREVIOUS TERRAFORM/HCL SYNTAX TO REPEAT
+PREVIOUS CLI/VALIDATION SYNTAX TO REPEAT
+OLD CAPABILITY REUSED IN THIS MODULE
+NEW CAPABILITY/SYNTAX THAT WILL BE TAUGHT
+INDEPENDENT TASK AFTER TEACHING
+```
+
+This contract is part of module design, not an optional exercise.
 
 ## Module exit review
 
@@ -201,26 +267,31 @@ The learner must be able to answer:
 1. What capability exists now that did not exist at module start?
 2. What resources/configuration were added, changed or retired?
 3. Which packet, DNS or control-plane paths changed?
-4. Which new failure modes now exist?
-5. Which earlier assumptions are no longer true?
-6. What evidence would I inspect first during an incident?
-7. What portfolio artefacts prove the work?
-8. Which AZ-700 objectives were satisfied?
+4. Which previous mental models were reused in this module?
+5. Which previously learned Terraform/CLI syntax did I have to produce again from memory?
+6. Which new failure modes now exist?
+7. Which earlier assumptions are no longer true?
+8. What evidence would I inspect first during an incident?
+9. What portfolio artefacts prove the work?
+10. Which AZ-700 objectives were satisfied?
 
 Module status becomes `MASTERED` only after this review passes.
 
 ## Destroy / replacement policy
 
-`terraform destroy` is not part of the normal unit lifecycle.
+`terraform destroy` may be taught as syntax and the learner should understand it, but it is not part of the normal cumulative module lifecycle.
 
 Removal is appropriate only when:
 
 - the BlueHarbor design intentionally retires a component;
 - the new architecture replaces an earlier temporary design;
 - a deliberate troubleshooting exercise requires a controlled change and it is subsequently restored/reconciled;
+- an explicitly disposable sandbox is being used to practise lifecycle commands;
 - the user explicitly chooses to reset the complete programme environment.
 
-Any planned destroy/replace action must be explained before apply.
+Knowing how to destroy infrastructure and knowing when **not** to destroy infrastructure are both required skills.
+
+Any planned destroy/replace action against the cumulative estate must be explained before apply.
 
 ## State continuity
 
