@@ -233,29 +233,19 @@ Instructor THEN teaches:
 - new Terraform blocks and validation.
 ```
 
-The previous skill is therefore repeated inside the real next architecture rather than as an artificial duplicate lab.
+The previous skill is therefore repeated inside the real next architecture.
 
----
+When a previously taught pattern is needed again, use one or more of these methods:
 
-# 7. Do not duplicate live resources merely for repetition
-
-Because BlueHarbor has one cumulative Terraform state, repetition must not create duplicate declarations for resources that already exist.
-
-Do **not** ask the learner to recreate `bhi-vnet-core-aue` in the live root merely to practise VNet syntax.
-
-Use one of these patterns instead, in preferred order:
-
-1. **Legitimate reuse** — the next module genuinely needs another subnet/resource using a known pattern.
-2. **Blank-to-code retrieval** — learner writes a known HCL block in a temporary scratch file or Git branch, then compares it and discards it without applying.
-3. **Code completion from memory** — provide only the resource type/business requirement and let the learner author attributes/references.
-4. **Fault repair** — remove or corrupt a known block in a controlled branch and require the learner to restore it from memory.
+1. **Legitimate reuse** — the new business requirement naturally needs the known pattern.
+2. **Blank-to-code retrieval** — learner writes the known HCL pattern from memory and checks it against the reference before use.
+3. **Code completion from memory** — provide the business requirement/resource type and let the learner author the known attributes/references.
+4. **Fault repair** — learner restores a previously taught pattern from memory during a controlled troubleshooting exercise.
 5. **CLI retrieval** — learner reconstructs the validation/troubleshooting command without opening notes.
 
-This keeps repetition high without corrupting state or creating fake architecture.
-
 ---
 
-# 8. Destroy syntax versus routine destroy
+# 7. Destroy syntax versus routine destroy
 
 If Terraform destroy syntax is taught, the learner should know and be able to recall it:
 
@@ -278,7 +268,7 @@ The learner should understand both **how to destroy infrastructure** and **why a
 
 ---
 
-# 9. Module-to-module retrieval contract
+# 8. Module-to-module retrieval contract
 
 Every module after Module 1 must explicitly define:
 
@@ -320,7 +310,7 @@ The same structure repeats from M2 -> M3, M3 -> M4, and onward.
 
 ---
 
-# 10. Spaced syntax progression
+# 9. Spaced syntax progression
 
 A syntax pattern should move through four levels:
 
@@ -342,7 +332,7 @@ Do not move a learner to Level 4 for a syntax pattern that was never properly ta
 
 ---
 
-# 11. Example of the intended progression
+# 10. Example of the intended progression
 
 ## Module 1
 
@@ -390,7 +380,7 @@ By later modules, basic Terraform syntax should be produced with little or no pr
 
 ---
 
-# 12. Success criterion
+# 11. Success criterion
 
 The programme succeeds when the learner does not merely recognise syntax on screen.
 
