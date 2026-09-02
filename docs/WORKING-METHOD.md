@@ -8,6 +8,7 @@ This programme teaches Azure networking as one progressive BlueHarbor Industries
 - The current AZ-700 study guide is the completeness check.
 - Azure product documentation is the technical behaviour authority.
 - The BlueHarbor story provides the progressive business context.
+- `docs/LEARNER-MASTERY-FRAMEWORK.md` defines the learner-performance and mastery standard.
 - Legacy labs are reference history only and do not override story continuity.
 - `blueharbor/terraform/` is the single canonical Terraform root for the project.
 
@@ -47,16 +48,32 @@ Do not create a second unmanaged version of the architecture through ad-hoc Port
 
 If a troubleshooting exercise deliberately creates infrastructure drift, either perform the fault through Terraform or explicitly reconcile the drift back into Terraform before the unit is complete.
 
+## Learner progression states
+
+A unit is not simply done/not-done. Use these states:
+
+```text
+NOT STARTED
+LEARNED      -> mental model / design understood
+BUILT        -> intended infrastructure/configuration implemented
+VALIDATED    -> behaviour independently proven
+MASTERED     -> failure, evidence, communication and low-guidance gate passed
+```
+
+A successful deployment is therefore an intermediate state, not the end of learning.
+
 ## Standard lifecycle
 
-### Phase A — Understand
+### Phase A — Understand and recall
 
 1. Identify the exact Microsoft Learn unit.
 2. State the BlueHarbor business problem.
 3. Complete the tutorial/mental model before deployment.
-4. Draw the architecture and traffic/control-plane flow.
-5. Identify dependencies, failure points, security boundaries and trade-offs.
-6. Use an explain-back to confirm understanding.
+4. Answer short recall questions about the existing BlueHarbor estate before opening implementation instructions.
+5. Draw the architecture and traffic/control-plane flow.
+6. Identify dependencies, failure points, security boundaries and trade-offs.
+7. Predict expected validation outcomes before running tests.
+8. Use an explain-back to confirm understanding.
 
 ### Phase B — Define the incremental change
 
@@ -65,6 +82,7 @@ If a troubleshooting exercise deliberately creates infrastructure drift, either 
 3. Define only the new resources/configuration required by this unit.
 4. Identify expected Terraform additions, changes and any intentional replacements.
 5. If an existing resource must change, explain why the new business requirement requires that change.
+6. State what earlier functionality could regress because of this change.
 
 ### Phase C — Extend the living Terraform stack
 
@@ -84,29 +102,112 @@ terraform plan
 6. Apply only after the delta is understood.
 7. Keep the same state lineage for the next unit.
 
-### Phase D — Validate, operate and troubleshoot
+### Phase D — Independently validate
 
 1. Inspect deployed resources independently using Azure CLI/Portal where useful.
 2. Test real traffic/control-plane behaviour.
-3. Test one or more relevant failure scenarios.
-4. Inspect effective Azure state rather than guessing.
-5. Use DNS queries, effective routes, Network Watcher, flow logs, HTTP tests and Azure Monitor where applicable.
-6. Record symptom, hypothesis, investigation, root cause, fix and verification.
-7. Ensure permanent infrastructure fixes are represented in Terraform.
-8. Re-run plan/apply and end with Terraform and Azure agreeing.
+3. Compare actual results to predictions made before the test.
+4. Inspect effective Azure state rather than inferring success from Terraform output.
+5. Use DNS queries, effective routes, Network Watcher, flow logs, HTTP/TLS tests, backend health and Azure Monitor where applicable.
+6. Record command/action, expected result, actual result, pass/fail and interpretation.
 
-### Phase E — Checkpoint and carry forward
+### Phase E — Deliberately fail and troubleshoot
+
+1. Introduce at least one realistic, controlled fault for applicable practical units.
+2. Define the symptom precisely before changing anything.
+3. State what still works.
+4. Draw the expected path and identify the first evidence point that can disprove it.
+5. Form one hypothesis.
+6. Run one test that can prove or disprove the hypothesis.
+7. Interpret the result before making a change.
+8. Make the smallest corrective change.
+9. Re-run the original failing test.
+10. Run regression tests against earlier BlueHarbor functionality.
+11. Record symptom, hypothesis, observation, root cause, fix, verification and prevention/lesson.
+12. Ensure permanent infrastructure fixes are represented in Terraform.
+13. Re-run plan/apply and end with Terraform and Azure agreeing.
+
+### Phase F — Pressure scenario
+
+For substantial practical units, complete a timed or constrained incident after the guided fault exercise.
+
+A pressure scenario includes:
+
+- realistic business impact;
+- incomplete initial information;
+- a time boundary;
+- explicit restrictions such as no rebuild/no destroy/one change at a time;
+- a technical recovery objective;
+- a stakeholder update.
+
+The purpose is to test method under pressure, not reward reckless speed.
+
+### Phase G — Evidence and communication
+
+1. Capture the smallest useful evidence set.
+2. Record the Terraform plan/apply delta.
+3. Capture independent Azure/network validation.
+4. Capture failure and recovery evidence.
+5. Produce a useful architecture or traffic-flow diagram when applicable.
+6. Produce one short communication artefact for a realistic audience.
+7. Record trade-offs and lessons.
+8. Never commit secrets, credentials, SAS tokens, private keys, real tfvars or unnecessary sensitive logs.
+
+### Phase H — Low-guidance repeat and mastery gate
+
+Before marking the practical mastered:
+
+1. Repeat the core reasoning or implementation with materially less guidance.
+2. Reproduce important validation commands from memory where appropriate.
+3. Diagnose a second fault or variation without a runbook where safe.
+4. Answer the unit's scenario/interview questions without notes.
+5. Explain the design and failure path in plain language.
+6. Complete the applicable checklist in `docs/LEARNER-MASTERY-FRAMEWORK.md`.
+
+Because BlueHarbor is cumulative, a repeat does **not** normally mean destroying and rebuilding the live estate. Use temporary Git branches, controlled configuration changes, diagrams, second faults and low-guidance Terraform deltas instead.
+
+### Phase I — Checkpoint and carry forward
 
 1. Update unit/module README when status changes.
 2. Capture useful commands and evidence.
-3. Record trade-offs and lessons.
-4. Update `docs/HANDOFF.md`, `docs/PROGRAMME-ROADMAP.md` and root `README.md` when programme status changes.
-5. Commit meaningful progression to Git/GitHub.
-6. Record the Terraform plan/apply delta for the unit.
-7. **Do not routinely destroy the environment.**
-8. Confirm the current Terraform state contains all expected BlueHarbor resources.
-9. Confirm Azure still contains the expected previous infrastructure plus the new unit's additions.
-10. Use this exact code/state/environment as the starting point for the next unit.
+3. Update `docs/HANDOFF.md`, `docs/PROGRAMME-ROADMAP.md` and root `README.md` when programme status changes.
+4. Commit meaningful progression to Git/GitHub.
+5. **Do not routinely destroy the environment.**
+6. Confirm the current Terraform state contains all expected BlueHarbor resources.
+7. Confirm Azure still contains the expected previous infrastructure plus the new unit's additions.
+8. Use this exact code/state/environment as the starting point for the next unit.
+
+## Assistance taper
+
+The amount of procedural help reduces deliberately as the learner progresses.
+
+```text
+Module 1      foundation mode — high guidance
+Module 2      engineering mode — moderate guidance
+Module 3      design/dependency mode — moderate-low guidance
+Modules 4-5   service-delivery mode — low guidance for repeated concepts
+Modules 6-7   senior-change mode — requirements + constraints + acceptance criteria
+Module 8      operations/on-call mode — symptoms + objectives, minimal hints
+```
+
+Do not remove explanation of genuinely new Azure behaviour. Remove repetitive hand-holding for skills already demonstrated.
+
+## Module exit review
+
+Each module ends with a mastery review of the entire accumulated estate.
+
+The learner must be able to answer:
+
+1. What capability exists now that did not exist at module start?
+2. What resources/configuration were added, changed or retired?
+3. Which packet, DNS or control-plane paths changed?
+4. Which new failure modes now exist?
+5. Which earlier assumptions are no longer true?
+6. What evidence would I inspect first during an incident?
+7. What portfolio artefacts prove the work?
+8. Which AZ-700 objectives were satisfied?
+
+Module status becomes `MASTERED` only after this review passes.
 
 ## Destroy / replacement policy
 
